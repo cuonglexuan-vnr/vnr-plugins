@@ -10,7 +10,7 @@ import {
   writeFileSync
 } from "node:fs";
 import { homedir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,7 +18,7 @@ const __dirname = dirname(__filename);
 const PACKAGE_ROOT = resolve(__dirname, "..");
 
 const MARKETPLACE_NAME = "vnr-plugins";
-const LOCAL_MARKETPLACE_ROOT = join(PACKAGE_ROOT, ".vnr-plugins");
+const LOCAL_MARKETPLACE_ROOT = PACKAGE_ROOT;
 const DEFAULT_PLUGIN_ID = "vnr-speckit";
 
 function printHelp() {
@@ -38,7 +38,7 @@ Examples:
 
 Options:
   --scope <project|user>     Plugin install scope (default: project)
-  --force                    Overwrite existing .<plugin-id> folder
+  --force                    Overwrite existing vnr-speckit folder
   --no-scaffold              Skip creating the local project folder
   --refresh-marketplace      Remove cached marketplace and re-add it
   --help                     Show this help
@@ -108,9 +108,7 @@ function findFirstExisting(paths) {
 function ensureClaudeInstalled() {
   const result = tryRun("claude", ["--version"]);
   if (!result.ok) {
-    fail(
-      "Claude CLI was not found in PATH. Please install Claude Code first, then rerun this command."
-    );
+    fail("Claude CLI was not found in PATH. Please install Claude Code first, then rerun this command.");
   }
 }
 
@@ -144,10 +142,7 @@ function resolveCachedPluginDir(pluginId) {
 }
 
 function resolvePluginSourceDir(pluginId) {
-  return (
-    resolveCachedPluginDir(pluginId) ||
-    resolvePackagedPluginDir(pluginId)
-  );
+  return resolveCachedPluginDir(pluginId) || resolvePackagedPluginDir(pluginId);
 }
 
 function ensurePackagedMarketplaceExists(pluginId) {
@@ -158,15 +153,11 @@ function ensurePackagedMarketplaceExists(pluginId) {
   );
 
   if (!existsSync(LOCAL_MARKETPLACE_ROOT)) {
-    fail(
-      `Bundled marketplace folder not found: ${LOCAL_MARKETPLACE_ROOT}`
-    );
+    fail(`Bundled marketplace root not found: ${LOCAL_MARKETPLACE_ROOT}`);
   }
 
   if (!existsSync(marketplaceManifest)) {
-    fail(
-      `Marketplace manifest not found: ${marketplaceManifest}`
-    );
+    fail(`Marketplace manifest not found: ${marketplaceManifest}`);
   }
 
   const packagedPluginDir = resolvePackagedPluginDir(pluginId);
@@ -208,7 +199,7 @@ function copyPluginToProject(sourcePluginDir, targetProjectDir, force) {
     if (!force) {
       info(`Project folder already exists, skipping scaffold: ${targetProjectDir}`);
       info("Use --force if you want to overwrite it.");
-      return;
+      return false;
     }
 
     info(`Overwriting existing project folder: ${targetProjectDir}`);
@@ -232,6 +223,8 @@ function copyPluginToProject(sourcePluginDir, targetProjectDir, force) {
       force: true
     });
   }
+
+  return true;
 }
 
 function writeInstallState(targetProjectDir, pluginId, sourcePluginDir, scope) {
@@ -258,16 +251,17 @@ function scaffoldProject(pluginId, repoRoot, scope, force) {
   const sourcePluginDir = resolvePluginSourceDir(pluginId);
 
   if (!sourcePluginDir) {
-    fail(
-      `Could not resolve plugin source directory for "${pluginId}" from either the Claude cache or the bundled marketplace.`
-    );
+    fail(`Could not resolve plugin source directory for "${pluginId}" from either the Claude cache or the bundled marketplace.`);
   }
 
-  const targetProjectDir = join(repoRoot, `.${pluginId}`);
+  const targetProjectDir = join(repoRoot, pluginId);
 
   info(`Scaffolding project folder to: ${targetProjectDir}`);
-  copyPluginToProject(sourcePluginDir, targetProjectDir, force);
-  writeInstallState(targetProjectDir, pluginId, sourcePluginDir, scope);
+  const copied = copyPluginToProject(sourcePluginDir, targetProjectDir, force);
+
+  if (copied) {
+    writeInstallState(targetProjectDir, pluginId, sourcePluginDir, scope);
+  }
 }
 
 function main() {
@@ -318,7 +312,7 @@ function main() {
   }
 
   info("");
-  info("✔ vnr-speckit setup completed.");
+  info(`✔ ${pluginId} setup completed.`);
 }
 
 main();

@@ -7,7 +7,8 @@
     "vnr-bootstrap": "./bin/vnr-bootstrap.mjs"
   },
   "files": [
-    ".vnr-plugins",
+    ".claude-plugin",
+    "plugins",
     "bin",
     "README.md"
   ],
