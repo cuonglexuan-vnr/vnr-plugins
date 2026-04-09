@@ -1,0 +1,5 @@
+{
+  "enabledPlugins": {
+    "vnr-speckit@vnr-plugins": true
+  }
+}
