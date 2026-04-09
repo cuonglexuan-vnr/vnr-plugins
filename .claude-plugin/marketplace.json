@@ -1,0 +1,20 @@
+{
+  "name": "vnr-plugins",
+  "version": "1.0.0",
+  "description": "Bundled plugins for Vnr",
+  "owner": {
+    "name": "Vnr"
+  },
+  "plugins": [
+    {
+      "name": "vnr-speckit",
+      "description": "Vnr speckit",
+      "version": "1.0.0",
+      "author": {
+        "name": "Vnr"
+      },
+      "source": "./plugins/vnr-speckit",
+      "category": "development"
+    }
+  ]
+}

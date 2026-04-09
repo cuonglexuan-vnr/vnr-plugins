@@ -1,0 +1,30 @@
+{
+  "name": "@vnr/claude-bootstrap",
+  "version": "1.0.0",
+  "description": "Cross-platform bootstrap installer for VNR Claude marketplace plugins",
+  "type": "module",
+  "bin": {
+    "vnr-bootstrap": "./bin/vnr-bootstrap.mjs"
+  },
+  "files": [
+    ".vnr-plugins",
+    "bin",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "start": "node ./bin/vnr-bootstrap.mjs",
+    "init:vnr-speckit": "node ./bin/vnr-bootstrap.mjs init vnr-speckit",
+    "help": "node ./bin/vnr-bootstrap.mjs --help"
+  },
+  "keywords": [
+    "claude-code",
+    "claude-plugin",
+    "marketplace",
+    "bootstrap",
+    "vnr"
+  ],
+  "license": "MIT"
+}
