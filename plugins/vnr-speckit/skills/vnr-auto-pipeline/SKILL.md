@@ -228,7 +228,7 @@ Dùng Agent tool:
 
     BÁO CÁO: số testcases per module, path file.
 ```
-
+**Checkpoint**:
 **Sau khi CẢ 2 hoàn thành**, tổng hợp:
 
 ```
@@ -383,7 +383,7 @@ Dùng Agent tool:
 
     OUTPUT: Kết luận PASS ✅ / WARN ⚠️ / FAIL ⛔ + bảng findings + OWASP ref.
 ```
-
+**Checkpoint**:
 **Sau khi CẢ 2 hoàn thành**, tổng hợp:
 
 ```
