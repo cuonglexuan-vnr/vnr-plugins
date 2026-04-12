@@ -128,9 +128,23 @@ describe('<Feature>Component', () => {
 
 ---
 
+## Cấu trúc source code
+
+> `src/backend/` và `src/frontend/` là **2 git repository riêng biệt**.
+
+| Layer | Path |
+|-------|------|
+| Backend tests | `src/backend/Tests/VNR.Service.<Name>.Tests/` |
+| Frontend tests | `src/frontend/apps/<remote-app>/**/*.spec.ts` |
+| E2E tests | `src/frontend/e2e/` |
+| Playwright config | `src/frontend/playwright.config.ts` |
+| Playwright screenshots | `src/frontend/test-results/` và `src/frontend/playwright-report/` |
+
+---
+
 ## Playwright — hoàn thiện stubs
 
-Với file `src/e2e/<feature>.e2e.spec.ts`:
+Với file `src/frontend/e2e/<feature>.e2e.spec.ts`:
 
 - **Thay `test.todo`** bằng implementation đầy đủ cho tất cả **Happy Path** (TC priority High).
 - Giữ `test.todo` cho scenarios cần data phức tạp hoặc external dependencies.
@@ -160,15 +174,15 @@ test('TC-01: QLTT tạo IDP thành công', async ({ page }) => {
 ## Output
 
 ```
-Tests/<service>/<feature>/
+src/backend/Tests/<service>/<feature>/
   Commands/Create<Feature>HandlerTests.cs
   Validators/Create<Feature>ValidatorTests.cs
   ...
 
-src/app/<feature>/<component>.component.spec.ts
-src/app/<feature>/<feature>.service.spec.ts
+src/frontend/apps/<remote-app>/<feature>/<component>.component.spec.ts
+src/frontend/apps/<remote-app>/<feature>/<feature>.service.spec.ts
 
-src/e2e/<feature>.e2e.spec.ts  ← cập nhật body cho Happy Path
+src/frontend/e2e/<feature>.e2e.spec.ts  ← cập nhật body cho Happy Path
 ```
 
 **Báo cáo**: số test methods viết (BE / FE), số Playwright stubs đã implement.

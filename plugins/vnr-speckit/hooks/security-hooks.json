@@ -164,16 +164,17 @@
   },
   "scan_scope": {
     "include": [
-      "src/**/*.cs",
-      "src/**/*.ts",
-      "src/**/*.html"
+      "src/backend/**/*.cs",
+      "src/frontend/**/*.ts",
+      "src/frontend/**/*.html"
     ],
     "exclude": [
-      "src/**/*.spec.ts",
-      "src/**/*.test.cs",
-      "**/bin/**",
-      "**/obj/**",
-      "**/node_modules/**"
+      "src/frontend/**/*.spec.ts",
+      "src/frontend/e2e/**",
+      "src/backend/**/*.test.cs",
+      "src/backend/**/bin/**",
+      "src/backend/**/obj/**",
+      "src/frontend/**/node_modules/**"
     ]
   }
 }

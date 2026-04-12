@@ -27,10 +27,15 @@ tasks.md: N tasks (N parallel groups)
 → Chờ duyệt [yes/edit/abort]
 ```
 
-### Step 2 — QC Generate
+### Step 2a — QC Generate
 ```
 test-scenarios.md: N scenarios (H High, M Medium, L Low)
-e2e stubs: N test.todo() in <feature>.e2e.spec.ts
+e2e stubs: N test.todo() in src/frontend/e2e/<feature>.e2e.spec.ts
+```
+
+### Step 2b — Testcase Writer
+```
+testcases.md: N testcases (P0: N, P1: N, P2: N, P3: N)
 → Chờ duyệt [yes/edit/abort]
 ```
 
@@ -84,7 +89,7 @@ Không cần prose giải thích — table là đủ.
 ## Progress tracker (auto-pipeline)
 
 ```
-✅ Step 1  ✅ Step 2  🔄 Step 3  ⬜ 4  ⬜ 5+6  ⬜ 7  ⬜ 8  ⬜ 9
+✅ Step 1  ✅ Step 2a+2b  🔄 Step 3  ⬜ 4  ⬜ 5+6  ⬜ 7  ⬜ 8  ⬜ 9
 ```
 
 Hiển thị sau mỗi checkpoint, không cần lặp lại toàn bộ pipeline description.
