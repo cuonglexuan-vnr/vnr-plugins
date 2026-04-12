@@ -1,0 +1,179 @@
+{
+  "version": "1.0",
+  "description": "Security scan patterns cho VNR pipeline — dùng bởi vnr-sec-reviewer",
+  "patterns": {
+    "backend": {
+      "critical": [
+        {
+          "id": "SEC-BE-01",
+          "name": "SQL Injection via string concat",
+          "pattern": "FromSqlRaw.*\\+|ExecuteSqlRaw.*\\+",
+          "message": "Raw SQL với string concatenation — nguy cơ SQL Injection (OWASP A03)",
+          "owasp": "A03:2021"
+        },
+        {
+          "id": "SEC-BE-02",
+          "name": "JWT None algorithm",
+          "pattern": "SecurityAlgorithms\\.None",
+          "message": "JWT None algorithm — bypass signature validation (OWASP A02)",
+          "owasp": "A02:2021"
+        },
+        {
+          "id": "SEC-BE-03",
+          "name": "Hardcoded signing key",
+          "pattern": "signingKey\\s*=\\s*\"[^\"]{8,}\"",
+          "message": "Signing key hardcoded trong code — phải đọc từ config/secrets (OWASP A02)",
+          "owasp": "A02:2021"
+        },
+        {
+          "id": "SEC-BE-04",
+          "name": "Missing Authorize attribute",
+          "pattern": "\\[HttpPost\\](?!.*\\[Authorize\\])[\\s\\S]{0,200}public async Task",
+          "message": "Action không có [Authorize] — kiểm tra xem có intentional public endpoint không (OWASP A01)",
+          "owasp": "A01:2021",
+          "note": "Kiểm tra thủ công context"
+        },
+        {
+          "id": "SEC-BE-05",
+          "name": "Mass assignment — expose Entity as request body",
+          "pattern": "public.*IActionResult.*\\(.*Entity\\s+",
+          "message": "Expose EF Entity trực tiếp làm request body — dùng Request DTO (OWASP A08)",
+          "owasp": "A08:2021"
+        },
+        {
+          "id": "SEC-BE-06",
+          "name": "DevAuth not guarded by IsProduction",
+          "pattern": "DevAuth|ImpersonateUser|SwitchUser",
+          "message": "DevAuth/impersonation — kiểm tra có guard bởi IsProduction check (OWASP A01)",
+          "owasp": "A01:2021",
+          "note": "Kiểm tra thủ công context"
+        }
+      ],
+      "high": [
+        {
+          "id": "SEC-BE-07",
+          "name": "Sensitive data in logs",
+          "pattern": "Log(Information|Debug|Warning).*(?i)(password|token|secret|credential|apikey)",
+          "message": "Log sensitive data — không được log password/token/PII (OWASP A09)",
+          "owasp": "A09:2021"
+        },
+        {
+          "id": "SEC-BE-08",
+          "name": "Stack trace exposed to client",
+          "pattern": "Exception\\.StackTrace|ex\\.StackTrace",
+          "message": "Stack trace có thể bị expose ra client — chỉ log nội bộ (OWASP A05)",
+          "owasp": "A05:2021"
+        },
+        {
+          "id": "SEC-BE-09",
+          "name": "AllowAnyOrigin in CORS",
+          "pattern": "AllowAnyOrigin\\(\\)",
+          "message": "CORS AllowAnyOrigin — chỉ dùng trong dev environment (OWASP A05)",
+          "owasp": "A05:2021",
+          "note": "Chấp nhận nếu có IsEnvironment(Development) guard"
+        },
+        {
+          "id": "SEC-BE-10",
+          "name": "Missing HTTPS redirect",
+          "pattern": "UseHttpsRedirection",
+          "message": "Kiểm tra UseHttpsRedirection có trong Program.cs (OWASP A05)",
+          "owasp": "A05:2021",
+          "note": "Pattern này để kiểm tra sự hiện diện — WARN nếu không tìm thấy"
+        },
+        {
+          "id": "SEC-BE-11",
+          "name": "Missing input validation",
+          "pattern": "class\\s+\\w+Command\\s*:\\s*(?!.*AbstractValidator)",
+          "message": "Command thiếu FluentValidation validator — kiểm tra có Validator riêng không (OWASP A03)",
+          "owasp": "A03:2021"
+        }
+      ],
+      "medium": [
+        {
+          "id": "SEC-BE-12",
+          "name": "Async void method",
+          "pattern": "async void (?!Main)",
+          "message": "async void không handle exception đúng cách — dùng async Task",
+          "owasp": "A05:2021"
+        }
+      ]
+    },
+    "frontend": {
+      "critical": [
+        {
+          "id": "SEC-FE-01",
+          "name": "innerHTML binding with API data",
+          "pattern": "\\[innerHTML\\]",
+          "message": "innerHTML binding — kiểm tra có dùng DomSanitizer không (OWASP A03 XSS)",
+          "owasp": "A03:2021",
+          "note": "Kiểm tra thủ công: chỉ CRITICAL nếu data từ API không qua sanitizer"
+        },
+        {
+          "id": "SEC-FE-02",
+          "name": "bypassSecurityTrust without comment",
+          "pattern": "bypassSecurityTrust(?!.*\\/\\/ SECURITY:)",
+          "message": "bypassSecurityTrust* không có comment giải thích — nguy cơ XSS (OWASP A03)",
+          "owasp": "A03:2021"
+        },
+        {
+          "id": "SEC-FE-03",
+          "name": "Missing authGuard on route",
+          "pattern": "loadComponent.*(?!canActivate)",
+          "message": "Route lazy-load thiếu canActivate: [authGuard] (OWASP A01)",
+          "owasp": "A01:2021",
+          "note": "Kiểm tra thủ công route definition"
+        },
+        {
+          "id": "SEC-FE-04",
+          "name": "Direct HttpClient instantiation",
+          "pattern": "new HttpClient\\(",
+          "message": "new HttpClient() trực tiếp — bypass interceptor chain (OWASP A02)",
+          "owasp": "A02:2021"
+        }
+      ],
+      "high": [
+        {
+          "id": "SEC-FE-05",
+          "name": "Token in console log",
+          "pattern": "console\\.log.*(?i)(token|access_token|refresh_token|jwt)",
+          "message": "Log token ra console — không được log sensitive auth data (OWASP A09)",
+          "owasp": "A09:2021"
+        },
+        {
+          "id": "SEC-FE-06",
+          "name": "Incomplete logout",
+          "pattern": "logout\\(\\)(?![\\s\\S]{0,200}(localStorage|sessionStorage)\\.clear)",
+          "message": "logout() không clear storage — token còn lại sau logout (OWASP A02)",
+          "owasp": "A02:2021",
+          "note": "Kiểm tra thủ công logout implementation"
+        },
+        {
+          "id": "SEC-FE-07",
+          "name": "Hardcoded role check",
+          "pattern": "role\\s*===\\s*['\"](?:admin|manager|QLTT|TCNS)['\"]",
+          "message": "Hardcode role name — dùng permission directive *appHasPermission (OWASP A01)",
+          "owasp": "A01:2021"
+        }
+      ]
+    }
+  },
+  "severity_rules": {
+    "FAIL_threshold": "critical",
+    "WARN_threshold": "high",
+    "pipeline_stop_on": "FAIL"
+  },
+  "scan_scope": {
+    "include": [
+      "src/**/*.cs",
+      "src/**/*.ts",
+      "src/**/*.html"
+    ],
+    "exclude": [
+      "src/**/*.spec.ts",
+      "src/**/*.test.cs",
+      "**/bin/**",
+      "**/obj/**",
+      "**/node_modules/**"
+    ]
+  }
+}

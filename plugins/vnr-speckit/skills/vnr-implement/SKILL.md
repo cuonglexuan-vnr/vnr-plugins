@@ -1,5 +1,5 @@
 ---
-name: "vnr.implement"
+name: "vnr-implement"
 description: "Execute the implementation plan by processing and executing all tasks defined in tasks.md"
 argument-hint: "Optional implementation guidance or task filter"
 compatibility: "Requires spec-kit project structure with vnr-speckit/ directory"
@@ -7,7 +7,6 @@ metadata:
   author: "github-spec-kit"
   source: "templates/commands/implement.md"
 user-invocable: true
-disable-model-invocation: true
 ---
 
 
@@ -18,6 +17,10 @@ $ARGUMENTS
 ```
 
 You **MUST** consider the user input before proceeding (if not empty).
+
+## Agent System Prompt
+
+<agent_to_use>Sử dụng vnr-developer agent — đọc `vnr-speckit/agents/vnr-developer.md` để hiểu vai trò, quy tắc backend/frontend và convention bắt buộc trước khi implement.</agent_to_use>
 
 ## Pre-Execution Checks
 

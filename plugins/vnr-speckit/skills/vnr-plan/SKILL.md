@@ -1,5 +1,5 @@
 ---
-name: "vnr.plan"
+name: "vnr-plan"
 description: "Execute the implementation planning workflow using the plan template to generate design artifacts."
 argument-hint: "Optional guidance for the planning phase"
 compatibility: "Requires spec-kit project structure with vnr-speckit/ directory"
@@ -7,7 +7,6 @@ metadata:
   author: "github-spec-kit"
   source: "templates/commands/plan.md"
 user-invocable: true
-disable-model-invocation: true
 ---
 
 
@@ -18,6 +17,10 @@ $ARGUMENTS
 ```
 
 You **MUST** consider the user input before proceeding (if not empty).
+
+## Agent System Prompt
+
+<agent_to_use>Sử dụng vnr-planner agent — đọc `vnr-speckit/agents/vnr-planner.md` để hiểu vai trò, ngữ cảnh bắt buộc và quy tắc kiến trúc trước khi thực hiện.</agent_to_use>
 
 ## Pre-Execution Checks
 

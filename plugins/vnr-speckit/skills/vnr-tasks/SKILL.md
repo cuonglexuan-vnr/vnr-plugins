@@ -1,5 +1,5 @@
 ---
-name: "vnr.tasks"
+name: "vnr-tasks"
 description: "Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts."
 argument-hint: "Optional task generation constraints"
 compatibility: "Requires spec-kit project structure with vnr-speckit/ directory"
@@ -7,7 +7,6 @@ metadata:
   author: "github-spec-kit"
   source: "templates/commands/tasks.md"
 user-invocable: true
-disable-model-invocation: true
 ---
 
 
@@ -18,6 +17,10 @@ $ARGUMENTS
 ```
 
 You **MUST** consider the user input before proceeding (if not empty).
+
+## Agent System Prompt
+
+<agent_to_use>Sử dụng vnr-task-breaker agent — đọc `vnr-speckit/agents/vnr-task-breaker.md` để hiểu vai trò, quy tắc chia task và format bắt buộc trước khi thực hiện.</agent_to_use>
 
 ## Pre-Execution Checks
 

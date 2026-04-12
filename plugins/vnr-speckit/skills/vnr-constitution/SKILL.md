@@ -1,5 +1,5 @@
 ---
-name: "vnr.constitution"
+name: "vnr-constitution"
 description: "Create or update the project constitution from interactive or provided principle inputs, ensuring all dependent templates stay in sync."
 argument-hint: "Principles or values for the project constitution"
 compatibility: "Requires spec-kit project structure with vnr-speckit/ directory"
