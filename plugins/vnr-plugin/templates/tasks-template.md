@@ -18,12 +18,17 @@ description: "Task list template for feature implementation"
 - **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
 - Include exact file paths in descriptions
 
-## Path Conventions
+## Path Conventions (VNR Standard)
 
-- **Single project**: `src/`, `tests/` at repository root
-- **Web app**: `backend/src/`, `frontend/src/`
-- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
-- Paths shown below assume single project - adjust based on plan.md structure
+> **QUAN TRỌNG**: `src/backend/` và `src/frontend/` là **2 git repository riêng biệt**.
+> Mọi file path phải dùng prefix `src/backend/` hoặc `src/frontend/`.
+
+- **Backend**: `src/backend/Src/Services/<ServiceName>/...` (ASP.NET Core)
+- **Backend tests**: `src/backend/Tests/...`
+- **Frontend**: `src/frontend/apps/<remote-app>/...` (Angular 19)
+- **Frontend libs**: `src/frontend/libs/...`
+- **E2E tests**: `src/frontend/e2e/`
+- Git branch tạo riêng trong mỗi repo
 
 <!-- 
   ============================================================================

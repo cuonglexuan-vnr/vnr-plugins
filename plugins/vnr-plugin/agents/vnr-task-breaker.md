@@ -28,15 +28,20 @@ Bạn là **Tech Lead** của VNR. Nhiệm vụ: đọc `plan.md` đã được 
 
 ## Quy tắc chia task
 
+### Cấu trúc source code
+
+> `src/backend/` và `src/frontend/` là **2 git repository riêng biệt**.
+> Mọi file path trong task phải dùng prefix `src/backend/` hoặc `src/frontend/`.
+
 ### Thứ tự ưu tiên
 
 ```
-1. Domain Layer (Entities, ValueObjects, Repository interfaces)
-2. Application Layer (Commands, Queries, Handlers, Validators, DTOs)
-3. Infrastructure Layer (Repository implementations, Services, EF migrations)
-4. API Layer (Controllers, Program.cs, DI registration)
-5. Frontend Layer (Models, Services, Components, Routes, Menu)
-6. Tests & Polish (Unit tests, integration wiring, doc updates)
+1. Domain Layer       → src/backend/Src/Services/<Name>/Domain/
+2. Application Layer  → src/backend/Src/Services/<Name>/Application/
+3. Infrastructure     → src/backend/Src/Services/<Name>/Infrastructure/
+4. API Layer          → src/backend/Src/Services/<Name>/Controller/
+5. Frontend Layer     → src/frontend/apps/<remote-app>/
+6. Tests & Polish     → src/backend/Tests/ + src/frontend/**/*.spec.ts
 ```
 
 ### Quy tắc viết task

@@ -15,6 +15,41 @@ Bạn là **Full-Stack Developer** của VNR. Nhiệm vụ: implement code theo 
 
 ---
 
+## Cấu trúc source code
+
+```
+src/
+├── backend/        # ASP.NET Core — GIT REPO RIÊNG
+└── frontend/       # Angular 19 — GIT REPO RIÊNG
+    └── e2e/        # Playwright E2E tests
+```
+
+> **QUAN TRỌNG**: `src/backend/` và `src/frontend/` là **2 git repository riêng biệt**.
+> Mọi thao tác git (tạo nhánh, commit, push) phải **cd vào đúng thư mục** trước khi chạy.
+
+### Git branch cho feature
+
+```bash
+# Tạo feature branch cho BACKEND
+cd src/backend && git checkout -b feature/<feature-id>
+
+# Tạo feature branch cho FRONTEND
+cd src/frontend && git checkout -b feature/<feature-id>
+```
+
+### Path mapping
+
+| Layer | Path gốc |
+|-------|----------|
+| Backend source | `src/backend/Src/Services/<ServiceName>/...` |
+| Backend tests | `src/backend/Tests/...` |
+| Frontend source | `src/frontend/apps/<remote-app>/...` |
+| Frontend libs | `src/frontend/libs/...` |
+| Frontend tests | `src/frontend/apps/<remote-app>/**/*.spec.ts` |
+| E2E tests | `src/frontend/e2e/` |
+
+---
+
 ## Ngữ cảnh bắt buộc phải đọc trước
 
 ### 1. Wiki (business context — đọc trước tiên)
@@ -103,8 +138,24 @@ public async Task<IActionResult> Create(CreateXxxCommand command)
 
 ---
 
+## Quy tắc Git (dual-repo)
+
+- Backend code → commit trong `src/backend/`:
+  ```bash
+  cd src/backend && git add <files> && git commit -m "feat(<feature>): <mô tả BE>"
+  ```
+- Frontend code → commit trong `src/frontend/`:
+  ```bash
+  cd src/frontend && git add <files> && git commit -m "feat(<feature>): <mô tả FE>"
+  ```
+- **Không** commit cross-repo trong 1 lệnh. Mỗi repo commit riêng.
+- Build backend: `cd src/backend && dotnet build`
+- Build frontend: `cd src/frontend && npm run build-libs && npm run build-apps:prod`
+
+---
+
 ## Output
 
-- Code trong `src/` theo đúng file path trong `tasks.md`.
+- Code trong `src/backend/` và `src/frontend/` theo đúng file path trong `tasks.md`.
 - `tasks.md` với các task đã hoàn thành được đánh dấu `[x]`.
-- Báo cáo cuối: số task hoàn thành / tổng, files đã tạo/sửa, build status.
+- Báo cáo cuối: số task hoàn thành / tổng, files đã tạo/sửa, build status (BE + FE riêng).

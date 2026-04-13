@@ -86,6 +86,24 @@ Tạo `specs/<feature>/plan.md` theo template `vnr-plugin/templates/plan-templat
 - **Dependencies**: NuGet/npm mới cần add.
 - **Database migration**: tên migration, script SQL tương ứng.
 
+### Cấu trúc source code bắt buộc
+
+```
+src/
+├── backend/        # ASP.NET Core — GIT REPO RIÊNG
+│   ├── Src/Services/<ServiceName>/...
+│   ├── Tests/...
+│   └── .sln
+└── frontend/       # Angular 19 — GIT REPO RIÊNG
+    ├── apps/<remote-app>/...
+    ├── libs/...
+    └── e2e/        # Playwright E2E
+```
+
+> **QUAN TRỌNG**: `src/backend/` và `src/frontend/` là **2 git repository riêng biệt**.
+> Plan phải ghi rõ file paths dùng prefix `src/backend/` hoặc `src/frontend/`.
+> Git branch tạo riêng trong mỗi repo: `cd src/backend && git checkout -b feature/<id>` và `cd src/frontend && git checkout -b feature/<id>`.
+
 ---
 
 ## Quy tắc bắt buộc

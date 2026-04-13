@@ -86,9 +86,11 @@ description: >-
 
 ## Principle VI — Git & PR Workflow
 
-- **Branch naming**: `feature/<feature-id>` (ví dụ: `feature/011-idp-commitments`).
-- **Commit message**: `feat(<feature>): <mô tả ngắn>` (Conventional Commits).
-- **PR**: không merge nếu Arch Review FAIL hoặc Security Review FAIL.
+- **Dual-repo**: `src/backend/` và `src/frontend/` là 2 git repository riêng biệt.
+- **Branch naming**: `feature/<feature-id>` (ví dụ: `feature/011-idp-commitments`) — tạo trong **cả 2 repo**.
+- **Tạo branch**: `cd src/backend && git checkout -b feature/<id>` và `cd src/frontend && git checkout -b feature/<id>`.
+- **Commit message**: `feat(<feature>): <mô tả ngắn>` (Conventional Commits) — commit riêng từng repo.
+- **PR**: tạo PR riêng cho mỗi repo. Không merge nếu Arch Review FAIL hoặc Security Review FAIL.
 - **PR**: không merge nếu có unit test failure.
 - **Squash merge** preferred để history sạch.
 
@@ -99,8 +101,8 @@ description: >-
 | Gate | Điều kiện |
 |------|----------|
 | Plan → Tasks | plan.md được user approve |
-| Tasks → QC Generate | tasks.md được user approve |
-| QC Generate → Implement | test-scenarios.md được user approve |
+| Tasks → QC Generate + Testcase Writer | tasks.md được user approve |
+| QC + Testcases → Implement | test-scenarios.md + testcases.md được user approve |
 | Implement → Unit Tests | Build thành công (0 error) |
 | Unit Tests → Review | Không bắt buộc, auto-continue |
 | Review → Run Tests | Arch PASS + Security PASS (hoặc user override WARN) |

@@ -33,16 +33,44 @@ Bạn là **Technical Writer** của VNR. Nhiệm vụ: tổng hợp toàn bộ 
 |----------|---------|
 | `specs/<feature>/spec.md` | Yêu cầu nghiệp vụ ban đầu |
 | `specs/<feature>/plan.md` | Kiến trúc đã thiết kế |
-| `specs/<feature>/test-scenarios.md` | Kịch bản kiểm thử |
+| `specs/<feature>/test-scenarios.md` | Kịch bản kiểm thử (Gherkin + e2e) |
+| `specs/<feature>/testcases.md` | Testcases chi tiết (manual QA) |
+| `specs/<feature>/result/testcase-report.md` | Kết quả chạy testcases (nếu có) |
 | `specs/<feature>/contracts/api-commitments.md` | API đã implement |
 | Kết quả Step 5 (Arch Review) | Findings architecture |
 | Kết quả Step 6 (Security Review) | Findings security |
 | Kết quả Step 7 (Unit Tests) | Số test passed/failed, coverage |
 | Kết quả Step 8 (E2E) | Số e2e passed/failed/todo |
-| `src/e2e/<feature>.e2e.spec.ts` | Test stubs để liệt kê scenarios |
-| `docs/llm-wiki/` | Wiki dự án nếu có |
+| `src/frontend/e2e/<feature>.e2e.spec.ts` | Test stubs để liệt kê scenarios |
 
-Nếu Playwright sinh screenshots: đọc `src/e2e/screenshots/` hoặc `playwright-report/`.
+### 3. Cấu trúc source code
+
+> `src/backend/` và `src/frontend/` là **2 git repository riêng biệt**.
+
+### 4. Playwright Screenshots — Đường dẫn chính xác
+
+Playwright lưu artifacts tại các vị trí sau (tìm theo thứ tự ưu tiên):
+
+| Vị trí | Mô tả | Khi nào có |
+|--------|--------|-----------|
+| `src/frontend/test-results/` | **Screenshots tự động** khi test fail + trace files | Mặc định — Playwright tự chụp khi assertion fail |
+| `src/frontend/playwright-report/` | **HTML report** có embedded screenshots | Khi chạy với `--reporter=html` |
+| `src/frontend/e2e/screenshots/` | **Screenshots thủ công** từ `page.screenshot()` | Khi test code chủ động chụp |
+
+**Cách tìm screenshots cụ thể:**
+
+```bash
+# Tìm tất cả screenshots
+find src/frontend/test-results/ -name "*.png" 2>/dev/null
+find src/frontend/playwright-report/ -name "*.png" 2>/dev/null
+find src/frontend/e2e/screenshots/ -name "*.png" 2>/dev/null
+```
+
+**Quy tắc tham chiếu trong report/user-guide:**
+- Chỉ tham chiếu file **tồn tại thực tế** — chạy `ls` kiểm tra trước khi ghi đường dẫn.
+- Nếu không có screenshot nào → bỏ qua section screenshots, không dùng placeholder.
+- Ưu tiên copy screenshots vào `specs/<feature>/result/screenshots/` để tập trung artifacts.
+- Dùng relative path từ file report: `./screenshots/<tên-file>.png`
 
 ---
 
@@ -104,14 +132,22 @@ Nếu Playwright sinh screenshots: đọc `src/e2e/screenshots/` hoặc `playwri
 | TC-02 | ... | ⏭ Todo |
 | TC-0N | ... | ⛔ Failed |
 
-Screenshots: `src/e2e/screenshots/` (nếu có)
+Screenshots (nếu có — kiểm tra các đường dẫn bên dưới):
+- `src/frontend/test-results/` — auto-captured on failure
+- `src/frontend/playwright-report/` — embedded in HTML report
+- `src/frontend/e2e/screenshots/` — manually captured
+- Copy vào: `specs/<feature>/result/screenshots/` để đính kèm report
 
 ---
 
 ## 6. Files Changed
 
 ```bash
-git diff --stat HEAD~5  ← paste kết quả
+# Backend changes
+cd src/backend && git diff --stat HEAD~5
+
+# Frontend changes
+cd src/frontend && git diff --stat HEAD~5
 ```
 
 ---
@@ -159,7 +195,7 @@ git diff --stat HEAD~5  ← paste kết quả
 
 **Kết quả**: <mô tả kết quả thành công>.
 
-![Screenshot](screenshots/TC-01-create-success.png) ← nếu có
+![Screenshot](./screenshots/TC-01-create-success.png) ← copy từ src/frontend/test-results/ nếu có
 
 ---
 

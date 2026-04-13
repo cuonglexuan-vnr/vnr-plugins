@@ -20,6 +20,20 @@ Parse `$ARGUMENTS` → lấy `<feature>` (bắt buộc) và `--from=N` (tuỳ ch
 
 ---
 
+## Cấu trúc source code
+
+```
+src/
+├── backend/        # ASP.NET Core — GIT REPO RIÊNG
+└── frontend/       # Angular 19 — GIT REPO RIÊNG
+    └── e2e/        # Playwright E2E tests
+```
+
+> **QUAN TRỌNG**: `src/backend/` và `src/frontend/` là **2 git repository riêng biệt**.
+> Mọi thao tác git (tạo nhánh, commit, push) phải **cd vào đúng thư mục** trước khi chạy.
+
+---
+
 ## Nguyên tắc thực thi
 
 - **Checkpoint**: Dừng và chờ user confirm `[yes]` trước khi sang bước tiếp theo tại các bước đánh dấu 🛑.
@@ -54,12 +68,20 @@ Parse `$ARGUMENTS` → lấy `<feature>` (bắt buộc) và `--from=N` (tuỳ ch
 Nếu `--from=N` được truyền vào → bỏ qua validate, nhảy thẳng đến Step N.
 
 ```bash
-rtk git branch --show-current
+# Kiểm tra spec tồn tại
 ls specs/<feature>/spec.md
+
+# Kiểm tra branch trong CẢ 2 repo
+cd src/backend && rtk git branch --show-current
+cd src/frontend && rtk git branch --show-current
 ```
 
-- Branch khớp `<feature>` → OK.
-- Không khớp → kiểm tra `$SPECIFY_FEATURE`. Cả hai đều miss → **dừng**: "Cần checkout branch `<feature>` hoặc `export SPECIFY_FEATURE=<feature>`".
+- Cả 2 repo đều ở branch khớp `feature/<feature>` → OK.
+- Chưa có branch → tạo mới:
+  ```bash
+  cd src/backend && git checkout -b feature/<feature>
+  cd src/frontend && git checkout -b feature/<feature>
+  ```
 - `specs/<feature>/plan.md` và `tasks.md` đã tồn tại → hỏi: "Plan & Tasks đã có. Bắt đầu từ Step 2? `[yes]` / `[chạy lại từ Step 1]`"
 
 Hiển thị progress tracker:
@@ -68,15 +90,18 @@ Hiển thị progress tracker:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  VNR AUTO-PIPELINE  [Feature: <feature>]
  Spec: specs/<feature>/spec.md
+ BE branch: feature/<feature> (src/backend/)
+ FE branch: feature/<feature> (src/frontend/)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- ⬜ Step 1  Plan + Tasks
- ⬜ Step 2  QC Generate
- ⬜ Step 3  Implement
- ⬜ Step 4  Unit Test Write
+ ⬜ Step 1    Plan + Tasks
+ ⬜ Step 2a   QC Generate (e2e stubs)
+ ⬜ Step 2b   Testcase Writer (testcases.md)
+ ⬜ Step 3    Implement
+ ⬜ Step 4    Unit Test Write
  ⬜ Step 5+6  Arch Review + Security Review
- ⬜ Step 7  Run Tests
- ⬜ Step 8  E2E Automation
- ⬜ Step 9  Report
+ ⬜ Step 7    Run Tests
+ ⬜ Step 8    E2E Automation
+ ⬜ Step 9    Report
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Bắt đầu pipeline? [yes] / [no]
 ```
@@ -123,7 +148,11 @@ Skill `vnr-tasks` sẽ đọc `vnr-plugin/agents/vnr-task-breaker.md` nội bộ
 
 ---
 
-## Step 2 — QC Generate (Shift-Left) 🛑
+## Step 2 — QC Generate + Testcase Writer (SONG SONG) 🛑
+
+Dispatch **cả 2 Agent tool calls trong cùng 1 message**:
+
+### Step 2a — QC Generate (e2e stubs)
 
 <agent_to_use>Sử dụng vnr-qc-generator agent</agent_to_use>
 
@@ -149,24 +178,63 @@ Dùng Agent tool:
     - vnr-plugin/standards/backend/03-permission.md
     - vnr-plugin/standards/frontend/03-permission.md
 
+    CẤU TRÚC SOURCE: src/frontend/ là git repo riêng, e2e tests tại src/frontend/e2e/
+
     THỰC HIỆN:
     1. Tạo specs/<feature>/test-scenarios.md:
        - Nhóm: Happy Path, Validation & Error, Authorization, Edge Cases
        - Format: Given/When/Then với TC-ID, Priority (High/Medium/Low), Role
-    2. Tạo src/e2e/<feature>.e2e.spec.ts:
+    2. Tạo src/frontend/e2e/<feature>.e2e.spec.ts:
        - test.todo() cho mỗi scenario, group bằng test.describe
        - Không implement body — chỉ stubs
 
     BÁO CÁO: số scenarios per nhóm, path 2 files.
 ```
 
+### Step 2b — Testcase Writer
+
+<agent_to_use>Sử dụng vnr-testcase-writer agent</agent_to_use>
+
+```
+Dùng Agent tool:
+  subagent_type: "general-purpose"
+  prompt: |
+    Đọc và tuân theo system prompt: vnr-speckit/agents/vnr-testcase-writer.md
+
+    FEATURE: <feature>
+
+    ĐỌC WIKI TRƯỚC (business context):
+    - docs/wiki/index.md → xác định entries liên quan
+    - docs/wiki/concepts/<feature>.md → AC, business rules
+    - docs/wiki/entities/<entity>.md → validation rules, field constraints
+    (Tuân theo vnr-speckit/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
+
+    ĐỌC SPEC & PLAN:
+    - specs/<feature>/spec.md
+    - specs/<feature>/plan.md
+    - specs/<feature>/tasks.md
+    - specs/<feature>/contracts/api-commitments.md (nếu có)
+    - specs/<feature>/ui-detail.md (nếu có)
+    - vnr-speckit/standards/backend/03-permission.md
+    - vnr-speckit/standards/frontend/03-permission.md
+
+    THỰC HIỆN:
+    Tạo specs/<feature>/testcases.md:
+    - Testcase chi tiết cho manual testing (pre-condition, steps, expected, test data)
+    - Phân loại theo module: API, UI, Authorization, Integration
+    - Priority: P0 (Critical), P1 (High), P2 (Medium), P3 (Low)
+
+    BÁO CÁO: số testcases per module, path file.
+```
 **Checkpoint**:
+**Sau khi CẢ 2 hoàn thành**, tổng hợp:
 
 ```
 ✅ Step 2 hoàn thành
-  test-scenarios.md — [N scenarios] (H High, M Medium, L Low)
-  e2e stubs — [N test.todo()] in src/e2e/<feature>.e2e.spec.ts
-→ Tiếp tục Step 3? [yes] / [review scenarios] / [abort]
+  Step 2a: test-scenarios.md — [N scenarios] (H High, M Medium, L Low)
+           e2e stubs — [N test.todo()] in src/frontend/e2e/<feature>.e2e.spec.ts
+  Step 2b: testcases.md — [N testcases] (P0/P1/P2/P3)
+→ Tiếp tục Step 3? [yes] / [review scenarios/testcases] / [abort]
 ```
 
 ---
@@ -218,18 +286,27 @@ Dùng Agent tool:
     - docs/wiki/concepts/<feature>.md → business rules → exception test cases
     (Tuân theo vnr-plugin/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
 
+    CẤU TRÚC SOURCE:
+    - src/backend/ = git repo riêng (ASP.NET Core)
+    - src/frontend/ = git repo riêng (Angular 19)
+    - E2E tests tại src/frontend/e2e/
+
     ĐỌC SPEC & CODE:
     - specs/<feature>/test-scenarios.md
     - specs/<feature>/plan.md
     - specs/<feature>/contracts/api-commitments.md (nếu có)
-    - Chạy: git diff --name-only HEAD~1 (xác định files đã implement)
+    - Chạy: cd src/backend && git diff --name-only HEAD~1 (xác định BE files)
+    - Chạy: cd src/frontend && git diff --name-only HEAD~1 (xác định FE files)
 
     THỰC HIỆN:
     1. BACKEND (xUnit + Moq): test per Handler + Validator
+       - Output: src/backend/Tests/...
        - Happy path, validation fail, business rules, repository verify
     2. FRONTEND (Jasmine): test per Component + Service
+       - Output: src/frontend/apps/<remote-app>/**/*.spec.ts
        - Create, load on init, empty state, HTTP calls
     3. PLAYWRIGHT: implement body cho tất cả Happy Path (thay test.todo)
+       - File: src/frontend/e2e/<feature>.e2e.spec.ts
        - Giữ test.todo cho scenarios cần data phức tạp
 
     TARGET: coverage ≥ 80%
@@ -304,7 +381,7 @@ Dùng Agent tool:
 
     OUTPUT: Kết luận PASS ✅ / WARN ⚠️ / FAIL ⛔ + bảng findings + OWASP ref.
 ```
-
+**Checkpoint**:
 **Sau khi CẢ 2 hoàn thành**, tổng hợp:
 
 ```
@@ -323,17 +400,16 @@ Dùng Agent tool:
 ## Step 7 — Run Unit Tests 🛑
 
 ```bash
-# Xác định scope
-SCOPE=$(git diff --name-only HEAD~1)
-
 # Backend (nếu có .cs changes)
-if echo "$SCOPE" | grep -q '\.cs$'; then
-  rtk dotnet test <solution>.sln --verbosity normal --logger "console;verbosity=normal"
+BE_SCOPE=$(cd src/backend && git diff --name-only HEAD~1)
+if echo "$BE_SCOPE" | grep -q '\.cs$'; then
+  cd src/backend && rtk dotnet test --verbosity normal --logger "console;verbosity=normal"
 fi
 
 # Frontend (nếu có .ts changes)
-if echo "$SCOPE" | grep -q '\.ts$'; then
-  cd webui && rtk npm test -- --watch=false --browsers=ChromeHeadless
+FE_SCOPE=$(cd src/frontend && git diff --name-only HEAD~1)
+if echo "$FE_SCOPE" | grep -q '\.ts$'; then
+  cd src/frontend && rtk npm test -- --watch=false --browsers=ChromeHeadless
 fi
 ```
 
@@ -364,9 +440,9 @@ HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/health 
 
 if [ "$HTTP_CODE" != "200" ]; then
   echo "⚠️ Backend API chưa chạy (HTTP $HTTP_CODE). SKIP E2E — không FAIL pipeline."
-  echo "Start bằng: dotnet run --project src/HRM.Api"
+  echo "Start bằng: cd src/backend && dotnet run --project <ApiProject>"
 else
-  cd webui && rtk npx playwright test src/e2e/<feature>.e2e.spec.ts --reporter=list
+  cd src/frontend && rtk npx playwright test e2e/<feature>.e2e.spec.ts --reporter=list
 fi
 ```
 
@@ -407,10 +483,16 @@ Dùng Agent tool:
     - docs/wiki/entities/<entity>.md → field labels → tên đúng với UI
     (Tuân theo vnr-plugin/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
 
+    CẤU TRÚC SOURCE:
+    - src/backend/ = git repo riêng (ASP.NET Core)
+    - src/frontend/ = git repo riêng (Angular 19)
+    - Playwright screenshots: src/frontend/test-results/ và src/frontend/playwright-report/
+
     ĐỌC SPEC & ARTIFACTS:
     - specs/<feature>/spec.md
     - specs/<feature>/plan.md
     - specs/<feature>/test-scenarios.md
+    - specs/<feature>/testcases.md (nếu có — từ Step 2b)
     - specs/<feature>/contracts/api-commitments.md (nếu có)
 
     DỮ LIỆU TỪ CÁC BƯỚC TRƯỚC (đã có trong context):
@@ -419,17 +501,25 @@ Dùng Agent tool:
     - Step 7: Unit Test results (total, passed, failed, coverage)
     - Step 8: E2E results (passed, failed, todo)
 
+    SCREENSHOTS TỪ PLAYWRIGHT:
+    Tìm screenshots tại các vị trí sau (theo thứ tự ưu tiên):
+    1. src/frontend/test-results/ — Playwright mặc định lưu screenshots khi test fail
+    2. src/frontend/playwright-report/ — HTML report có embedded screenshots
+    3. src/frontend/e2e/screenshots/ — Custom screenshots (nếu test code chụp thủ công)
+    Chỉ tham chiếu file tồn tại thực tế. Bỏ qua nếu không có.
+
     THỰC HIỆN:
     1. Tạo specs/<feature>/result/final-report.md
        - Summary table: Arch | Security | Unit Tests | E2E
        - Findings chi tiết từ mỗi review step
-       - Files changed: git diff --stat HEAD~5
+       - Files changed: cd src/backend && git diff --stat HEAD~5; cd src/frontend && git diff --stat HEAD~5
        - Sign-off checklist
 
     2. Tạo specs/<feature>/result/user-guide.md
        - Tiếng Việt, hướng end-user
        - Menu path, chức năng, phân quyền, FAQ
        - Nếu Playwright docs-reporter đã tạo → bổ sung, không ghi đè
+       - Screenshots: dùng relative path từ specs/<feature>/result/ đến src/frontend/test-results/ hoặc copy screenshots vào specs/<feature>/result/screenshots/
 
     BÁO CÁO: path 2 files, tóm tắt verdict tổng.
 ```
@@ -442,18 +532,20 @@ Dùng Agent tool:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  VNR AUTO-PIPELINE COMPLETE ✅  [Feature: <feature>]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- ✅ Plan + Tasks    ✅ QC Generate     ✅ Implement
- ✅ Unit Tests      ✅ Arch Review     ✅ Security
- ✅ Run Tests       ✅ E2E             ✅ Report
+ ✅ Plan + Tasks    ✅ QC + Testcases   ✅ Implement
+ ✅ Unit Tests      ✅ Arch Review      ✅ Security
+ ✅ Run Tests       ✅ E2E              ✅ Report
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Artifacts:
   specs/<feature>/result/final-report.md
   specs/<feature>/result/user-guide.md
   specs/<feature>/test-scenarios.md
+  specs/<feature>/testcases.md
 
-Next:
-  rtk git add . && rtk git commit -m "feat(<feature>): <mô tả>"
-  → Tạo PR: <feature> → main
+Next (commit riêng từng repo):
+  cd src/backend  && rtk git add . && rtk git commit -m "feat(<feature>): <mô tả BE>"
+  cd src/frontend && rtk git add . && rtk git commit -m "feat(<feature>): <mô tả FE>"
+  → Tạo PR cho mỗi repo: feature/<feature> → main
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -478,9 +570,9 @@ Nếu step trước đã sinh artifacts (plan.md, tasks.md, ...) → sử dụng
 
 | Chuyển tiếp | Điều kiện |
 |-------------|----------|
-| Step 1 → 2 | plan.md + tasks.md được user approve |
-| Step 2 → 3 | test-scenarios.md được user approve |
-| Step 3 → 4 | Build thành công (0 error) |
+| Step 1 → 2a+2b | plan.md + tasks.md được user approve |
+| Step 2a+2b → 3 | test-scenarios.md + testcases.md được user approve |
+| Step 3 → 4 | Build thành công (0 error) — cả BE và FE |
 | Step 4 → 5+6 | Tự động — không cần approve |
 | Step 5+6 → 7 | Arch PASS + Security PASS (hoặc user override WARN) |
 | Step 7 → 8 | Unit test 0 failures |

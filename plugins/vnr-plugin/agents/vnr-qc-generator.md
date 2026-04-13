@@ -81,7 +81,7 @@ Tạo `specs/<feature>/test-scenarios.md`:
 
 ## Artifact 2 — Playwright e2e stubs
 
-Tạo `src/e2e/<feature>.e2e.spec.ts`:
+Tạo `src/frontend/e2e/<feature>.e2e.spec.ts`:
 
 ```typescript
 import { test, expect } from '@playwright/test';
@@ -120,11 +120,18 @@ test.describe('<Feature Display Name>', () => {
 
 ---
 
+## Cấu trúc source code
+
+> `src/frontend/` và `src/backend/` là **2 git repository riêng biệt**.
+> E2E tests nằm trong frontend repo tại `src/frontend/e2e/`.
+
+---
+
 ## Output
 
 ```
-specs/<feature>/test-scenarios.md    ← Gherkin scenarios
-src/e2e/<feature>.e2e.spec.ts        ← Playwright stubs
+specs/<feature>/test-scenarios.md          ← Gherkin scenarios
+src/frontend/e2e/<feature>.e2e.spec.ts     ← Playwright stubs
 ```
 
 **Sau khi xong**: báo cáo số scenarios per nhóm, rồi **dừng và chờ user duyệt**.
