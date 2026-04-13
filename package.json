@@ -17,7 +17,7 @@
   },
   "scripts": {
     "start": "node ./bin/vnr-bootstrap.mjs",
-    "init:vnr-speckit": "node ./bin/vnr-bootstrap.mjs init vnr-speckit",
+    "init:vnr-plugin": "node ./bin/vnr-bootstrap.mjs init vnr-plugin",
     "help": "node ./bin/vnr-bootstrap.mjs --help"
   },
   "keywords": [

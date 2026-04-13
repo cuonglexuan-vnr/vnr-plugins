@@ -7,13 +7,13 @@
   },
   "plugins": [
     {
-      "name": "vnr-speckit",
-      "description": "Vnr speckit",
+      "name": "vnr-plugin",
+      "description": "Vnr plugin",
       "version": "1.0.0",
       "author": {
         "name": "Vnr"
       },
-      "source": "./plugins/vnr-speckit",
+      "source": "./plugins/vnr-plugin",
       "category": "development"
     }
   ]

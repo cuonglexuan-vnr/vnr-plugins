@@ -19,7 +19,7 @@ const PACKAGE_ROOT = resolve(__dirname, "..");
 
 const MARKETPLACE_NAME = "vnr-plugins";
 const LOCAL_MARKETPLACE_ROOT = PACKAGE_ROOT;
-const DEFAULT_PLUGIN_ID = "vnr-speckit";
+const DEFAULT_PLUGIN_ID = "vnr-plugin";
 
 function printHelp() {
   console.log(`
@@ -30,15 +30,15 @@ Usage:
 
 Examples:
   vnr-bootstrap init
-  vnr-bootstrap init vnr-speckit
-  vnr-bootstrap init vnr-speckit --force
-  vnr-bootstrap init vnr-speckit --scope project
-  vnr-bootstrap init vnr-speckit --refresh-marketplace
-  vnr-bootstrap init vnr-speckit --no-scaffold
+  vnr-bootstrap init vnr-plugin
+  vnr-bootstrap init vnr-plugin --force
+  vnr-bootstrap init vnr-plugin --scope project
+  vnr-bootstrap init vnr-plugin --refresh-marketplace
+  vnr-bootstrap init vnr-plugin --no-scaffold
 
 Options:
   --scope <project|user>     Plugin install scope (default: project)
-  --force                    Overwrite existing vnr-speckit folder
+  --force                    Overwrite existing vnr-plugin folder
   --no-scaffold              Skip creating the local project folder
   --refresh-marketplace      Remove cached marketplace and re-add it
   --help                     Show this help
