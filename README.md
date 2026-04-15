@@ -9,6 +9,11 @@
 
 ## PowerShell
 
+### Install
+``` powershell
+npx github:cuonglexuan-vnr/vnr-plugins init vnr-speckit
+```
+
 ### Install from the current project folder
 ```powershell
 powershell -ExecutionPolicy Bypass -File "\\company-pc\tools\vnr-plugins\install-vnr-speckit.ps1"
