@@ -28,7 +28,7 @@ try {
   $args = @(
     $Bootstrap
     "init"
-    "vnr-speckit"
+    "vnr-plugin"
     "--scope"
     $Scope
   )

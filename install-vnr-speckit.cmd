@@ -3,7 +3,7 @@ setlocal EnableExtensions
 
 set "SCRIPT_DIR=%~dp0"
 set "BOOTSTRAP=%SCRIPT_DIR%bin\vnr-bootstrap.mjs"
-set "PLUGIN_ID=vnr-speckit"
+set "PLUGIN_ID=vnr-plugin"
 set "PROJECT_DIR=%CD%"
 
 if not exist "%BOOTSTRAP%" (
@@ -39,7 +39,7 @@ if not "%~1"=="" (
       echo Usage:
       echo   install-vnr-speckit.cmd
       echo   install-vnr-speckit.cmd "C:\path\to\project"
-      echo   install-vnr-speckit.cmd "C:\path\to\project" --force
+      echo   install-vnr-speckit.cmd "C:\path\to\project" --forceforce
       echo   install-vnr-speckit.cmd --scope user
       exit /b 1
     )
