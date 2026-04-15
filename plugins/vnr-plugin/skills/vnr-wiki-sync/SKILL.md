@@ -6,7 +6,6 @@ compatibility: "Requires spec-kit project structure with vnr-plugin/ directory"
 metadata:
   author: "VNR"
 user-invocable: true
-disable-model-invocation: true
 ---
 
 # LLM Wiki
