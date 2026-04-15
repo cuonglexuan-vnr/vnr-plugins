@@ -199,7 +199,7 @@ Dùng Agent tool:
 Dùng Agent tool:
   subagent_type: "general-purpose"
   prompt: |
-    Đọc và tuân theo system prompt: vnr-speckit/agents/vnr-testcase-writer.md
+    Đọc và tuân theo system prompt: vnr-plugin/agents/vnr-testcase-writer.md
 
     FEATURE: <feature>
 
@@ -207,7 +207,7 @@ Dùng Agent tool:
     - docs/wiki/index.md → xác định entries liên quan
     - docs/wiki/concepts/<feature>.md → AC, business rules
     - docs/wiki/entities/<entity>.md → validation rules, field constraints
-    (Tuân theo vnr-speckit/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
+    (Tuân theo vnr-plugin/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
 
     ĐỌC SPEC & PLAN:
     - specs/<feature>/spec.md
@@ -215,8 +215,8 @@ Dùng Agent tool:
     - specs/<feature>/tasks.md
     - specs/<feature>/contracts/api-commitments.md (nếu có)
     - specs/<feature>/ui-detail.md (nếu có)
-    - vnr-speckit/standards/backend/03-permission.md
-    - vnr-speckit/standards/frontend/03-permission.md
+    - vnr-plugin/standards/backend/03-permission.md
+    - vnr-plugin/standards/frontend/03-permission.md
 
     THỰC HIỆN:
     Tạo specs/<feature>/testcases.md:

@@ -22,7 +22,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 ## Pre-Execution Checks
 
 **Check for extension hooks (before constitution update)**:
-- Check if `vnr-speckit/extensions.yml` exists in the project root.
+- Check if `vnr-plugin/extensions.yml` exists in the project root.
 - If it exists, read it and look for entries under the `hooks.before_constitution` key
 - If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
 - Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
@@ -51,17 +51,17 @@ You **MUST** consider the user input before proceeding (if not empty).
 
     Wait for the result of the hook command before proceeding to the Outline.
     ```
-- If no hooks are registered or `vnr-speckit/extensions.yml` does not exist, skip silently
+- If no hooks are registered or `vnr-plugin/extensions.yml` does not exist, skip silently
 
 ## Outline
 
-You are updating the project constitution at `vnr-speckit/memory/constitution.md`. This file is a TEMPLATE containing placeholder tokens in square brackets (e.g. `[PROJECT_NAME]`, `[PRINCIPLE_1_NAME]`). Your job is to (a) collect/derive concrete values, (b) fill the template precisely, and (c) propagate any amendments across dependent artifacts.
+You are updating the project constitution at `vnr-plugin/memory/constitution.md`. This file is a TEMPLATE containing placeholder tokens in square brackets (e.g. `[PROJECT_NAME]`, `[PRINCIPLE_1_NAME]`). Your job is to (a) collect/derive concrete values, (b) fill the template precisely, and (c) propagate any amendments across dependent artifacts.
 
-**Note**: If `vnr-speckit/memory/constitution.md` does not exist yet, it should have been initialized from `vnr-speckit/templates/constitution-template.md` during project setup. If it's missing, copy the template first.
+**Note**: If `vnr-plugin/memory/constitution.md` does not exist yet, it should have been initialized from `vnr-plugin/templates/constitution-template.md` during project setup. If it's missing, copy the template first.
 
 Follow this execution flow:
 
-1. Load the existing constitution at `vnr-speckit/memory/constitution.md`.
+1. Load the existing constitution at `vnr-plugin/memory/constitution.md`.
    - Identify every placeholder token of the form `[ALL_CAPS_IDENTIFIER]`.
    **IMPORTANT**: The user might require less or more principles than the ones used in the template. If a number is specified, respect that - follow the general template. You will update the doc accordingly.
 
@@ -82,10 +82,10 @@ Follow this execution flow:
    - Ensure Governance section lists amendment procedure, versioning policy, and compliance review expectations.
 
 4. Consistency propagation checklist (convert prior checklist into active validations):
-   - Read `vnr-speckit/templates/plan-template.md` and ensure any "Constitution Check" or rules align with updated principles.
-   - Read `vnr-speckit/templates/spec-template.md` for scope/requirements alignment—update if constitution adds/removes mandatory sections or constraints.
-   - Read `vnr-speckit/templates/tasks-template.md` and ensure task categorization reflects new or removed principle-driven task types (e.g., observability, versioning, testing discipline).
-   - Read each command file in `vnr-speckit/templates/commands/*.md` (including this one) to verify no outdated references (agent-specific names like CLAUDE only) remain when generic guidance is required.
+   - Read `vnr-plugin/templates/plan-template.md` and ensure any "Constitution Check" or rules align with updated principles.
+   - Read `vnr-plugin/templates/spec-template.md` for scope/requirements alignment—update if constitution adds/removes mandatory sections or constraints.
+   - Read `vnr-plugin/templates/tasks-template.md` and ensure task categorization reflects new or removed principle-driven task types (e.g., observability, versioning, testing discipline).
+   - Read each command file in `vnr-plugin/templates/commands/*.md` (including this one) to verify no outdated references (agent-specific names like CLAUDE only) remain when generic guidance is required.
    - Read any runtime guidance docs (e.g., `README.md`, `docs/quickstart.md`, or agent-specific guidance files if present). Update references to principles changed.
 
 5. Produce a Sync Impact Report (prepend as an HTML comment at top of the constitution file after update):
@@ -102,7 +102,7 @@ Follow this execution flow:
    - Dates ISO format YYYY-MM-DD.
    - Principles are declarative, testable, and free of vague language ("should" → replace with MUST/SHOULD rationale where appropriate).
 
-7. Write the completed constitution back to `vnr-speckit/memory/constitution.md` (overwrite).
+7. Write the completed constitution back to `vnr-plugin/memory/constitution.md` (overwrite).
 
 8. Output a final summary to the user with:
    - New version and bump rationale.
@@ -120,12 +120,12 @@ If the user supplies partial updates (e.g., only one principle revision), still 
 
 If critical info missing (e.g., ratification date truly unknown), insert `TODO(<FIELD_NAME>): explanation` and include in the Sync Impact Report under deferred items.
 
-Do not create a new template; always operate on the existing `vnr-speckit/memory/constitution.md` file.
+Do not create a new template; always operate on the existing `vnr-plugin/memory/constitution.md` file.
 
 ## Post-Execution Checks
 
 **Check for extension hooks (after constitution update)**:
-Check if `vnr-speckit/extensions.yml` exists in the project root.
+Check if `vnr-plugin/extensions.yml` exists in the project root.
 - If it exists, read it and look for entries under the `hooks.after_constitution` key
 - If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
 - Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
@@ -152,4 +152,4 @@ Check if `vnr-speckit/extensions.yml` exists in the project root.
     Executing: `/{command}`
     EXECUTE_COMMAND: {command}
     ```
-- If no hooks are registered or `vnr-speckit/extensions.yml` does not exist, skip silently
+- If no hooks are registered or `vnr-plugin/extensions.yml` does not exist, skip silently

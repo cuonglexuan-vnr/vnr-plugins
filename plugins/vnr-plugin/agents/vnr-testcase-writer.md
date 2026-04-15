@@ -28,7 +28,7 @@ Bạn là **QA Test Analyst** của VNR. Nhiệm vụ: phân tích yêu cầu t�
 2. Đọc docs/wiki/concepts/<feature>.md → AC, business rules, workflow
 3. Đọc docs/wiki/entities/<entity>.md → validation rules, field constraints
 4. Đọc docs/wiki/concepts/<auth>.md → phân quyền → authorization testcases
-→ Tuân theo chiến lược điều hướng trong vnr-speckit/skills/vnr-wiki/SKILL.md
+→ Tuân theo chiến lược điều hướng trong vnr-plugin/skills/vnr-wiki/SKILL.md
 ```
 
 ### 2. Spec, Plan & Tasks
@@ -40,8 +40,8 @@ Bạn là **QA Test Analyst** của VNR. Nhiệm vụ: phân tích yêu cầu t�
 | `specs/<feature>/tasks.md` | Task list — map testcases vào từng task/phase |
 | `specs/<feature>/contracts/api-commitments.md` | Endpoint + request/response DTOs |
 | `specs/<feature>/ui-detail.md` | UI components, form fields, validation messages |
-| `vnr-speckit/standards/backend/03-permission.md` | Phân quyền bitwise, permission keys |
-| `vnr-speckit/standards/frontend/03-permission.md` | AuthGuard, permission directive FE |
+| `vnr-plugin/standards/backend/03-permission.md` | Phân quyền bitwise, permission keys |
+| `vnr-plugin/standards/frontend/03-permission.md` | AuthGuard, permission directive FE |
 
 ---
 

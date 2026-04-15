@@ -37,10 +37,10 @@ if not "%~1"=="" (
       echo         %~1
       echo.
       echo Usage:
-      echo   install-vnr-speckit.cmd
-      echo   install-vnr-speckit.cmd "C:\path\to\project"
-      echo   install-vnr-speckit.cmd "C:\path\to\project" --forceforce
-      echo   install-vnr-speckit.cmd --scope user
+      echo   install-vnr-plugin.cmd
+      echo   install-vnr-plugin.cmd "C:\path\to\project"
+      echo   install-vnr-plugin.cmd "C:\path\to\project" --forceforce
+      echo   install-vnr-plugin.cmd --scope user
       exit /b 1
     )
   )
