@@ -166,6 +166,7 @@ function Get-BranchName {
 
 # Use common.ps1 functions which should prioritize vnr-plugin over git
 $repoRoot = Get-RepoRoot
+$pluginDir = Join-Path $repoRoot 'vnr-plugin'
 
 # Check if git is available at this repo root (not a parent)
 $hasGit = Test-HasGit
@@ -287,7 +288,7 @@ if (-not (Test-Path -PathType Leaf $specFile)) {
     }
 
     if (-not $template) {
-        $template = Join-Path $repoRoot 'vnr-plugin/templates/spec-template.md'
+        $template = Join-Path $pluginDir 'templates/spec-template.md'
     }
 
     if ($template -and (Test-Path $template)) {

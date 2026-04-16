@@ -38,6 +38,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 # Acquire environment paths
 $envData = Get-FeaturePathsEnv
 $REPO_ROOT     = $envData.REPO_ROOT
+$PLUGIN_DIR    = $envData.PLUGIN_DIR
 $CURRENT_BRANCH = $envData.CURRENT_BRANCH
 $HAS_GIT       = $envData.HAS_GIT
 $IMPL_PLAN     = $envData.IMPL_PLAN
@@ -68,7 +69,7 @@ $KIMI_FILE     = Join-Path $REPO_ROOT 'KIMI.md'
 $TRAE_FILE     = Join-Path $REPO_ROOT '.trae/rules/AGENTS.md'
 $IFLOW_FILE    = Join-Path $REPO_ROOT 'IFLOW.md'
 
-$TEMPLATE_FILE = Join-Path $REPO_ROOT 'vnr-plugin/templates/agent-file-template.md'
+$TEMPLATE_FILE = Join-Path $PLUGIN_DIR 'templates/agent-file-template.md'
 
 # Parsed plan data placeholders
 $script:NEW_LANG = ''

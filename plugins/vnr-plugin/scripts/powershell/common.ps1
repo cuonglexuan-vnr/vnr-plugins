@@ -177,6 +177,7 @@ function Get-FeaturePathsEnv {
 
     [PSCustomObject]@{
         REPO_ROOT      = $repoRoot
+        PLUGIN_DIR     = Join-Path $repoRoot 'vnr-plugin'
         CURRENT_BRANCH = $currentBranch
         HAS_GIT        = $hasGit
         FEATURE_DIR    = $featureDir
@@ -234,7 +235,8 @@ function Resolve-Template {
         [Parameter(Mandatory = $true)][string]$RepoRoot
     )
 
-    $base = Join-Path $RepoRoot 'vnr-plugin/templates'
+    $pluginDir = Join-Path $RepoRoot 'vnr-plugin'
+    $base = Join-Path $pluginDir 'templates'
 
     # Priority 1: Project overrides
     $override = Join-Path $base "overrides/$TemplateName.md"
@@ -243,7 +245,7 @@ function Resolve-Template {
     }
 
     # Priority 2: Installed presets (sorted by priority from .registry)
-    $presetsDir = Join-Path $RepoRoot 'vnr-plugin/presets'
+    $presetsDir = Join-Path $pluginDir 'presets'
     if (Test-Path -LiteralPath $presetsDir) {
         $registryFile = Join-Path $presetsDir '.registry'
         $sortedPresets = @()
@@ -283,7 +285,7 @@ function Resolve-Template {
     }
 
     # Priority 3: Extension-provided templates
-    $extDir = Join-Path $RepoRoot 'vnr-plugin/extensions'
+    $extDir = Join-Path $pluginDir 'extensions'
     if (Test-Path -LiteralPath $extDir) {
         foreach ($ext in Get-ChildItem -LiteralPath $extDir -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '.*' } | Sort-Object Name) {
             $candidate = Join-Path $ext.FullName "templates/$TemplateName.md"

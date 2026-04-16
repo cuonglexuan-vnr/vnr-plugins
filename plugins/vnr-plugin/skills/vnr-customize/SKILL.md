@@ -22,11 +22,12 @@ You **MUST** consider the user input before proceeding (if not empty).
 ## Constants
 
 ```
-PLUGIN_SKILLS_DIR   = vnr-plugin/skills
-PLUGIN_AGENTS_DIR   = vnr-plugin/agents
+PLUGIN_DIR          = <repo-root>/vnr-plugin  (resolve by searching upward for the vnr-plugin/ directory)
+PLUGIN_SKILLS_DIR   = $PLUGIN_DIR/skills
+PLUGIN_AGENTS_DIR   = $PLUGIN_DIR/agents
 PROJECT_SKILLS_DIR   = .claude/skills
 PROJECT_AGENTS_DIR   = .claude/agents
-PLUGIN_SCRIPTS_DIR  = vnr-plugin/scripts
+PLUGIN_SCRIPTS_DIR  = $PLUGIN_DIR/scripts
 
 PROTECTED_SKILLS = ["vnr-wiki", "vnr-wiki-sync"]
 
@@ -262,8 +263,8 @@ mkdir -p {PROJECT_AGENTS_DIR}          # for agents
 
    ## Rules
 
-   - Follow the constitution: `vnr-plugin/memory/constitution.md`
-   - Follow project standards: `vnr-plugin/standards/`
+   - Follow the constitution: `$PLUGIN_DIR/memory/constitution.md`
+   - Follow project standards: `$PLUGIN_DIR/standards/`
    ```
 
 3. Ask the user:
@@ -298,9 +299,9 @@ mkdir -p {PROJECT_AGENTS_DIR}          # for agents
    ## Ngu canh bat buoc phai doc truoc
 
    <!-- List files the agent must read before executing -->
-   - `vnr-plugin/memory/constitution.md`
-   - `vnr-plugin/standards/backend/` (if backend-related)
-   - `vnr-plugin/standards/frontend/` (if frontend-related)
+   - `$PLUGIN_DIR/memory/constitution.md`
+   - `$PLUGIN_DIR/standards/backend/` (if backend-related)
+   - `$PLUGIN_DIR/standards/frontend/` (if frontend-related)
 
    ## Quy trinh thuc hien
 
@@ -336,7 +337,7 @@ For the target `{name}`, build these search patterns:
 | Exact name | `vnr-plan` |
 | Slash command | `/vnr-plan`, `/vnr.plan` |
 | Skill tool ref | `skill: "vnr-plan"`, `skill: 'vnr-plan'` |
-| Agent file path | `vnr-plugin/agents/vnr-planner.md` |
+| Agent file path | `$PLUGIN_DIR/agents/vnr-planner.md` |
 | Agent tag | `<agent_to_use>.*vnr-planner.*</agent_to_use>` |
 | Script reference | `vnr-plan`, `plan.md`, `tasks.md` (for output artifacts) |
 
@@ -347,7 +348,7 @@ Search these locations for any of the patterns above:
 1. **All SKILL.md files**: `{PLUGIN_SKILLS_DIR}/*/SKILL.md`
 2. **All agent files**: `{PLUGIN_AGENTS_DIR}/*.md`
 3. **All script files**: `{PLUGIN_SCRIPTS_DIR}/**/*`
-4. **Extensions config**: `vnr-plugin/extensions.yml` (if exists)
+4. **Extensions config**: `$PLUGIN_DIR/extensions.yml` (if exists)
 
 For each match, record:
 - File path
@@ -494,7 +495,7 @@ These rules **MUST** be enforced during customization. They serve as guardrails 
 
 ### Rule 1: Constitution compliance
 
-All customized skills/agents **MUST** still reference and comply with `vnr-plugin/memory/constitution.md`. You may add project-specific rules on top, but must not remove or weaken constitution rules.
+All customized skills/agents **MUST** still reference and comply with `$PLUGIN_DIR/memory/constitution.md`. You may add project-specific rules on top, but must not remove or weaken constitution rules.
 
 ### Rule 2: Artifact format compatibility
 
@@ -505,7 +506,7 @@ If a customized skill produces output artifacts (e.g., `plan.md`, `tasks.md`, `t
 
 ### Rule 3: Standards reference
 
-All customized skills/agents **SHOULD** still reference `vnr-plugin/standards/` for tech stack and architecture guidelines. Custom standards can be added, but base standards should not be contradicted.
+All customized skills/agents **SHOULD** still reference `$PLUGIN_DIR/standards/` for tech stack and architecture guidelines. Custom standards can be added, but base standards should not be contradicted.
 
 ### Rule 4: Wiki integration
 
@@ -517,7 +518,7 @@ Skills that previously read from `docs/wiki/` (via `vnr-wiki` strategy) **MUST**
 
 ### Rule 6: Override, don't delete
 
-Customization works by **overriding** (adding a project-scope version that takes precedence), not by modifying the plugin originals. The plugin files in `vnr-plugin/` must remain untouched to allow clean updates.
+Customization works by **overriding** (adding a project-scope version that takes precedence), not by modifying the plugin originals. The plugin files in `$PLUGIN_DIR/` must remain untouched to allow clean updates.
 
 ---
 

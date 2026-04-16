@@ -3,7 +3,7 @@
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 **Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
+**Note**: This template is filled in by the `/vnr-plan` command. See `vnr-plugin/templates/plan-template.md` for the execution workflow.
 
 ## Summary
 
@@ -39,12 +39,12 @@
 
 ```text
 specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+├── plan.md              # This file (/vnr-plan command output)
+├── research.md          # Phase 0 output (/vnr-plan command)
+├── data-model.md        # Phase 1 output (/vnr-plan command)
+├── quickstart.md        # Phase 1 output (/vnr-plan command)
+├── contracts/           # Phase 1 output (/vnr-plan command)
+└── tasks.md             # Phase 2 output (/vnr-tasks command - NOT created by /vnr-plan)
 ```
 
 ### Source Code (repository root)

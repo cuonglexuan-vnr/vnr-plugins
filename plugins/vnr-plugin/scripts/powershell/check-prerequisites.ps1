@@ -68,6 +68,7 @@ if ($PathsOnly) {
     if ($Json) {
         [PSCustomObject]@{
             REPO_ROOT    = $paths.REPO_ROOT
+            PLUGIN_DIR   = $paths.PLUGIN_DIR
             BRANCH       = $paths.CURRENT_BRANCH
             FEATURE_DIR  = $paths.FEATURE_DIR
             FEATURE_SPEC = $paths.FEATURE_SPEC
@@ -77,6 +78,7 @@ if ($PathsOnly) {
     }
     else {
         Write-Output "REPO_ROOT: $($paths.REPO_ROOT)"
+        Write-Output "PLUGIN_DIR: $($paths.PLUGIN_DIR)"
         Write-Output "BRANCH: $($paths.CURRENT_BRANCH)"
         Write-Output "FEATURE_DIR: $($paths.FEATURE_DIR)"
         Write-Output "FEATURE_SPEC: $($paths.FEATURE_SPEC)"
@@ -128,6 +130,7 @@ if ($IncludeTasks -and (Test-Path $paths.TASKS)) {
 # Output results
 if ($Json) {
     [PSCustomObject]@{
+        PLUGIN_DIR     = $paths.PLUGIN_DIR
         FEATURE_DIR    = $paths.FEATURE_DIR
         AVAILABLE_DOCS = $docs
     } | ConvertTo-Json -Compress

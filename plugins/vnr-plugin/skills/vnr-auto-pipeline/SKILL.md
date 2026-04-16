@@ -18,6 +18,8 @@ $ARGUMENTS
 
 Parse `$ARGUMENTS` → lấy `<feature>` (bắt buộc) và `--from=N` (tuỳ chọn, default = 0).
 
+**Path Resolution**: `$PLUGIN_DIR` = thư mục `vnr-plugin` tại repo root (tìm bằng cách scan ngược từ thư mục hiện tại cho đến khi thấy `vnr-plugin/`). Dùng trong tất cả các agent prompts bên dưới.
+
 ---
 
 ## Cấu trúc source code
@@ -40,8 +42,8 @@ src/
 - **Skill tool**: Dùng cho các bước có sẵn skill (vnr-plan, vnr-tasks, vnr-implement). Không chạy PS script thủ công.
 - **Agent tool**: Dùng `subagent_type: "general-purpose"` cho các bước cần agent chuyên dụng. Mỗi Agent prompt phải bắt đầu bằng việc đọc file agent tương ứng.
 - **Song song**: Steps 5+6 dispatch cả 2 Agent tool calls trong cùng 1 message.
-- **Constitution**: `vnr-plugin/memory/constitution.md` là tài liệu quy tắc gốc — mọi agent phải tuân thủ.
-- **Wiki context**: Các bước Plan (1), QC (2), Implement (3), Report (9) phải đọc `docs/wiki/` trước khi thực hiện. Xem hướng dẫn tại `vnr-plugin/skills/vnr-wiki/SKILL.md`.
+- **Constitution**: `$PLUGIN_DIR/memory/constitution.md` là tài liệu quy tắc gốc — mọi agent phải tuân thủ.
+- **Wiki context**: Các bước Plan (1), QC (2), Implement (3), Report (9) phải đọc `docs/wiki/` trước khi thực hiện. Xem hướng dẫn tại `$PLUGIN_DIR/skills/vnr-wiki/SKILL.md`.
 
 ---
 
@@ -50,16 +52,16 @@ src/
 | Step | Agent | File | Cách gọi |
 |------|-------|------|----------|
 | Pre | — | `docs/wiki/` | Skill tool: `vnr-wiki` (Steps 1,2,3,9) |
-| 1a | vnr-planner | `vnr-plugin/agents/vnr-planner.md` | Skill tool: `vnr-plan` |
-| 1b | vnr-task-breaker | `vnr-plugin/agents/vnr-task-breaker.md` | Skill tool: `vnr-tasks` |
-| 2 | vnr-qc-generator | `vnr-plugin/agents/vnr-qc-generator.md` | Agent tool |
-| 3 | vnr-developer | `vnr-plugin/agents/vnr-developer.md` | Skill tool: `vnr-implement` |
-| 4 | vnr-test-engineer | `vnr-plugin/agents/vnr-test-engineer.md` | Agent tool |
-| 5 | vnr-arch-reviewer | `vnr-plugin/agents/vnr-arch-reviewer.md` | Agent tool (song song) |
-| 6 | vnr-sec-reviewer | `vnr-plugin/agents/vnr-sec-reviewer.md` | Agent tool (song song) |
+| 1a | vnr-planner | `$PLUGIN_DIR/agents/vnr-planner.md` | Skill tool: `vnr-plan` |
+| 1b | vnr-task-breaker | `$PLUGIN_DIR/agents/vnr-task-breaker.md` | Skill tool: `vnr-tasks` |
+| 2 | vnr-qc-generator | `$PLUGIN_DIR/agents/vnr-qc-generator.md` | Agent tool |
+| 3 | vnr-developer | `$PLUGIN_DIR/agents/vnr-developer.md` | Skill tool: `vnr-implement` |
+| 4 | vnr-test-engineer | `$PLUGIN_DIR/agents/vnr-test-engineer.md` | Agent tool |
+| 5 | vnr-arch-reviewer | `$PLUGIN_DIR/agents/vnr-arch-reviewer.md` | Agent tool (song song) |
+| 6 | vnr-sec-reviewer | `$PLUGIN_DIR/agents/vnr-sec-reviewer.md` | Agent tool (song song) |
 | 7 | — | — | CLI: `dotnet test` / `npm test` |
 | 8 | — | — | CLI: `npx playwright test` |
-| 9 | vnr-tech-writer | `vnr-plugin/agents/vnr-tech-writer.md` | Agent tool |
+| 9 | vnr-tech-writer | `$PLUGIN_DIR/agents/vnr-tech-writer.md` | Agent tool |
 
 ---
 
@@ -120,7 +122,7 @@ Dùng Skill tool:
   args: ""
 ```
 
-Skill `vnr-plan` sẽ đọc `vnr-plugin/agents/vnr-planner.md` nội bộ, thực hiện:
+Skill `vnr-plan` sẽ đọc `$PLUGIN_DIR/agents/vnr-planner.md` nội bộ, thực hiện:
 - Đọc `specs/<feature>/spec.md` + standards + docs
 - Sinh `plan.md`, `data-model.md`, `contracts/`, `research.md`
 
@@ -135,7 +137,7 @@ Dùng Skill tool:
   args: ""
 ```
 
-Skill `vnr-tasks` sẽ đọc `vnr-plugin/agents/vnr-task-breaker.md` nội bộ, sinh `tasks.md`.
+Skill `vnr-tasks` sẽ đọc `$PLUGIN_DIR/agents/vnr-task-breaker.md` nội bộ, sinh `tasks.md`.
 
 **Checkpoint**:
 
@@ -160,7 +162,7 @@ Dispatch **cả 2 Agent tool calls trong cùng 1 message**:
 Dùng Agent tool:
   subagent_type: "general-purpose"
   prompt: |
-    Đọc và tuân theo system prompt: vnr-plugin/agents/vnr-qc-generator.md
+    Đọc và tuân theo system prompt: $PLUGIN_DIR/agents/vnr-qc-generator.md
 
     FEATURE: <feature>
 
@@ -169,14 +171,14 @@ Dùng Agent tool:
     - docs/wiki/concepts/<feature>.md → AC, business rules → Happy Path scenarios
     - docs/wiki/entities/<entity>.md → validation rules → Validation & Error scenarios
     - docs/wiki/concepts/<auth>.md → phân quyền → Authorization scenarios
-    (Tuân theo vnr-plugin/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
+    (Tuân theo $PLUGIN_DIR/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
 
     ĐỌC SPEC:
     - specs/<feature>/spec.md
     - specs/<feature>/plan.md
     - specs/<feature>/contracts/api-commitments.md (nếu có)
-    - vnr-plugin/standards/backend/03-permission.md
-    - vnr-plugin/standards/frontend/03-permission.md
+    - $PLUGIN_DIR/standards/backend/03-permission.md
+    - $PLUGIN_DIR/standards/frontend/03-permission.md
 
     CẤU TRÚC SOURCE: src/frontend/ là git repo riêng, e2e tests tại src/frontend/e2e/
 
@@ -199,7 +201,7 @@ Dùng Agent tool:
 Dùng Agent tool:
   subagent_type: "general-purpose"
   prompt: |
-    Đọc và tuân theo system prompt: vnr-plugin/agents/vnr-testcase-writer.md
+    Đọc và tuân theo system prompt: $PLUGIN_DIR/agents/vnr-testcase-writer.md
 
     FEATURE: <feature>
 
@@ -215,8 +217,8 @@ Dùng Agent tool:
     - specs/<feature>/tasks.md
     - specs/<feature>/contracts/api-commitments.md (nếu có)
     - specs/<feature>/ui-detail.md (nếu có)
-    - vnr-plugin/standards/backend/03-permission.md
-    - vnr-plugin/standards/frontend/03-permission.md
+    - $PLUGIN_DIR/standards/backend/03-permission.md
+    - $PLUGIN_DIR/standards/frontend/03-permission.md
 
     THỰC HIỆN:
     Tạo specs/<feature>/testcases.md:
@@ -249,7 +251,7 @@ Dùng Skill tool:
   args: ""
 ```
 
-Skill `vnr-implement` sẽ đọc `vnr-plugin/agents/vnr-developer.md` nội bộ, thực hiện:
+Skill `vnr-implement` sẽ đọc `$PLUGIN_DIR/agents/vnr-developer.md` nội bộ, thực hiện:
 - Load tasks.md + plan.md + contracts/ + data-model.md
 - Execute từng task theo phase, đánh dấu `[x]` khi done
 - Dừng nếu non-parallel task fails
@@ -276,7 +278,7 @@ Skill `vnr-implement` sẽ đọc `vnr-plugin/agents/vnr-developer.md` nội b�
 Dùng Agent tool:
   subagent_type: "general-purpose"
   prompt: |
-    Đọc và tuân theo system prompt: vnr-plugin/agents/vnr-test-engineer.md
+    Đọc và tuân theo system prompt: $PLUGIN_DIR/agents/vnr-test-engineer.md
 
     FEATURE: <feature>
 
@@ -284,7 +286,7 @@ Dùng Agent tool:
     - docs/wiki/index.md → entries liên quan
     - docs/wiki/entities/<entity>.md → validation rules → boundary test cases
     - docs/wiki/concepts/<feature>.md → business rules → exception test cases
-    (Tuân theo vnr-plugin/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
+    (Tuân theo $PLUGIN_DIR/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
 
     CẤU TRÚC SOURCE:
     - src/backend/ = git repo riêng (ASP.NET Core)
@@ -336,16 +338,16 @@ Dispatch **cả 2 Agent tool calls trong cùng 1 message**:
 Dùng Agent tool:
   subagent_type: "general-purpose"
   prompt: |
-    Đọc và tuân theo system prompt: vnr-plugin/agents/vnr-arch-reviewer.md
+    Đọc và tuân theo system prompt: $PLUGIN_DIR/agents/vnr-arch-reviewer.md
 
     FEATURE: <feature>
 
     ĐỌC BẮT BUỘC:
-    - vnr-plugin/standards/backend/02-architecture-and-structure.md
-    - vnr-plugin/standards/frontend/02-architecture-and-structure.md
+    - $PLUGIN_DIR/standards/backend/02-architecture-and-structure.md
+    - $PLUGIN_DIR/standards/frontend/02-architecture-and-structure.md
     - specs/<feature>/contracts/api-commitments.md (nếu có)
     - docs/raw/api-http-contracts.md (nếu có)
-    - vnr-plugin/memory/constitution.md (Principle II)
+    - $PLUGIN_DIR/memory/constitution.md (Principle II)
 
     SCOPE: git diff --name-only HEAD~1 → xác định BE/FE/full-stack.
     KHÔNG kết luận nếu chưa đọc ít nhất 1 file thay đổi.
@@ -363,15 +365,15 @@ Dùng Agent tool:
 Dùng Agent tool:
   subagent_type: "general-purpose"
   prompt: |
-    Đọc và tuân theo system prompt: vnr-plugin/agents/vnr-sec-reviewer.md
+    Đọc và tuân theo system prompt: $PLUGIN_DIR/agents/vnr-sec-reviewer.md
 
     FEATURE: <feature>
 
     ĐỌC BẮT BUỘC:
-    - vnr-plugin/standards/backend/03-permission.md
-    - vnr-plugin/standards/frontend/03-permission.md
-    - vnr-plugin/hooks/security-hooks.json (scan patterns)
-    - vnr-plugin/memory/constitution.md (Principle III)
+    - $PLUGIN_DIR/standards/backend/03-permission.md
+    - $PLUGIN_DIR/standards/frontend/03-permission.md
+    - $PLUGIN_DIR/hooks/security-hooks.json (scan patterns)
+    - $PLUGIN_DIR/memory/constitution.md (Principle III)
 
     SCOPE: git diff --name-only HEAD~1 → xác định BE/FE/full-stack.
     KHÔNG kết luận nếu chưa đọc ít nhất 1 file thay đổi.
@@ -472,7 +474,7 @@ Parse: X passed, Y failed, Z skipped (test.todo = skipped).
 Dùng Agent tool:
   subagent_type: "general-purpose"
   prompt: |
-    Đọc và tuân theo system prompt: vnr-plugin/agents/vnr-tech-writer.md
+    Đọc và tuân theo system prompt: $PLUGIN_DIR/agents/vnr-tech-writer.md
 
     FEATURE: <feature>
 

@@ -21,7 +21,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 ## Pre-Execution Checks
 
 **Check for extension hooks (before specification)**:
-- Check if `vnr-plugin/extensions.yml` exists in the project root.
+- Check if `$PLUGIN_DIR/extensions.yml` exists in the project root.
 - If it exists, read it and look for entries under the `hooks.before_specify` key
 - If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
 - Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
@@ -50,11 +50,13 @@ You **MUST** consider the user input before proceeding (if not empty).
 
     Wait for the result of the hook command before proceeding to the Outline.
     ```
-- If no hooks are registered or `vnr-plugin/extensions.yml` does not exist, skip silently
+- If no hooks are registered or `$PLUGIN_DIR/extensions.yml` does not exist, skip silently
 
 ## Outline
 
-The text the user typed after `/speckit.specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `$ARGUMENTS` appears literally below. Do not ask the user to repeat it unless they provided an empty command.
+**Path Resolution**: Set `PLUGIN_DIR` by finding the directory containing `vnr-plugin/` starting from the repo root. If uncertain, use `vnr-plugin` as a relative path from the repo root (fallback). `$PLUGIN_DIR` = `<repo-root>/vnr-plugin`.
+
+The text the user typed after `/vnr-specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `$ARGUMENTS` appears literally below. Do not ask the user to repeat it unless they provided an empty command.
 
 Given that feature description, do this:
 
@@ -83,7 +85,7 @@ Given that feature description, do this:
    **Resolution order for `SPECIFY_FEATURE_DIRECTORY`**:
    1. If the user explicitly provided `SPECIFY_FEATURE_DIRECTORY` (e.g., via environment variable, argument, or configuration), use it as-is
    2. Otherwise, auto-generate it under `specs/`:
-      - Check `vnr-plugin/init-options.json` for `branch_numbering`
+      - Check `$PLUGIN_DIR/init-options.json` for `branch_numbering`
       - If `"timestamp"`: prefix is `YYYYMMDD-HHMMSS` (current timestamp)
       - If `"sequential"` or absent: prefix is `NNN` (next available 3-digit number after scanning existing directories in `specs/`)
       - Construct the directory name: `<prefix>-<short-name>` (e.g., `003-user-auth` or `20260319-143022-user-auth`)
@@ -91,23 +93,23 @@ Given that feature description, do this:
 
    **Create the directory and spec file**:
    - `mkdir -p SPECIFY_FEATURE_DIRECTORY`
-   - Copy `vnr-plugin/templates/spec-template.md` to `SPECIFY_FEATURE_DIRECTORY/spec.md` as the starting point
+   - Copy `$PLUGIN_DIR/templates/spec-template.md` to `SPECIFY_FEATURE_DIRECTORY/spec.md` as the starting point
    - Set `SPEC_FILE` to `SPECIFY_FEATURE_DIRECTORY/spec.md`
-   - Persist the resolved path to `vnr-plugin/feature.json`:
+   - Persist the resolved path to `$PLUGIN_DIR/feature.json`:
      ```json
      {
        "feature_directory": "<resolved feature dir>"
      }
      ```
      Write the actual resolved directory path value (for example, `specs/003-user-auth`), not the literal string `SPECIFY_FEATURE_DIRECTORY`.
-     This allows downstream commands (`/speckit.plan`, `/speckit.tasks`, etc.) to locate the feature directory without relying on git branch name conventions.
+     This allows downstream commands (`/vnr-plan`, `/vnr-tasks`, etc.) to locate the feature directory without relying on git branch name conventions.
 
    **IMPORTANT**:
-   - You must only create one feature per `/speckit.specify` invocation
+   - You must only create one feature per `/vnr-specify` invocation
    - The spec directory name and the git branch name are independent — they may be the same but that is the user's choice
    - The spec directory and file are always created by this command, never by the hook
 
-4. Load `vnr-plugin/templates/spec-template.md` to understand required sections.
+4. Load `$PLUGIN_DIR/templates/spec-template.md` to understand required sections.
 
 5. Follow this execution flow:
     1. Parse user description from arguments
@@ -174,7 +176,7 @@ Given that feature description, do this:
       
       ## Notes
       
-      - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
+      - Items marked incomplete require spec updates before `/vnr-clarify` or `/vnr-plan`
       ```
 
    b. **Run Validation Check**: Review the spec against each checklist item:
@@ -232,9 +234,9 @@ Given that feature description, do this:
    - `SPECIFY_FEATURE_DIRECTORY` — the feature directory path
    - `SPEC_FILE` — the spec file path
    - Checklist results summary
-   - Readiness for the next phase (`/speckit.clarify` or `/speckit.plan`)
+   - Readiness for the next phase (`/vnr-clarify` or `/vnr-plan`)
 
-9. **Check for extension hooks**: After reporting completion, check if `vnr-plugin/extensions.yml` exists in the project root.
+9. **Check for extension hooks**: After reporting completion, check if `$PLUGIN_DIR/extensions.yml` exists in the project root.
    - If it exists, read it and look for entries under the `hooks.after_specify` key
    - If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
    - Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
@@ -261,7 +263,7 @@ Given that feature description, do this:
        Executing: `/{command}`
        EXECUTE_COMMAND: {command}
        ```
-   - If no hooks are registered or `vnr-plugin/extensions.yml` does not exist, skip silently
+   - If no hooks are registered or `$PLUGIN_DIR/extensions.yml` does not exist, skip silently
 
 **NOTE:** Branch creation is handled by the `before_specify` hook (git extension). Spec directory and file creation are always handled by this core command.
 

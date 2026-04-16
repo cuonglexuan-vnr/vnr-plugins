@@ -20,12 +20,12 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Agent System Prompt
 
-<agent_to_use>Sử dụng vnr-developer agent — đọc `vnr-plugin/agents/vnr-developer.md` để hiểu vai trò, quy tắc backend/frontend và convention bắt buộc trước khi implement.</agent_to_use>
+<agent_to_use>Sử dụng vnr-developer agent — đọc `$PLUGIN_DIR/agents/vnr-developer.md` để hiểu vai trò, quy tắc backend/frontend và convention bắt buộc trước khi implement.</agent_to_use>
 
 ## Pre-Execution Checks
 
 **Check for extension hooks (before implementation)**:
-- Check if `vnr-plugin/extensions.yml` exists in the project root.
+- Check if `$PLUGIN_DIR/extensions.yml` exists in the project root.
 - If it exists, read it and look for entries under the `hooks.before_implement` key
 - If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
 - Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
@@ -54,11 +54,11 @@ You **MUST** consider the user input before proceeding (if not empty).
     
     Wait for the result of the hook command before proceeding to the Outline.
     ```
-- If no hooks are registered or `vnr-plugin/extensions.yml` does not exist, skip silently
+- If no hooks are registered or `$PLUGIN_DIR/extensions.yml` does not exist, skip silently
 
 ## Outline
 
-1. Run `vnr-plugin/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+1. Run `vnr-plugin/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks` from repo root and parse PLUGIN_DIR, FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
 2. **Check checklists status** (if FEATURE_DIR/checklists/ exists):
    - Scan all checklist files in the checklists/ directory
@@ -178,9 +178,9 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Confirm the implementation follows the technical plan
    - Report final status with summary of completed work
 
-Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.
+Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/vnr-tasks` first to regenerate the task list.
 
-10. **Check for extension hooks**: After completion validation, check if `vnr-plugin/extensions.yml` exists in the project root.
+10. **Check for extension hooks**: After completion validation, check if `$PLUGIN_DIR/extensions.yml` exists in the project root.
     - If it exists, read it and look for entries under the `hooks.after_implement` key
     - If the YAML cannot be parsed or is invalid, skip hook checking silently and continue normally
     - Filter out hooks where `enabled` is explicitly `false`. Treat hooks without an `enabled` field as enabled by default.
@@ -207,4 +207,4 @@ Note: This command assumes a complete task breakdown exists in tasks.md. If task
         Executing: `/{command}`
         EXECUTE_COMMAND: {command}
         ```
-    - If no hooks are registered or `vnr-plugin/extensions.yml` does not exist, skip silently
+    - If no hooks are registered or `$PLUGIN_DIR/extensions.yml` does not exist, skip silently

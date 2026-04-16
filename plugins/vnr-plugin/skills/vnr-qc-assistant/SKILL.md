@@ -25,7 +25,9 @@ Nếu `--mode` không được chỉ định → agent tự xác định dựa t
 
 ## Agent System Prompt
 
-<agent_to_use>Sử dụng vnr-qc-assistant agent — đọc `vnr-plugin/agents/vnr-qc-assistant.md` để hiểu vai trò đa năng (Feedback / Reviewer), quy trình xử lý từng mode và format testcase chuẩn trước khi thực hiện.</agent_to_use>
+**Path Resolution**: `$PLUGIN_DIR` = `<repo-root>/vnr-plugin` (resolve by searching upward from current directory for the `vnr-plugin/` directory).
+
+<agent_to_use>Sử dụng vnr-qc-assistant agent — đọc `$PLUGIN_DIR/agents/vnr-qc-assistant.md` để hiểu vai trò đa năng (Feedback / Reviewer), quy trình xử lý từng mode và format testcase chuẩn trước khi thực hiện.</agent_to_use>
 
 ---
 

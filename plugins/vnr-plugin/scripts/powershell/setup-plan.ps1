@@ -43,7 +43,7 @@ catch {
 
 # Fallback path for Vnr speckit template
 if (-not $template) {
-    $template = Join-Path $paths.REPO_ROOT 'vnr-plugin/templates/plan-template.md'
+    $template = Join-Path $paths.PLUGIN_DIR 'templates/plan-template.md'
 }
 
 if ($template -and (Test-Path $template)) {
@@ -58,6 +58,7 @@ else {
 # Output results
 if ($Json) {
     $result = [PSCustomObject]@{
+        PLUGIN_DIR   = $paths.PLUGIN_DIR
         FEATURE_SPEC = $paths.FEATURE_SPEC
         IMPL_PLAN    = $paths.IMPL_PLAN
         SPECS_DIR    = $paths.FEATURE_DIR
@@ -67,6 +68,7 @@ if ($Json) {
     $result | ConvertTo-Json -Compress
 }
 else {
+    Write-Output "PLUGIN_DIR: $($paths.PLUGIN_DIR)"
     Write-Output "FEATURE_SPEC: $($paths.FEATURE_SPEC)"
     Write-Output "IMPL_PLAN: $($paths.IMPL_PLAN)"
     Write-Output "SPECS_DIR: $($paths.FEATURE_DIR)"
