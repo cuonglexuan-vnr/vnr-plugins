@@ -1,0 +1,8 @@
+{
+    "name": "vnr-ba-plugin",
+    "description": "BA Plugin — User Story authoring, EPIC/FEAT management, and BA→Dev handoff for the VNR BA team",
+    "version": "1.0.0",
+    "author": {
+        "name": "vnr-ba-plugin"
+    }
+}
