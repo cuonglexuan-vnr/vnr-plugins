@@ -1,28 +1,15 @@
 {
   "mcpServers": {
-    "azureDevOps": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@tiberriver256/mcp-server-azure-devops"
-      ],
-      "env": {
-        "AZURE_DEVOPS_ORG_URL": "http://hcm-srv-tfscore01:8080/tfs/DefaultCollection",
-        "AZURE_DEVOPS_AUTH_METHOD": "pat",
-        "AZURE_DEVOPS_PAT": "your_pat_here",
-        "AZURE_DEVOPS_DEFAULT_PROJECT": "VNR.Platform"
+      "tfs": {
+          "type": "sse",
+          "url": "http://172.21.55.10:8000/sse"
+      },
+      "amis-task": {
+          "type": "sse",
+          "url": "http://172.21.55.10:8001/sse",
+          "env": {
+              "AMIS_USER_ID": "your_user_id_here"
+          }
       }
-    },
-    "amis-task": {
-      "type": "stdio",
-      "command": "node",
-      "args": [
-        "path_to_your_mcp_server\\dist\\src\\index.js"
-      ],
-      "env": {
-        "AMIS_PASSPHRASE": "vnr_team",
-        "AMIS_USER_ID": "your_user_id_here"
-      }
-    }
   }
 }
