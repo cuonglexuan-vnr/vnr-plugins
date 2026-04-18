@@ -51,7 +51,7 @@ if ($template -and (Test-Path $template)) {
     Write-Output "Copied plan template to $($paths.IMPL_PLAN)"
 }
 else {
-    Write-Warning "[vnr.plan] Plan template not found"
+    Write-Warning "[vnr-plan] Plan template not found"
     New-Item -ItemType File -Path $paths.IMPL_PLAN -Force | Out-Null
 }
 

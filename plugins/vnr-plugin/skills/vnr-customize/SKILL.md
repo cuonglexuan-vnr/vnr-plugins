@@ -335,7 +335,7 @@ For the target `{name}`, build these search patterns:
 | Pattern Type | Examples |
 |-------------|----------|
 | Exact name | `vnr-plan` |
-| Slash command | `/vnr-plan`, `/vnr.plan` |
+| Slash command | `/vnr-plan`, `/vnr-plan` |
 | Skill tool ref | `skill: "vnr-plan"`, `skill: 'vnr-plan'` |
 | Agent file path | `$PLUGIN_DIR/agents/vnr-planner.md` |
 | Agent tag | `<agent_to_use>.*vnr-planner.*</agent_to_use>` |
@@ -397,7 +397,7 @@ Group findings by the referencing file and present as a structured report:
 │ ARTIFACT_DEPENDENCY references
 ├─────────────────────────────────────────────────
 │ 📄 vnr-plugin/scripts/powershell/check-prerequisites.ps1
-│    Line 98:  "Run /vnr.plan first to create the implementation plan."
+│    Line 98:  "Run /vnr-plan first to create the implementation plan."
 │    → Script checks for plan.md output.
 │      Ensure your customized skill still produces plan.md.
 └─────────────────────────────────────────────────

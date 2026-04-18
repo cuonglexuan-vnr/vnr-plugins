@@ -192,7 +192,7 @@ if ([string]::IsNullOrWhiteSpace($branchSuffix)) {
 
 # Warn if -Number and -Timestamp are both specified
 if ($Timestamp -and $Number -ne 0) {
-    Write-Warning "[vnr.specify] Warning: -Number is ignored when -Timestamp is used"
+    Write-Warning "[vnr-specify] Warning: -Number is ignored when -Timestamp is used"
     $Number = 0
 }
 
@@ -227,9 +227,9 @@ if ($branchName.Length -gt $maxBranchLength) {
     $originalBranchName = $branchName
     $branchName = "$featureNum-$truncatedSuffix"
 
-    Write-Warning "[vnr.specify] Branch name exceeded GitHub's 244-byte limit"
-    Write-Warning "[vnr.specify] Original: $originalBranchName ($($originalBranchName.Length) bytes)"
-    Write-Warning "[vnr.specify] Truncated to: $branchName ($($branchName.Length) bytes)"
+    Write-Warning "[vnr-specify] Branch name exceeded GitHub's 244-byte limit"
+    Write-Warning "[vnr-specify] Original: $originalBranchName ($($originalBranchName.Length) bytes)"
+    Write-Warning "[vnr-specify] Truncated to: $branchName ($($branchName.Length) bytes)"
 }
 
 if ($hasGit) {
@@ -270,7 +270,7 @@ if ($hasGit) {
     }
 }
 else {
-    Write-Warning "[vnr.specify] Warning: Git repository not detected; skipped branch creation for $branchName"
+    Write-Warning "[vnr-specify] Warning: Git repository not detected; skipped branch creation for $branchName"
 }
 
 $featureDir = Join-Path $specsDir $branchName

@@ -356,7 +356,7 @@ Sau mỗi lần tạo/override, skill **tự động quét** toàn bộ bộ vnr
 │ ARTIFACT_DEPENDENCY
 ├───────────────────────────────────────────────
 │ vnr-plugin/scripts/powershell/check-prerequisites.ps1
-│   Dòng 98:  "Run /vnr.plan first..."
+│   Dòng 98:  "Run /vnr-plan first..."
 │   → Script kiểm tra plan.md output.
 └───────────────────────────────────────────────
 
