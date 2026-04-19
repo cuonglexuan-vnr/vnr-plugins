@@ -68,3 +68,4 @@ powershell -ExecutionPolicy Bypass -File "\\company-pc\tools\vnr-plugins\install
 ```bat
 \\company-pc\tools\vnr-plugins\install-vnr-plugin.cmd "C:\work\my-project" --scope user --no-scaffold
 ```
+XC
