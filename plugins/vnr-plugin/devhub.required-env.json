@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "pluginId": "vnr-plugin",
+  "requiredEnv": [
+    {
+      "key": "AMIS_USER_ID",
+      "source": "identity.amisUserId",
+      "required": true,
+      "description": "AMIS user ID for the developer"
+    },
+    {
+      "key": "USER_EMAIL",
+      "source": "identity.email",
+      "required": true,
+      "description": "Developer email address"
+    }
+  ]
+}

@@ -15,6 +15,16 @@
       },
       "source": "./plugins/vnr-plugin",
       "category": "development"
+    },
+	{
+      "name": "vnr-ba-plugin",
+      "description": "Vnr BA plugin",
+      "version": "1.0.0",
+      "author": {
+        "name": "Vnr"
+      },
+      "source": "./plugins/vnr-ba-plugin",
+      "category": "development"
     }
   ]
 }
