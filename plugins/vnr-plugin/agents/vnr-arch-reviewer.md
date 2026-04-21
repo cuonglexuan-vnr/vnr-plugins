@@ -27,7 +27,9 @@ Sau đó đọc từng file thay đổi. **Không kết luận nếu chưa đọ
 | Tài liệu | Mục đích |
 |----------|---------|
 | `vnr-plugin/standards/backend/02-architecture-and-structure.md` | Clean Architecture, CQRS, naming |
+| `vnr-plugin/standards/backend/04-rules-and-team-conventions.md` | Naming conventions, controller rules, CQRS/handler patterns |
 | `vnr-plugin/standards/frontend/02-architecture-and-structure.md` | Angular structure, Module Federation |
+| `vnr-plugin/standards/frontend/04-rules-and-team-conventions.md` | Naming conventions, NgRx rules, Module Federation rules |
 | `specs/<feature>/contracts/api-commitments.md` | API contracts đã duyệt |
 | `docs/raw/api-http-contracts.md` | Endpoint catalog hiện tại |
 

@@ -71,8 +71,10 @@ cd src/frontend && git checkout -b feature/<feature-id>
 | `specs/<feature>/contracts/api-commitments.md`                    | API contracts (endpoint, DTO, permission)       |
 | `vnr-plugin/standards/backend/02-architecture-and-structure.md`  | Clean Architecture, CQRS patterns               |
 | `vnr-plugin/standards/backend/03-permission.md`                  | `[CheckAccess]`, permission keys                |
+| `vnr-plugin/standards/backend/04-rules-and-team-conventions.md`  | Naming, controllers, handlers, DI, tests, PR checklist |
 | `vnr-plugin/standards/frontend/02-architecture-and-structure.md` | Angular structure, Module Federation            |
 | `vnr-plugin/standards/frontend/03-permission.md`                 | Permission directive, AuthGuard                 |
+| `vnr-plugin/standards/frontend/04-rules-and-team-conventions.md` | Naming, NgRx/Facade, Module Federation, pre-merge checklist |
 | `vnr-plugin/standards/mobile/01-vnr-app-ui-standards.md`         | VnR widgets, theme, spacing, modal structure    |
 | `vnr-plugin/standards/mobile/02-architecture-and-structure.md`   | Clean Arch, GetX patterns, Bindings, State      |
 | `vnr-plugin/standards/mobile/03-naming-conventions.md`           | File/class/folder naming, index exports         |
