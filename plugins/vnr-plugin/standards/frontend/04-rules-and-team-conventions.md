@@ -140,7 +140,35 @@ nx build objEval --outputPath=dist/apps/shell/apps/objEval
 
 ---
 
-## 13. Pre-merge Checklist
+## 13. Component Library Selection — vnr-module vs nz-*
+
+> **Đây là quy tắc bắt buộc** — vi phạm sẽ bị reject ở code review.
+
+VNR wrap và mở rộng `ng-zorro-antd` trong `@hrm-frontend-workspace/vnr-module`. **Luôn dùng `vnr-module` components thay vì `nz-*` trực tiếp.**
+
+| Chức năng | ✅ Dùng | ❌ Không dùng |
+|-----------|---------|--------------|
+| Danh sách dữ liệu | `vnr-grid`, `vnr-grid-new` | `nz-table` |
+| Modal / confirm / error dialog | VNR modal wrapper (vnr-module/components/modal/) | `NzModalService` |
+| Drawer / form slide-in | VNR drawer wrapper / `VnrFormBaseComponent` | `nz-drawer` |
+| Dropdown entity picker | VNR advanced select, org picker, employee picker | `nz-select` |
+| Date picker | VNR date picker | `nz-date-picker` |
+| Input / Textarea | VNR input components | `nz-input`, `nz-textarea` |
+| File upload | VNR file upload | `nz-upload` |
+| List view | VNR list view wrapper | `nz-list` |
+| Tree / tree-select | VNR treelist | `nz-tree` |
+| Filter UI | VNR advanced filter builder | custom nz-form |
+| Toolbar / page header | `vnr-toolbar`, `vnr-toolbar-v2` | `nz-page-header` |
+| Form validation messages | VNR validation components | div tự build |
+
+**Ngoại lệ được phép** (không có vnr-module equivalent):  
+`nz-switch`, `nz-tag`, `nz-divider`, `nz-alert`, `nz-result`, `nz-tooltip`, `nz-checkbox`, `nz-radio`, `nz-icon`, `nz-spin`, `nz-skeleton`, `cdkDragDrop`.
+
+📖 **Chi tiết đầy đủ:** `vnr-plugin/standards/frontend/05-vnr-module-components.md`
+
+---
+
+## 14. Pre-merge Checklist
 
 - [ ] Component & service unit tests added (≥80% coverage)
 - [ ] Facade pattern dùng khi có NgRx
@@ -150,6 +178,7 @@ nx build objEval --outputPath=dist/apps/shell/apps/objEval
 - [ ] Không có direct imports của remote modules trong shell
 - [ ] E2E tests cho critical flows
 - [ ] Không có secrets trong code
+- [ ] **Không có `nz-table`, `NzModalService`, `nz-drawer`, `nz-input` trong code** — dùng `vnr-module` equivalents (xem `05-vnr-module-components.md`)
 
 ---
 

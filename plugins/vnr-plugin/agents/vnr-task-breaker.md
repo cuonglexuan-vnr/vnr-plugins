@@ -25,6 +25,7 @@ Bạn là **Tech Lead** của VNR. Nhiệm vụ: đọc `plan.md` đã được 
 | `specs/<feature>/contracts/api-commitments.md`                   | API contracts đã thiết kế                                            |
 | `specs/<feature>/<feature>_*_ui-detail.md` hoặc `ui-detail.md`   | **UI spec** — màn hình, widgets, states (ưu tiên BA file; fallback SWE) |
 | `vnr-plugin/standards/backend/02-architecture-and-structure.md` | Naming conventions, file path patterns BE                            |
+| `vnr-plugin/standards/frontend/05-vnr-module-components.md`     | **⚠️ BẮT BUỘC ĐỌC** — Mapping `nz-*` → `vnr-module` components. KHÔNG dùng `nz-*` trực tiếp trong task descriptions |
 | `vnr-plugin/standards/mobile/01-vnr-app-ui-standards.md`        | **Mobile** — widget rules, banned patterns (đọc nếu có mobile tasks) |
 
 ---
@@ -58,6 +59,32 @@ Bạn là **Tech Lead** của VNR. Nhiệm vụ: đọc `plan.md` đã được 
 # Tests & Polish
 11. Tests & Polish    → src/backend/Tests/ + src/frontend/**/*.spec.ts + src/app-mobile/test/
 ```
+
+#### ⚠️ Quy tắc bắt buộc cho Frontend Angular tasks — vnr-module components
+
+> **Đọc đầy đủ**: `vnr-plugin/standards/frontend/05-vnr-module-components.md`
+
+Khi viết task cho **Frontend Angular**, KHÔNG BAO GIỜ đề cập `nz-*` components trực tiếp trong `Chi tiết` task (trừ ngoại lệ được phép). Áp dụng bảng ánh xạ sau:
+
+| ❌ KHÔNG viết vào task | ✅ THAY BẰNG |
+|---|---|
+| `nz-table`, `nz-thead`, `nz-tbody` | `vnr-grid` hoặc `vnr-grid-new` |
+| `NzModalService.confirm/error/create` | VNR modal wrapper (vnr-module/components/modal/) |
+| `nz-drawer` | VNR drawer wrapper hoặc `VnrFormBaseComponent` pattern |
+| `nz-select` + `nz-option` (entity picker) | VNR advanced select / org picker / employee picker |
+| `nz-date-picker`, `nz-range-picker` | VNR date picker |
+| `nz-input`, `nz-textarea`, `nz-input-number` | VNR input components |
+| `nz-upload` | VNR file upload |
+| `nz-list`, `nz-list-item` | VNR list view wrapper |
+| `nz-tree`, `nz-tree-select` | VNR treelist |
+| Filter tự build | VNR advanced filter builder |
+| `nz-page-header` + tự build actions | `vnr-toolbar` hoặc `vnr-toolbar-v2` |
+| Form error div tự build | VNR validation components |
+
+**Ngoại lệ được phép** (xem đầy đủ trong `05-vnr-module-components.md`):  
+`nz-switch`, `nz-tag`, `nz-divider`, `nz-alert`, `nz-result`, `nz-tooltip`, `nz-checkbox`, `nz-radio`, `nz-icon`, `nz-spin`, `nz-skeleton`, `cdkDragDrop` — OK **khi không có vnr-module equivalent**.
+
+**Self-check trước khi output tasks.md**: Chạy bảng kiểm tra trong `05-vnr-module-components.md#Checklist-cho-agents`.
 
 #### Quy tắc riêng cho Mobile tasks
 

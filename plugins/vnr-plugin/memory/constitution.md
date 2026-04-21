@@ -350,6 +350,18 @@ hrm-core/
 
 📖 **Xem đầy đủ:** `vnr-plugin/standards/mobile/01-vnr-app-ui-standards.md`
 
+### Frontend Angular — vnr-module Components
+
+12. ❌ **KHÔNG dùng `nz-table`** trong component templates — dùng `vnr-grid` hoặc `vnr-grid-new`
+13. ❌ **KHÔNG dùng `NzModalService` trực tiếp** — dùng VNR modal wrapper từ `vnr-module/components/modal/`
+14. ❌ **KHÔNG dùng `nz-drawer`** — dùng VNR drawer wrapper hoặc `VnrFormBaseComponent` pattern
+15. ❌ **KHÔNG dùng `nz-select`/`nz-option` cho entity pickers** — dùng VNR advanced select / org picker / employee picker
+16. ❌ **KHÔNG dùng `nz-input`, `nz-textarea`** trong forms — dùng VNR input components
+17. ❌ **KHÔNG tự build filter UI** — dùng VNR advanced filter builder
+18. ❌ **KHÔNG dùng `nz-page-header` + tự build actions** — dùng `vnr-toolbar` / `vnr-toolbar-v2`
+
+📖 **Xem đầy đủ (mapping table + ngoại lệ):** `vnr-plugin/standards/frontend/05-vnr-module-components.md`
+
 ---
 
 ## 📞 Reference Documents
