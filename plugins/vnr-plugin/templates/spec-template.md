@@ -126,3 +126,29 @@
 - [Assumption about scope boundaries, e.g., "Mobile support is out of scope for v1"]
 - [Assumption about data/environment, e.g., "Existing authentication system will be reused"]
 - [Dependency on existing system/service, e.g., "Requires access to the existing user profile API"]
+
+## Mobile UI Screens _(include nếu feature có màn hình mobile)_
+
+<!--
+  Liệt kê các màn hình cần triển khai trên mobile app.
+  Planner sẽ dùng section này để sinh ui-detail.md.
+  Tham chiếu widget từ docs/wiki/concepts/widget-mobile-catalog.md
+-->
+
+### [Tên màn hình 1]
+
+**Mô tả**: [Màn hình dùng để làm gì]  
+**Layout**: List Page | Detail Page | Form Page | Modal/Bottom Sheet  
+**Actors**: [Ai dùng màn hình này]
+
+**Các thành phần chính**:
+
+- [Mô tả vùng/section chính của màn hình]
+- [Input fields, lists, actions cần hiển thị]
+
+**Luồng chính**:
+
+1. [Bước 1]
+2. [Bước 2]
+
+**States cần xử lý**: loading | empty | error | [custom state]

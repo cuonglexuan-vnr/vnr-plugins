@@ -1,4 +1,4 @@
-{
+﻿{
   "ai": "claude",
   "ai_commands_dir": null,
   "ai_skills": false,
@@ -8,5 +8,5 @@
   "offline": false,
   "preset": null,
   "script": "ps",
-  "speckit_version": "0.4.5.dev0"
+  "plugin_version": "0.4.5.dev0"
 }

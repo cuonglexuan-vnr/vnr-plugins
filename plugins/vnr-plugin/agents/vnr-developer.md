@@ -1,4 +1,4 @@
----
+﻿---
 name: vnr-developer
 role: Full-Stack Developer
 step: "Step 3 — Implement"
@@ -39,14 +39,14 @@ cd src/frontend && git checkout -b feature/<feature-id>
 
 ### Path mapping
 
-| Layer | Path gốc |
-|-------|----------|
-| Backend source | `src/backend/Src/Services/<ServiceName>/...` |
-| Backend tests | `src/backend/Tests/...` |
-| Frontend source | `src/frontend/apps/<remote-app>/...` |
-| Frontend libs | `src/frontend/libs/...` |
-| Frontend tests | `src/frontend/apps/<remote-app>/**/*.spec.ts` |
-| E2E tests | `src/frontend/e2e/` |
+| Layer           | Path gốc                                      |
+| --------------- | --------------------------------------------- |
+| Backend source  | `src/backend/Src/Services/<ServiceName>/...`  |
+| Backend tests   | `src/backend/Tests/...`                       |
+| Frontend source | `src/frontend/apps/<remote-app>/...`          |
+| Frontend libs   | `src/frontend/libs/...`                       |
+| Frontend tests  | `src/frontend/apps/<remote-app>/**/*.spec.ts` |
+| E2E tests       | `src/frontend/e2e/`                           |
 
 ---
 
@@ -63,30 +63,35 @@ cd src/frontend && git checkout -b feature/<feature-id>
 
 ### 2. Spec & Task
 
-| Tài liệu | Mục đích |
-|----------|---------|
-| `specs/<feature>/tasks.md` | Danh sách task cần implement |
-| `specs/<feature>/plan.md` | Kiến trúc, quyết định kỹ thuật, phase breakdown |
-| `specs/<feature>/data-model.md` | Entity definitions, relationships |
-| `specs/<feature>/contracts/api-commitments.md` | API contracts (endpoint, DTO, permission) |
-| `vnr-plugin/standards/backend/02-architecture-and-structure.md` | Clean Architecture, CQRS patterns |
-| `vnr-plugin/standards/backend/03-permission.md` | `[CheckAccess]`, permission keys |
-| `vnr-plugin/standards/frontend/02-architecture-and-structure.md` | Angular structure, Module Federation |
-| `vnr-plugin/standards/frontend/03-permission.md` | Permission directive, AuthGuard |
-| `docs/raw/backend-architecture.md` | Kiến trúc backend cụ thể của dự án |
-| `docs/raw/frontend-architecture.md` | Kiến trúc frontend cụ thể của dự án |
-| `docs/raw/solution-layout.md` | Solution structure thực tế |
+| Tài liệu                                                          | Mục đích                                        |
+| ----------------------------------------------------------------- | ----------------------------------------------- |
+| `specs/<feature>/tasks.md`                                        | Danh sách task cần implement                    |
+| `specs/<feature>/plan.md`                                         | Kiến trúc, quyết định kỹ thuật, phase breakdown |
+| `specs/<feature>/data-model.md`                                   | Entity definitions, relationships               |
+| `specs/<feature>/contracts/api-commitments.md`                    | API contracts (endpoint, DTO, permission)       |
+| `vnr-plugin/standards/backend/02-architecture-and-structure.md`  | Clean Architecture, CQRS patterns               |
+| `vnr-plugin/standards/backend/03-permission.md`                  | `[CheckAccess]`, permission keys                |
+| `vnr-plugin/standards/frontend/02-architecture-and-structure.md` | Angular structure, Module Federation            |
+| `vnr-plugin/standards/frontend/03-permission.md`                 | Permission directive, AuthGuard                 |
+| `vnr-plugin/standards/mobile/01-vnr-app-ui-standards.md`         | VnR widgets, theme, spacing, modal structure    |
+| `vnr-plugin/standards/mobile/02-architecture-and-structure.md`   | Clean Arch, GetX patterns, Bindings, State      |
+| `vnr-plugin/standards/mobile/03-naming-conventions.md`           | File/class/folder naming, index exports         |
+| `docs/raw/backend-architecture.md`                                | Kiến trúc backend cụ thể của dự án              |
+| `docs/raw/frontend-architecture.md`                               | Kiến trúc frontend cụ thể của dự án             |
+| `docs/raw/solution-layout.md`                                     | Solution structure thực tế                      |
 
 ---
 
 ## Quy tắc Backend (ASP.NET Core / Clean Architecture)
 
 ### Domain Layer
+
 - Entity extends `EntityBase<TId>` + implement `IAuditableEntity`, `ISoftDelete`.
 - Repository interface trong `VNR.Service.<Name>.Domain/Repository/`.
 - Không import bất kỳ package Infrastructure nào trong Domain.
 
 ### Application Layer
+
 - Command: implement `ICommand<TResult>` → handler implement `CommandHandler<TRequest, TResult>`.
 - Query: implement `IQuery<TResult>` hoặc `IQueryListGrid<TResult>`.
 - Validator: FluentValidation `AbstractValidator<TCommand>` — `NotEmpty`, `MaximumLength`, `GreaterThan`, v.v.
@@ -94,21 +99,25 @@ cd src/frontend && git checkout -b feature/<feature-id>
 - Ném `NotFoundException` / `ConflictException` / `BusinessException` khi cần.
 
 ### Infrastructure Layer
+
 - Repository implement interface từ Domain bằng `GenericRepository<TEntity, TKey>`.
 - Service implement interface từ Application.
 - DI registration trong `Add<Name>Services()`.
 
 ### API Layer (Controller)
+
 ```csharp
 [HttpPost]
 [CheckAccess("HRM_<MODULE>_<FEATURE>", PrivilegeType.Create)]
 public async Task<IActionResult> Create(CreateXxxCommand command)
     => await HandleRequest(command);
 ```
+
 - **Tuyệt đối không** có business logic trong controller.
 - Route: `api/v{version:apiVersion}/[controller]`
 
 ### Naming
+
 - File: `<FeatureName><CommandName>Command.cs`, `<FeatureName>Handler.cs`, `<FeatureName>Validator.cs`
 - DTO: `Create<Feature>Request`, `<Feature>Response`, `<Feature>Dto`
 
@@ -124,6 +133,20 @@ public async Task<IActionResult> Create(CreateXxxCommand command)
 - Permission: dùng `*appHasPermission="['HRM_<MODULE>_<FEATURE>', 'Create']"`.
 - Không dùng `nz-sider`; icons register trong `icons-provider.ts`.
 - Interceptor order: base URL → auth → unauthorized.
+
+---
+
+## Quy tắc Mobile (Flutter)
+
+> **Đọc standards đầy đủ trước khi implement bất kỳ code Mobile nào:**
+
+| Standard | Nội dung |
+| -------- | -------- |
+| `vnr-plugin/standards/mobile/01-vnr-app-ui-standards.md` | VnR widgets, theme, spacing, modal structure |
+| `vnr-plugin/standards/mobile/02-architecture-and-structure.md` | Clean Architecture, GetX patterns, Bindings, Controller+State |
+| `vnr-plugin/standards/mobile/03-naming-conventions.md` | File/class/folder naming, index barrel exports, translation keys |
+| `vnr-plugin/standards/mobile/04-api-and-module-patterns.md` | **ĐỌC TRƯỚC KHI CODE** — HttpService, response parsing, DI patterns, ModuleConfig, Freezed models |
+| `vnr-plugin/standards/mobile/05-dynamic-form-and-permissions.md` | **ĐỌC KHI CÓ FORM CREATE/EDIT** — FormDynamicController, FieldBinder, business rules, storeName config, PermissionService |
 
 ---
 

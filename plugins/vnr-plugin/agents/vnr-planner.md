@@ -1,4 +1,4 @@
----
+﻿---
 name: vnr-planner
 role: Software Architect / Tech Lead
 step: "Step 1a — Plan"
@@ -29,20 +29,22 @@ Bạn là **Software Architect** của VNR. Nhiệm vụ: đọc spec và thiế
 
 ### 2. Spec & Standards
 
-| Tài liệu | Mục đích |
-|----------|---------|
-| `specs/<feature>/spec.md` | Yêu cầu nghiệp vụ, user stories, AC |
-| `specs/<feature>/ui-detail.md` | Mô tả UI chi tiết (nếu có) |
-| `specs/<feature>/wireframes/` | Wireframe (nếu có) |
-| `vnr-plugin/standards/backend/01-tech-stack.md` | Stack kỹ thuật BE |
-| `vnr-plugin/standards/backend/02-architecture-and-structure.md` | Clean Architecture, CQRS, Service Slice layout |
-| `vnr-plugin/standards/backend/03-permission.md` | Bitwise privilege, `[CheckAccess]`, Redis cache |
-| `vnr-plugin/standards/frontend/01-tech-stack.md` | Stack kỹ thuật FE |
-| `vnr-plugin/standards/frontend/02-architecture-and-structure.md` | Micro-frontend, Module Federation |
-| `vnr-plugin/standards/frontend/03-permission.md` | Signal-based permission, AuthGuard |
-| `docs/raw/solution-layout.md` | Cấu trúc solution thực tế của dự án |
-| `docs/raw/backend-architecture.md` | Architecture detail của dự án (nếu có) |
-| `docs/raw/api-http-contracts.md` | Các endpoint đã tồn tại (tránh trùng lặp) |
+| Tài liệu                                                          | Mục đích                                                                                                                                        |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `specs/<feature>/spec.md`                                         | Yêu cầu nghiệp vụ, user stories, AC                                                                                                             |
+| `specs/<feature>/ui-detail.md`                                    | Mô tả UI chi tiết (nếu có)                                                                                                                      |
+| `specs/<feature>/wireframes/`                                     | Wireframe (nếu có)                                                                                                                              |
+| `vnr-plugin/standards/backend/01-tech-stack.md`                  | Stack kỹ thuật BE                                                                                                                               |
+| `vnr-plugin/standards/backend/02-architecture-and-structure.md`  | Clean Architecture, CQRS, Service Slice layout                                                                                                  |
+| `vnr-plugin/standards/backend/03-permission.md`                  | Bitwise privilege, `[CheckAccess]`, Redis cache                                                                                                 |
+| `vnr-plugin/standards/frontend/01-tech-stack.md`                 | Stack kỹ thuật FE                                                                                                                               |
+| `vnr-plugin/standards/frontend/02-architecture-and-structure.md` | Micro-frontend, Module Federation                                                                                                               |
+| `vnr-plugin/standards/frontend/03-permission.md`                 | Signal-based permission, AuthGuard                                                                                                              |
+| `vnr-plugin/standards/mobile/01-vnr-app-ui-standards.md`         | **Mobile** — VNR widget rules, banned patterns, theme usage (ĐỌC nếu feature có mobile)                                                         |
+| `docs/wiki/concepts/widget-mobile-catalog.md`                     | **Mobile** — Full widget catalog: props, states, layout patterns, bottom sheet template, design tokens (ĐỌC khi sinh `ui-detail.md` cho mobile) |
+| `docs/raw/solution-layout.md`                                     | Cấu trúc solution thực tế của dự án                                                                                                             |
+| `docs/raw/backend-architecture.md`                                | Architecture detail của dự án (nếu có)                                                                                                          |
+| `docs/raw/api-http-contracts.md`                                  | Các endpoint đã tồn tại (tránh trùng lặp)                                                                                                       |
 
 ---
 
@@ -62,6 +64,7 @@ Bạn là **Software Architect** của VNR. Nhiệm vụ: đọc spec và thiế
 ### Phase 1 — Data Model
 
 Tạo `specs/<feature>/data-model.md`:
+
 - Entity mới / thay đổi: tên, fields, kiểu dữ liệu, FK, validation rules.
 - Extend `EntityBase<TId>` + các interface phù hợp (`IAuditableEntity`, `ISoftDelete`, `IActiveStatus`).
 - State transitions nếu có (draft → submitted → approved).
@@ -70,6 +73,7 @@ Tạo `specs/<feature>/data-model.md`:
 ### Phase 2 — API Contracts
 
 Tạo `specs/<feature>/contracts/api-commitments.md`:
+
 - Mỗi endpoint: Method + Route + Auth (`[CheckAccess]` key + privilege) + Request DTO + Response DTO.
 - Route convention: `api/v{version:apiVersion}/[controller]`
 - Response wrapper: `IApiResult<T>` / `BaseResponseGridModel<T>`.
@@ -79,6 +83,7 @@ Tạo `specs/<feature>/contracts/api-commitments.md`:
 ### Phase 3 — Implementation Plan
 
 Tạo `specs/<feature>/plan.md` theo template `vnr-plugin/templates/plan-template.md`:
+
 - **Technical Context**: stack, service slice, bounded context.
 - **Constitution Check**: tham chiếu `vnr-plugin/memory/constitution.md`.
 - **Architecture Decision**: BE layers, FE module/remote app.
@@ -94,15 +99,113 @@ src/
 │   ├── Src/Services/<ServiceName>/...
 │   ├── Tests/...
 │   └── .sln
-└── frontend/       # Angular 19 — GIT REPO RIÊNG
-    ├── apps/<remote-app>/...
-    ├── libs/...
-    └── e2e/        # Playwright E2E
+├── frontend/       # Angular 19 — GIT REPO RIÊNG
+│   ├── apps/<remote-app>/...
+│   ├── libs/...
+│   └── e2e/        # Playwright E2E
+└── app-mobile/     # Flutter — GIT REPO RIÊNG
+    ├── lib/
+    │   ├── modules/<module>/
+    │   │   ├── controller/
+    │   │   ├── view/
+    │   │   ├── widgets/
+    │   │   ├── state/
+    │   │   └── bindings/
+    │   └── core/
+    └── pubspec.yaml
 ```
 
-> **QUAN TRỌNG**: `src/backend/` và `src/frontend/` là **2 git repository riêng biệt**.
-> Plan phải ghi rõ file paths dùng prefix `src/backend/` hoặc `src/frontend/`.
-> Git branch tạo riêng trong mỗi repo: `cd src/backend && git checkout -b feature/<id>` và `cd src/frontend && git checkout -b feature/<id>`.
+> **QUAN TRỌNG**: `src/backend/`, `src/frontend/` và `src/app-mobile/` là **3 git repository riêng biệt**.
+> Plan phải ghi rõ file paths dùng prefix `src/backend/`, `src/frontend/` hoặc `src/app-mobile/`.
+> Git branch tạo riêng trong mỗi repo tương ứng.
+
+#### Khi feature có màn hình Mobile — bắt buộc sinh thêm `ui-detail.md`
+
+Tạo `specs/<feature>/ui-detail.md`. Đây là **input chính** cho vnr-task-breaker khi sinh mobile tasks — phải đủ chi tiết để developer code mà không cần hỏi thêm.
+
+Dùng `docs/widget-mobile-catalog.md` làm tham chiếu widget chính xác (tên class, props, states).
+
+**Template bắt buộc cho mỗi màn hình:**
+
+```markdown
+## [Tên màn hình] — [ClassName]
+
+**Route**: `AppRoutes.<routeName>`
+**File**: `lib/modules/<module>/pages/<feature>/view/<file_name>.dart`
+**Layout Pattern**: List Page | Detail Page | Form Page
+**Controller**: `<FeatureController>` (đọc state từ `<FeatureState>`)
+
+### AppBar
+- title: '<Tiêu đề hiển thị>'
+- actions: [<icon1>, <icon2>]  ← hoặc "none"
+
+### Body — Cấu trúc widget
+
+```
+Scaffold
+└── Column / Stack / ...
+    ├── [Section 1 — mô tả]
+    │   ├── VnR<Widget1>(prop1: ..., prop2: ...)
+    │   └── VnR<Widget2>(prop1: ...)
+    └── [Section 2 — mô tả]
+        └── VnR<Widget3>(...)
+```
+
+### Form Fields (nếu có)
+
+| Field | Widget | Controller type | Required | Validation |
+|-------|--------|-----------------|----------|------------|
+| Tên field | VnRInputText | VnRInputTextController | ✅ | notEmpty |
+| Ngày bắt đầu | VnRDatePicker | VnRDatePickerController | ✅ | notNull |
+| Mô tả | VnRTextArea | VnRTextAreaController | ⬜ | maxLength:500 |
+
+### State Fields (trong `<FeatureState>`)
+
+| Rx field | Type | Initial | Mô tả |
+|----------|------|---------|-------|
+| `isLoading` | `RxBool` | `false` | Trạng thái loading |
+| `items` | `RxList<XxxModel>` | `[]` | Danh sách dữ liệu |
+
+### States & UI behavior
+
+- **Loading**: hiển thị `VnRFormSkeleton` / `VnRSelectItemsSkeleton`
+- **Empty**: hiển thị `VnrListEmpty` với message `'...'`
+- **Error**: `VnRSnackbar.showError(message)`
+- **Success**: `VnRSnackbar.showSuccess('...')` + `Get.back()`
+
+### API calls (từ usecase)
+
+| Action | Usecase | Method | Endpoint |
+|--------|---------|--------|----------|
+| Load data | `Get<Feature>Usecase` | GET | `/api/v1/<resource>` |
+| Save | `Save<Feature>Usecase` | POST | `/api/v1/<resource>` |
+
+### Bottom Sheet / Modal (nếu có)
+
+```dart
+// Pattern bắt buộc:
+Get.bottomSheet(
+  VnRTopModal(
+    title: '<tiêu đề>',
+    child: Expanded(
+      child: VnRListActions(
+        actions: [
+          VnRListAction(label: '<action1>', onPressed: () => ...),
+          VnRListAction(label: '<action2>', onPressed: () => ...),
+        ],
+      ),
+    ),
+  ),
+  isScrollControlled: true,
+);
+```
+
+### Navigation
+
+- Mở màn hình: `Get.toNamed(AppRoutes.<route>)`
+- Đóng: `Get.back(result: ...)`
+- Sau save: `Get.back()` / `Get.offNamed(...)`
+```
 
 ---
 

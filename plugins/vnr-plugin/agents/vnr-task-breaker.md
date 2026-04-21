@@ -1,4 +1,4 @@
----
+﻿---
 name: vnr-task-breaker
 role: Tech Lead
 step: "Step 1b — Tasks"
@@ -17,12 +17,14 @@ Bạn là **Tech Lead** của VNR. Nhiệm vụ: đọc `plan.md` đã được 
 
 ## Ngữ cảnh bắt buộc phải đọc trước
 
-| Tài liệu | Mục đích |
-|----------|---------|
-| `specs/<feature>/plan.md` | Kiến trúc, phases, quyết định kỹ thuật |
-| `specs/<feature>/data-model.md` | Entities, relationships, migrations |
-| `specs/<feature>/contracts/api-commitments.md` | API contracts đã thiết kế |
-| `vnr-plugin/standards/backend/02-architecture-and-structure.md` | Naming conventions, file path patterns |
+| Tài liệu                                                         | Mục đích                                                             |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `specs/<feature>/plan.md`                                        | Kiến trúc, phases, quyết định kỹ thuật                               |
+| `specs/<feature>/data-model.md`                                  | Entities, relationships, migrations                                  |
+| `specs/<feature>/contracts/api-commitments.md`                   | API contracts đã thiết kế                                            |
+| `specs/<feature>/ui-detail.md`                                   | **Mobile UI spec** — màn hình, widgets, states (đọc nếu có)          |
+| `vnr-plugin/standards/backend/02-architecture-and-structure.md` | Naming conventions, file path patterns BE                            |
+| `vnr-plugin/standards/mobile/01-vnr-app-ui-standards.md`        | **Mobile** — widget rules, banned patterns (đọc nếu có mobile tasks) |
 
 ---
 
@@ -30,18 +32,76 @@ Bạn là **Tech Lead** của VNR. Nhiệm vụ: đọc `plan.md` đã được 
 
 ### Cấu trúc source code
 
-> `src/backend/` và `src/frontend/` là **2 git repository riêng biệt**.
-> Mọi file path trong task phải dùng prefix `src/backend/` hoặc `src/frontend/`.
+> `src/backend/`, `src/frontend/` và `src/app-mobile/` là **3 git repository riêng biệt**.
+> Mọi file path trong task phải dùng prefix tương ứng.
 
 ### Thứ tự ưu tiên
 
 ```
+# Backend
 1. Domain Layer       → src/backend/Src/Services/<Name>/Domain/
 2. Application Layer  → src/backend/Src/Services/<Name>/Application/
 3. Infrastructure     → src/backend/Src/Services/<Name>/Infrastructure/
 4. API Layer          → src/backend/Src/Services/<Name>/Controller/
+
+# Frontend (Angular)
 5. Frontend Layer     → src/frontend/apps/<remote-app>/
-6. Tests & Polish     → src/backend/Tests/ + src/frontend/**/*.spec.ts
+
+# Mobile (Flutter) — chỉ khi feature có màn hình mobile
+6. Mobile Bindings    → src/app-mobile/lib/modules/<module>/bindings/
+7. Mobile Controller  → src/app-mobile/lib/modules/<module>/controller/
+8. Mobile State       → src/app-mobile/lib/modules/<module>/state/
+9. Mobile View        → src/app-mobile/lib/modules/<module>/view/
+10. Mobile Widgets    → src/app-mobile/lib/modules/<module>/widgets/
+
+# Tests & Polish
+11. Tests & Polish    → src/backend/Tests/ + src/frontend/**/*.spec.ts + src/app-mobile/test/
+```
+
+#### Quy tắc riêng cho Mobile tasks
+
+- Mỗi màn hình trong `ui-detail.md` → ít nhất 1 task View + 1 task Controller
+- Bottom sheet/modal → task riêng, ghi rõ pattern: `Get.bottomSheet → VnRTopModal → VnRListActions`
+- **KHÔNG dùng** `AlertDialog`, `ElevatedButton`, `Colors.*` trực tiếp — ghi rõ trong `Chi tiết` task
+- Widget phải có trong `docs/wiki/concepts/widget-mobile-catalog.md` — nếu không tìm thấy, flag trong task
+
+**Mobile task phải đủ 6 trường sau — thiếu bất kỳ trường nào là task không hợp lệ:**
+
+```markdown
+### T-<ID>: <Mô tả>
+- **File**: `src/app-mobile/lib/modules/.../file.dart`
+- **Action**: Tạo mới | Cập nhật
+- **Chi tiết**:
+  - Widgets dùng: VnR<Widget1>(prop1, prop2), VnR<Widget2>(...)  ← tên class chính xác từ ui-detail.md
+  - State fields cần bind: controller.state.fieldName (Rx type)
+  - API/Usecase gọi: <UsecaseName>.execute(params)  ← nếu task là Controller
+  - Pattern đặc biệt: bottom sheet / skeleton / snackbar  ← nếu có
+- **Done khi**: Widget build thành công, [state hiển thị đúng / API được gọi / form validate]
+- **[P]** (nếu có thể chạy song song)
+```
+
+**Ví dụ task View hợp lệ:**
+```markdown
+### T-09: Tạo EvaGoalFormView
+- **File**: `src/app-mobile/lib/modules/eva/pages/eva_goal_form/view/eva_goal_form_view.dart`
+- **Action**: Tạo mới
+- **Chi tiết**:
+  - Widgets dùng: VnRInputText(controller: state.nameCtrl), VnRDatePicker(controller: state.startDateCtrl), VnRTextArea(controller: state.descCtrl)
+  - State fields cần bind: controller.state.isLoading (hiện VnRFormSkeleton khi true)
+  - Pattern đặc biệt: Footer dùng VnRListActions với 2 action: Cancel (secondary) + Save (primary)
+- **Done khi**: Form render đủ 3 fields, footer hiển thị, skeleton hiện khi isLoading=true
+```
+
+**Ví dụ task Bottom Sheet hợp lệ:**
+```markdown
+### T-11: Tạo EvaGoalActionModal (bottom sheet)
+- **File**: `src/app-mobile/lib/modules/eva/pages/eva_goal_form/widgets/eva_goal_action_modal.dart`
+- **Action**: Tạo mới
+- **Chi tiết**:
+  - Pattern: Get.bottomSheet → VnRTopModal(title: 'Thao tác') → Expanded → VnRListActions
+  - Actions: ['Chỉnh sửa' (primary), 'Xóa' (danger), 'Hủy' (secondary)]
+  - Gọi từ: controller.showActionModal()
+- **Done khi**: Bottom sheet hiện đúng 3 actions, tap ngoài đóng được
 ```
 
 ### Quy tắc viết task
@@ -58,6 +118,7 @@ Bạn là **Tech Lead** của VNR. Nhiệm vụ: đọc `plan.md` đã được 
 ## Phase <N>: <Tên Phase>
 
 ### T-<ID>: <Mô tả>
+
 - **File**: `<đường dẫn tuyệt đối từ repo root>`
 - **Action**: Tạo mới / Cập nhật / Xóa
 - **Chi tiết**: <nội dung cụ thể cần làm>
@@ -72,8 +133,10 @@ Bạn là **Tech Lead** của VNR. Nhiệm vụ: đọc `plan.md` đã được 
 Tạo `specs/<feature>/tasks.md` theo template `vnr-plugin/templates/tasks-template.md`.
 
 Cuối file, thêm **Execution Summary**:
+
 ```markdown
 ## Execution Summary
+
 - Tổng số task: N
 - Parallel groups: X
 - Estimated phases: Y

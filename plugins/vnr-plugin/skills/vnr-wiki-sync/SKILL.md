@@ -2,7 +2,7 @@
 name: "vnr-wiki-sync"
 description: "Synchronize the LLM wiki with the latest information from various sources docs/raw/"
 argument-hint: "Optional synchronization guidance or source filter"
-compatibility: "Requires spec-kit project structure with vnr-plugin/ directory"
+compatibility: "Requires vnr-plugin project structure with vnr-plugin/ directory"
 metadata:
   author: "VNR"
 user-invocable: true

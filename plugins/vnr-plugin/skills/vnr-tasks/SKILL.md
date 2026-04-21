@@ -2,7 +2,7 @@
 name: "vnr-tasks"
 description: "Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts."
 argument-hint: "Optional task generation constraints"
-compatibility: "Requires spec-kit project structure with vnr-plugin/ directory"
+compatibility: "Requires vnr-plugin project structure with vnr-plugin/ directory"
 metadata:
   author: "github-spec-kit"
   source: "templates/commands/tasks.md"
