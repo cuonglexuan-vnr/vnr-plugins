@@ -72,7 +72,8 @@ cd src/app-mobile && git checkout -b feature/<feature-id>
 | Tài liệu | Mục đích |
 |---|---|
 | `specs/<feature>/tasks.md` | Danh sách task cần implement — đọc TOÀN BỘ trước khi bắt đầu |
-| `specs/<feature>/ui-detail.md` | **ĐỌC KHI** task View/Widget không đủ rõ ràng — chứa widget tree, props, state fields, API |
+| `specs/<feature>/<feature>_*_ui-detail.md` (BA) hoặc `specs/<feature>/ui-detail.md` (SWE fallback) | **ĐỌC KHI** task View/Widget không đủ rõ ràng — chứa widget tree, props, state fields, API. Ưu tiên BA file khi có. |
+| `specs/<feature>/<feature>_*.md` | **User Story file** — ĐỌC Section 7 (VM) khi cần wire validation messages, Section 8 (UI/UX) khi cần hiểu trạng thái screen (Loading/Data/Empty/Error). |
 
 > **Không đọc** plan.md, data-model.md, contracts/ trừ khi task description ghi rõ cần.
 

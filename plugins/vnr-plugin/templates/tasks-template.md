@@ -1,21 +1,21 @@
 ---
 
-description: "Task list template for feature implementation"
+description: "Task list template for implementing one User Story"
 ---
 
-# Tasks: [FEATURE NAME]
+# Tasks: [US-ID — Title]
 
-**Input**: Design documents from `/specs/[###-feature-name]/`
-**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
+**Input**: Design documents in `/specs/<US-ID>/` — User Story file (`<US-ID>_*.md`, shape: `templates/userstory-template.md`), `plan.md`, and optionally `data-model.md`, `contracts/`, `research.md`, `<US-ID>_*_ui-detail.md` (BA) or `ui-detail.md` (SWE fallback).
+**Prerequisites**: `plan.md` (required), User Story file (required — ACs drive phases), `research.md`, `data-model.md`, `contracts/`.
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Tests**: OPTIONAL — only include test tasks if explicitly requested in the User Story or user direction.
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Organization**: All tasks belong to one User Story. Phase 3+ is grouped by **AC group** (Happy-Path / Validation / Edge) or by **UI screen** (when the US spans multiple screens). Pick whichever yields cleaner, independently shippable increments for this US.
 
-## Format: `[ID] [P?] [Story] Description`
+## Format: `[ID] [P?] [AC/Screen] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
+- **[AC]**: Traces the task to an AC from US Section 4 (e.g., `[AC-001]`, `[VAL-02]`) or a screen from US Section 8 (e.g., `[S1]`, `[S2]`)
 - Include exact file paths in descriptions
 
 ## Path Conventions (VNR Standard)
@@ -30,137 +30,121 @@ description: "Task list template for feature implementation"
 - **E2E tests**: `src/frontend/e2e/`
 - Git branch tạo riêng trong mỗi repo
 
-<!-- 
+<!--
   ============================================================================
-  IMPORTANT: The tasks below are SAMPLE TASKS for illustration purposes only.
-  
-  The /vnr-tasks command MUST replace these with actual tasks based on:
-  - User stories from spec.md (with their priorities P1, P2, P3...)
-  - Feature requirements from plan.md
-  - Entities from data-model.md
-  - Endpoints from contracts/
-  
-  Tasks MUST be organized by user story so each story can be:
-  - Implemented independently
-  - Tested independently
-  - Delivered as an MVP increment
-  
+  IMPORTANT: The tasks below are SAMPLE TASKS for illustration only.
+
+  The /vnr-tasks command MUST replace these with actual tasks derived from:
+  - Acceptance Criteria (Section 4 of the User Story file)
+  - Business Rules (Section 3) — each BR maps to validation tasks
+  - Data Dictionary (Section 6) — each field maps to model/DTO tasks
+  - Validation Messages (Section 7) — each VM maps to message/i18n tasks
+  - UI/UX screens (Section 8) — each screen maps to View + Controller tasks
+  - contracts/ (from plan.md Phase 1)
+
+  Pick ONE phase-organization shape for Phase 3+:
+    Shape A — per AC group (Happy-Path → Validation → Edge)
+    Shape B — per UI screen (S1 → S2 → S3)
+
   DO NOT keep these sample tasks in the generated tasks.md file.
   ============================================================================
 -->
 
-## Phase 1: Setup (Shared Infrastructure)
+## Phase 1: Setup
 
-**Purpose**: Project initialization and basic structure
+**Purpose**: Branches, scaffolds, dependencies specific to this US.
 
-- [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
-- [ ] T003 [P] Configure linting and formatting tools
+- [ ] T001 Create feature branches in `src/backend/` and `src/frontend/`
+- [ ] T002 [P] Add/verify project dependencies per plan.md Technical Context
+- [ ] T003 [P] Configure linting/formatting if new tooling needed
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
+**Purpose**: Cross-cutting prerequisites that must exist before any AC implementation begins.
 
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+**⚠️ CRITICAL**: No AC work can begin until this phase is complete.
 
-Examples of foundational tasks (adjust based on your project):
+- [ ] T004 Create/update DB schema + migrations from US Section 6 (Data Dictionary)
+- [ ] T005 [P] Create base entities/DTOs (US Section 6 → `src/backend/Src/Services/<Svc>/Domain/`)
+- [ ] T006 [P] Register DI/routing hooks if the US introduces new endpoints
+- [ ] T007 Seed/fixture data required for all ACs (if any)
 
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
-
-**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
+**Checkpoint**: Foundation ready — AC/Screen phases can start.
 
 ---
 
-## Phase 3: User Story 1 - [Title] (Priority: P1) 🎯 MVP
+## Phase 3 (Shape A): Happy-Path ACs 🎯 MVP
 
-**Goal**: [Brief description of what this story delivers]
+**Goal**: Deliver the primary success flow of the US.
 
-**Independent Test**: [How to verify this story works on its own]
+**Independent Test**: Walk through AC-001 (and other Happy-Path ACs) end-to-end.
 
-### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
+### Tests for Happy-Path ACs (OPTIONAL) ⚠️
 
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+- [ ] T010 [P] [AC-001] Integration test for AC-001 in `src/backend/Tests/.../AC001Tests.cs`
+- [ ] T011 [P] [AC-001] E2E test in `src/frontend/e2e/<us-id>-happy.spec.ts`
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+### Implementation
 
-### Implementation for User Story 1
+- [ ] T012 [P] [AC-001] Backend command/query handler in `src/backend/Src/Services/<Svc>/Application/...`
+- [ ] T013 [P] [AC-001] Frontend service + UI wiring in `src/frontend/apps/<app>/.../<feature>.service.ts`
+- [ ] T014 [AC-001] Wire up primary screen (S1) from US Section 8 in `src/frontend/apps/<app>/.../<feature>.component.ts`
+- [ ] T015 [AC-001] Emit audit event from US Section 9 (e.g., `{Entity}Created`)
 
-- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
-- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T016 [US1] Add validation and error handling
-- [ ] T017 [US1] Add logging for user story 1 operations
-
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+**Checkpoint**: Happy-Path ACs are demo-ready.
 
 ---
 
-## Phase 4: User Story 2 - [Title] (Priority: P2)
+## Phase 4 (Shape A): Validation ACs
 
-**Goal**: [Brief description of what this story delivers]
+**Goal**: Enforce Business Rules (US Section 3) and surface Validation Messages (US Section 7).
 
-**Independent Test**: [How to verify this story works on its own]
+### Implementation
 
-### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
+- [ ] T020 [P] [AC-002] Implement BR-U001..BR-U00N checks (server + client)
+- [ ] T021 [P] [AC-002] Wire VM-E01..VM-E0N messages with correct placement (field/form/toast)
+- [ ] T022 [AC-002] Block submit when required fields are missing (US Section 6 "Bắt buộc" = Có)
+- [ ] T023 [AC-002] Confirm dialog for VM-W01 warnings
 
-- [ ] T018 [P] [US2] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T019 [P] [US2] Integration test for [user journey] in tests/integration/test_[name].py
-
-### Implementation for User Story 2
-
-- [ ] T020 [P] [US2] Create [Entity] model in src/models/[entity].py
-- [ ] T021 [US2] Implement [Service] in src/services/[service].py
-- [ ] T022 [US2] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T023 [US2] Integrate with User Story 1 components (if needed)
-
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
+**Checkpoint**: All BRs from US Section 3 are enforced; all VMs in US Section 7 are wired.
 
 ---
 
-## Phase 5: User Story 3 - [Title] (Priority: P3)
+## Phase 5 (Shape A): Edge-Case ACs
 
-**Goal**: [Brief description of what this story delivers]
+**Goal**: Cover the remaining edge ACs and any conditional/toggle flows.
 
-**Independent Test**: [How to verify this story works on its own]
+- [ ] T030 [P] [AC-003] Handle {edge case 1 from US Section 4}
+- [ ] T031 [AC-003] Handle {edge case 2}
+- [ ] T032 [AC-003] Empty-state VM-I01 on list screen
 
-### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
-
-- [ ] T024 [P] [US3] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
-
-### Implementation for User Story 3
-
-- [ ] T026 [P] [US3] Create [Entity] model in src/models/[entity].py
-- [ ] T027 [US3] Implement [Service] in src/services/[service].py
-- [ ] T028 [US3] Implement [endpoint/feature] in src/[location]/[file].py
-
-**Checkpoint**: All user stories should now be independently functional
+**Checkpoint**: All AC-xxx from US Section 4 pass.
 
 ---
 
-[Add more user story phases as needed, following the same pattern]
+<!--
+  Shape B alternative (delete Shape A blocks above and use this when the US
+  clearly maps to multiple screens):
+
+  ## Phase 3 (Shape B): Screen 1 — {Tên màn hình}
+  - [ ] T010 [P] [S1] ...
+  - [ ] T011 [S1] ...
+  ## Phase 4 (Shape B): Screen 2 — {Tên màn hình}
+  - [ ] T020 [P] [S2] ...
+  - [ ] T021 [S2] ...
+-->
 
 ---
 
-## Phase N: Polish & Cross-Cutting Concerns
+## Phase N: Polish & Cross-Cutting
 
-**Purpose**: Improvements that affect multiple user stories
-
-- [ ] TXXX [P] Documentation updates in docs/
-- [ ] TXXX Code cleanup and refactoring
-- [ ] TXXX Performance optimization across all stories
-- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
-- [ ] TXXX Security hardening
-- [ ] TXXX Run quickstart.md validation
+- [ ] TXXX [P] Analytics events from US Section 9 wired in `src/frontend/...`
+- [ ] TXXX Traceability check — every AC in US Section 4 has ≥1 task and ≥1 test reference
+- [ ] TXXX Documentation updates in `docs/`
+- [ ] TXXX Run `/vnr-analyze` and resolve findings
+- [ ] TXXX [P] Additional unit tests (if requested) in `src/backend/Tests/unit/`, `src/frontend/...`
 
 ---
 
@@ -168,89 +152,51 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Phase Dependencies
 
-- **Setup (Phase 1)**: No dependencies - can start immediately
-- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
-- **User Stories (Phase 3+)**: All depend on Foundational phase completion
-  - User stories can then proceed in parallel (if staffed)
-  - Or sequentially in priority order (P1 → P2 → P3)
-- **Polish (Final Phase)**: Depends on all desired user stories being complete
+- **Setup (Phase 1)**: No dependencies — can start immediately.
+- **Foundational (Phase 2)**: Depends on Setup. BLOCKS all AC/Screen phases.
+- **Phase 3+ (AC groups or Screens)**: Each depends on Foundational. Within an AC group, tests (if any) precede implementation.
+- **Polish (Final Phase)**: Depends on all AC/Screen phases.
 
-### User Story Dependencies
+### Within a Phase
 
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 2 (P2)**: Can start after Foundational (Phase 2) - May integrate with US1 but should be independently testable
-- **User Story 3 (P3)**: Can start after Foundational (Phase 2) - May integrate with US1/US2 but should be independently testable
-
-### Within Each User Story
-
-- Tests (if included) MUST be written and FAIL before implementation
-- Models before services
-- Services before endpoints
-- Core implementation before integration
-- Story complete before moving to next priority
+- Models/DTOs before services.
+- Services before controllers/components.
+- Validation logic alongside the AC it guards.
+- Commit after each logical task group.
 
 ### Parallel Opportunities
 
-- All Setup tasks marked [P] can run in parallel
-- All Foundational tasks marked [P] can run in parallel (within Phase 2)
-- Once Foundational phase completes, all user stories can start in parallel (if team capacity allows)
-- All tests for a user story marked [P] can run in parallel
-- Models within a story marked [P] can run in parallel
-- Different user stories can be worked on in parallel by different team members
-
----
-
-## Parallel Example: User Story 1
-
-```bash
-# Launch all tests for User Story 1 together (if tests requested):
-Task: "Contract test for [endpoint] in tests/contract/test_[name].py"
-Task: "Integration test for [user journey] in tests/integration/test_[name].py"
-
-# Launch all models for User Story 1 together:
-Task: "Create [Entity1] model in src/models/[entity1].py"
-Task: "Create [Entity2] model in src/models/[entity2].py"
-```
+- All `[P]` tasks within a phase can run in parallel.
+- Backend and frontend tasks targeting different files are independently parallelizable once Foundational is done.
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (User Story 1 Only)
+### MVP First (Happy-Path)
 
-1. Complete Phase 1: Setup
-2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
-3. Complete Phase 3: User Story 1
-4. **STOP and VALIDATE**: Test User Story 1 independently
-5. Deploy/demo if ready
+1. Phase 1 Setup → Phase 2 Foundational → Phase 3 Happy-Path ACs.
+2. **STOP and VALIDATE**: Walk AC-001 end-to-end; confirm audit event from Section 9 fires.
+3. Demo / review.
 
-### Incremental Delivery
+### Incremental Completion
 
-1. Complete Setup + Foundational → Foundation ready
-2. Add User Story 1 → Test independently → Deploy/Demo (MVP!)
-3. Add User Story 2 → Test independently → Deploy/Demo
-4. Add User Story 3 → Test independently → Deploy/Demo
-5. Each story adds value without breaking previous stories
+1. After Happy-Path demo: add Validation ACs (Phase 4) → re-demo.
+2. Add Edge-Case ACs (Phase 5) → final demo.
+3. Polish phase.
 
 ### Parallel Team Strategy
 
-With multiple developers:
-
-1. Team completes Setup + Foundational together
-2. Once Foundational is done:
-   - Developer A: User Story 1
-   - Developer B: User Story 2
-   - Developer C: User Story 3
-3. Stories complete and integrate independently
+- Backend dev: handlers + validation + migrations.
+- Frontend dev: screens + VM wiring + UX states (Loading/Data/Empty/Error per US Section 8).
+- Both converge on the contract defined in `plan.md` and `contracts/`.
 
 ---
 
 ## Notes
 
-- [P] tasks = different files, no dependencies
-- [Story] label maps task to specific user story for traceability
-- Each user story should be independently completable and testable
-- Verify tests fail before implementing
-- Commit after each task or logical group
-- Stop at any checkpoint to validate story independently
-- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+- `[P]` tasks = different files, no dependencies.
+- `[AC-xxx]` / `[Sn]` label maps each task back to US Section 4 / Section 8 for traceability.
+- Every AC in US Section 4 MUST have ≥1 implementation task; every VM in US Section 7 MUST have ≥1 wiring task.
+- Verify tests fail before implementing (if tests requested).
+- Avoid: vague tasks, same-file conflicts, cross-AC dependencies that break independent testing.

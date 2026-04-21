@@ -1,13 +1,17 @@
 ---
 name: "vnr-specify"
-description: "Create or update the feature specification from a natural language feature description."
-argument-hint: "Describe the feature you want to specify"
+description: "FALLBACK — create a local User Story stub from a natural-language description when BA hasn't yet provided one. The normal SWE workflow is to copy a BA-produced User Story file into `specs/<US-ID>/`."
+argument-hint: "Describe the user story you want to stub"
 compatibility: "Requires vnr-plugin project structure with vnr-plugin/ directory"
 metadata:
   author: "github-spec-kit"
   source: "templates/commands/specify.md"
 user-invocable: true
 ---
+
+> **Normal workflow**: BA runs `vnr-ba-write-us` and hands SWE a `<US-ID>_*.md` (plus optional `<US-ID>_*_ui-detail.md`). SWE copies both into `specs/<US-ID>/`, then runs `/vnr-plan`.
+>
+> Use `/vnr-specify` only as a **developer fallback** (e.g., prototyping before BA output exists). The stub it produces follows `templates/userstory-template.md` — BA should still review it before any serious implementation.
 
 
 ## User Input
@@ -91,10 +95,10 @@ Given that feature description, do this:
       - Construct the directory name: `<prefix>-<short-name>` (e.g., `003-user-auth` or `20260319-143022-user-auth`)
       - Set `SPECIFY_FEATURE_DIRECTORY` to `specs/<directory-name>`
 
-   **Create the directory and spec file**:
+   **Create the directory and stub User Story file**:
    - `mkdir -p SPECIFY_FEATURE_DIRECTORY`
-   - Copy `$PLUGIN_DIR/templates/spec-template.md` to `SPECIFY_FEATURE_DIRECTORY/spec.md` as the starting point
-   - Set `SPEC_FILE` to `SPECIFY_FEATURE_DIRECTORY/spec.md`
+   - Copy `$PLUGIN_DIR/templates/userstory-template.md` to `SPECIFY_FEATURE_DIRECTORY/<short-name>.md` as the starting point (preferred name: `<US-ID>_<slug>.md` if a US-ID is known; else `<slug>.md`).
+   - Set `SPEC_FILE` to that path (downstream skills resolve it via glob — any `*.md` in the folder that isn't `plan.md`, `tasks.md`, `research.md`, `data-model.md`, `quickstart.md`, or a `*_ui-detail.md`).
    - Persist the resolved path to `$PLUGIN_DIR/feature.json`:
      ```json
      {
@@ -109,7 +113,7 @@ Given that feature description, do this:
    - The spec directory name and the git branch name are independent — they may be the same but that is the user's choice
    - The spec directory and file are always created by this command, never by the hook
 
-4. Load `$PLUGIN_DIR/templates/spec-template.md` to understand required sections.
+4. Load `$PLUGIN_DIR/templates/userstory-template.md` to understand the 11 required sections of a BA User Story file.
 
 5. Follow this execution flow:
     1. Parse user description from arguments
@@ -147,7 +151,7 @@ Given that feature description, do this:
       
       **Purpose**: Validate specification completeness and quality before proceeding to planning
       **Created**: [DATE]
-      **Feature**: [Link to spec.md]
+      **User Story**: [Link to `<US-ID>_*.md`]
       
       ## Content Quality
       

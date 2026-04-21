@@ -1,6 +1,6 @@
 ---
 name: "vnr-analyze"
-description: "Perform a non-destructive cross-artifact consistency and quality analysis across spec.md, plan.md, and tasks.md after task generation."
+description: "Perform a non-destructive cross-artifact consistency and quality analysis across the User Story file, plan.md, and tasks.md after task generation."
 argument-hint: "Optional focus areas for analysis"
 compatibility: "Requires spec-kit project structure with vnr-plugin/ directory"
 metadata:
@@ -55,7 +55,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Goal
 
-Identify inconsistencies, duplications, ambiguities, and underspecified items across the three core artifacts (`spec.md`, `plan.md`, `tasks.md`) before implementation. This command MUST run only after `/vnr-tasks` has successfully produced a complete `tasks.md`.
+Identify inconsistencies, duplications, ambiguities, and underspecified items across the three core artifacts (the BA User Story file `<US-ID>_*.md`, `plan.md`, `tasks.md`) before implementation. This command MUST run only after `/vnr-tasks` has successfully produced a complete `tasks.md`.
 
 ## Operating Constraints
 
@@ -67,9 +67,10 @@ Identify inconsistencies, duplications, ambiguities, and underspecified items ac
 
 ### 1. Initialize Analysis Context
 
-Run `vnr-plugin/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks` once from repo root and parse JSON for PLUGIN_DIR, FEATURE_DIR and AVAILABLE_DOCS. Derive absolute paths:
+Run `vnr-plugin/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks` once from repo root and parse JSON for PLUGIN_DIR, FEATURE_DIR, USER_STORY, UI_DETAIL, and AVAILABLE_DOCS. Derive absolute paths:
 
-- SPEC = FEATURE_DIR/spec.md
+- USER_STORY = `<US-ID>_*.md` in FEATURE_DIR (shape: `templates/userstory-template.md`)
+- UI_DETAIL  = `<US-ID>_*_ui-detail.md` or `ui-detail.md` in FEATURE_DIR (optional)
 - PLAN = FEATURE_DIR/plan.md
 - TASKS = FEATURE_DIR/tasks.md
 
@@ -80,13 +81,16 @@ For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot
 
 Load only the minimal necessary context from each artifact:
 
-**From spec.md:**
+**From the User Story file (Sections 1–10):**
 
-- Overview/Context
-- Functional Requirements
-- Success Criteria (measurable outcomes — e.g., performance, security, availability, user success, business impact)
-- User Stories
-- Edge Cases (if present)
+- Section 1 (User Story Statement) + Out of Scope
+- Section 2 (Business Context) — glossary, master-detail, examples
+- Section 3 (Business Rules) — BR-Uxxx with trace type
+- Section 4 (Acceptance Criteria) — AC-xxx with Given/When/Then
+- Section 6 (Data Dictionary) — fields + constraints
+- Section 7 (Validation Messages) — Errors / Warnings / Success / Info
+- Section 8 (UI/UX Mô tả) — screens, states, navigation
+- Section 10 (Traceability matrices) — AC↔BR and VM↔BR↔AC
 
 **From plan.md:**
 
@@ -143,9 +147,11 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 
 #### E. Coverage Gaps
 
-- Requirements with zero associated tasks
-- Tasks with no mapped requirement/story
-- Success Criteria requiring buildable work (performance, security, availability) not reflected in tasks
+- **Every AC in Section 4 MUST have ≥1 task in tasks.md**; otherwise report as CRITICAL.
+- **Every BR in Section 3 MUST be covered by ≥1 AC** (cross-check against Section 10 matrix `AC ↔ BR`).
+- **Every VM in Section 7 MUST trace to both a BR and an AC** (cross-check Section 10 matrix `VM ↔ BR ↔ AC`).
+- Tasks with no mapped AC (orphan `[AC-xxx]` or `[Sn]` labels).
+- Each screen in Section 8 MUST have ≥1 View task and ≥1 Controller/Service task in tasks.md.
 
 #### F. Inconsistency
 
@@ -171,7 +177,7 @@ Output a Markdown report (no file writes) with the following structure:
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| A1 | Duplication | HIGH | spec.md:L120-134 | Two similar requirements ... | Merge phrasing; keep clearer version |
+| A1 | Duplication | HIGH | <US-ID>_*.md §3 BR-U002 vs §3 BR-U005 | Two similar BRs ... | Merge phrasing; keep clearer version |
 
 (Add one row per finding; generate stable IDs prefixed by category initial.)
 

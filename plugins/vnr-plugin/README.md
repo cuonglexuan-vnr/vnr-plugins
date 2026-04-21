@@ -27,7 +27,7 @@ A content-driven plugin for the Claude Code / agent harness that provides a full
 
 | Skill | Command | Purpose |
 |---|---|---|
-| `vnr-specify` | `/vnr-specify` | Create or update a feature spec (`spec.md`) from a natural-language description |
+| `vnr-specify` | `/vnr-specify` | **Fallback** — stub a User Story file (`<US-ID>_*.md`) from a natural-language description when BA hasn't yet produced one. Normal flow: BA delivers the User Story file directly. |
 | `vnr-clarify` | `/vnr-clarify` | Ask up to 5 targeted questions to resolve underspecified areas in a spec |
 | `vnr-analyze` | `/vnr-analyze` | Non-destructive cross-artifact analysis — find gaps between spec, plan, and tasks |
 | `vnr-checklist` | `/vnr-checklist` | Generate a requirements-quality checklist ("unit tests for the spec") |
@@ -50,7 +50,7 @@ A content-driven plugin for the Claude Code / agent harness that provides a full
 The flagship skill runs the entire development pipeline end-to-end with checkpoints:
 
 ```
-spec.md → plan.md → tasks.md → QC scenarios → implement → unit tests → arch review → sec review → E2E tests → final report
+BA User Story file (<US-ID>_*.md) → plan.md → tasks.md → QC scenarios → implement → unit tests → arch review → sec review → E2E tests → final report
 ```
 
 Each stage delegates to the appropriate specialized agent. The pipeline is checkpointed — it can be resumed from any failed stage.
@@ -68,7 +68,7 @@ The plugin ships a team of specialized agents. Each agent has a defined role, I/
 | Attribute | Detail |
 |---|---|
 | **Role** | Software Architect / Tech Lead |
-| **Inputs** | `spec.md`, `memory/constitution.md`, wiki context, templates |
+| **Inputs** | BA User Story file (`<US-ID>_*.md`, shape: `templates/userstory-template.md`), optional BA `<US-ID>_*_ui-detail.md`, `memory/constitution.md`, wiki context, templates |
 | **Outputs** | `plan.md`, `data-model.md`, `contracts/api-commitments.md`, `research.md` |
 
 **Constraints:** Read-only relative to implementation (does not write code). Errors on unresolved gates. Must follow templates and constitution checks.
@@ -110,7 +110,7 @@ The plugin ships a team of specialized agents. Each agent has a defined role, I/
 | Attribute | Detail |
 |---|---|
 | **Role** | QC Engineer |
-| **Inputs** | Wiki (index/concepts/entities), `spec.md`, `plan.md`, standards |
+| **Inputs** | Wiki (index/concepts/entities), BA User Story file (`<US-ID>_*.md`) §3/§4/§7, `plan.md`, standards |
 | **Outputs** | `specs/<feature>/test-scenarios.md` (Gherkin-like), `src/frontend/e2e/<feature>.e2e.spec.ts` (stubs with `test.todo`) |
 
 **Constraints:** Creates stubs only (`test.todo`) — does not implement test bodies.
@@ -138,7 +138,7 @@ The plugin ships a team of specialized agents. Each agent has a defined role, I/
 | Attribute | Detail |
 |---|---|
 | **Role** | QA/QC Assistant |
-| **Inputs** | `specs/<feature>/testcases.md` (required); in Reviewer mode also `spec.md`, `plan.md`, `tasks.md`, wiki |
+| **Inputs** | `specs/<US-ID>/testcases.md` (required); in Reviewer mode also the User Story file (`<US-ID>_*.md`), `plan.md`, `tasks.md`, wiki |
 | **Outputs** | **Feedback mode:** updated `testcases.md` + edit summary. **Reviewer mode:** 10-check review table + improvement suggestions |
 
 **Constraints:** Feedback mode strictly applies QC feedback only. Reviewer mode does not modify files unless QC authorizes. Asks user when mode is ambiguous.
@@ -152,7 +152,7 @@ The plugin ships a team of specialized agents. Each agent has a defined role, I/
 | Attribute | Detail |
 |---|---|
 | **Role** | QA Test Analyst |
-| **Inputs** | `spec.md`, `plan.md`, `tasks.md`, wiki |
+| **Inputs** | User Story file (`<US-ID>_*.md`), `plan.md`, `tasks.md`, wiki |
 | **Outputs** | `specs/<feature>/testcases.md` — manual testcases with pre-conditions, test data, steps, expected results |
 
 **Constraints:** Produces human-readable, testable manual cases. Maps to automation TC IDs where possible. Does not write test code.
@@ -207,20 +207,21 @@ Every feature produces artifacts under a consistent directory layout:
 
 ```
 specs/
- └── <feature-folder>/
-      ├── spec.md               # business scope — source of truth
-      ├── research.md           # background & analysis (optional)
-      ├── data-model.md         # data dependencies (read-only for most agents)
-      ├── plan.md               # implementation plan (vnr-planner output)
-      ├── tasks.md              # task breakdown (vnr-task-breaker output)
-      ├── test-scenarios.md     # QC scenarios (vnr-qc-generator output)
-      ├── testcases.md          # manual testcases (vnr-testcase-writer output)
-      ├── checklists/           # spec quality checklists
+ └── <US-ID>/                           # one folder per User Story (e.g. SCC-E01-F01-U02)
+      ├── <US-ID>_<slug>.md             # BA User Story file — source of truth (read-only for SWE)
+      ├── <US-ID>_<slug>_ui-detail.md   # BA UI detail (optional; ui-detail.md is SWE fallback)
+      ├── research.md                   # background & analysis (optional)
+      ├── data-model.md                 # data dependencies (read-only for most agents)
+      ├── plan.md                       # implementation plan (vnr-planner output)
+      ├── tasks.md                      # task breakdown (vnr-task-breaker output)
+      ├── test-scenarios.md             # QC scenarios (vnr-qc-generator output)
+      ├── testcases.md                  # manual testcases (vnr-testcase-writer output)
+      ├── checklists/                   # requirements-quality checklists
       ├── contracts/
       │    └── api-commitments.md
       └── result/
-           ├── final-report.md  # pipeline summary (vnr-tech-writer output)
-           └── user-guide.md    # end-user documentation
+           ├── final-report.md          # pipeline summary (vnr-tech-writer output)
+           └── user-guide.md            # end-user documentation
 
 src/
  ├── backend/                   # backend implementation (vnr-developer output)

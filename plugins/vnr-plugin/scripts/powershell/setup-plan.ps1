@@ -59,6 +59,8 @@ else {
 if ($Json) {
     $result = [PSCustomObject]@{
         PLUGIN_DIR   = $paths.PLUGIN_DIR
+        USER_STORY   = $paths.USER_STORY
+        UI_DETAIL    = $paths.UI_DETAIL
         FEATURE_SPEC = $paths.FEATURE_SPEC
         IMPL_PLAN    = $paths.IMPL_PLAN
         SPECS_DIR    = $paths.FEATURE_DIR
@@ -69,6 +71,8 @@ if ($Json) {
 }
 else {
     Write-Output "PLUGIN_DIR: $($paths.PLUGIN_DIR)"
+    Write-Output "USER_STORY: $($paths.USER_STORY)"
+    Write-Output "UI_DETAIL: $($paths.UI_DETAIL)"
     Write-Output "FEATURE_SPEC: $($paths.FEATURE_SPEC)"
     Write-Output "IMPL_PLAN: $($paths.IMPL_PLAN)"
     Write-Output "SPECS_DIR: $($paths.FEATURE_DIR)"

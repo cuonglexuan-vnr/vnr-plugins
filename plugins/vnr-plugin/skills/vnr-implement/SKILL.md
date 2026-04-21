@@ -94,6 +94,8 @@ You **MUST** consider the user input before proceeding (if not empty).
 3. Load and analyze the implementation context:
    - **REQUIRED**: Read tasks.md for the complete task list and execution plan
    - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
+   - **REQUIRED**: Read the User Story file (`<US-ID>_*.md`, shape: `templates/userstory-template.md`) — Section 3 (BR), Section 4 (AC), Section 6 (Data Dictionary), Section 7 (VM) drive implementation correctness; Section 10 matrices give the traceability baseline.
+   - **IF EXISTS**: Read `<US-ID>_*_ui-detail.md` (BA) or `ui-detail.md` (SWE fallback) for screen layout and component details
    - **IF EXISTS**: Read data-model.md for entities and relationships
    - **IF EXISTS**: Read contracts/ for API specifications and test requirements
    - **IF EXISTS**: Read research.md for technical decisions and constraints

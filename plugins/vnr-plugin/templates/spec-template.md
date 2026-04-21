@@ -1,8 +1,10 @@
 # Feature Specification: [FEATURE NAME]
 
+> **⚠️ DEPRECATED** — this feature-level template is kept only for legacy features that still have a `spec.md`. New work uses **per-User-Story** deliveries from the BA team. See `templates/userstory-template.md` and the BA source at `plugins/vnr-ba-plugin/skills/vnr-ba-write-us/templates/us-template.md`.
+
 **Feature Branch**: `[###-feature-name]`  
 **Created**: [DATE]  
-**Status**: Draft  
+**Status**: Draft (legacy)  
 **Input**: User description: "$ARGUMENTS"
 
 ## User Scenarios & Testing *(mandatory)*

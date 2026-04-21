@@ -118,7 +118,8 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Infer any missing context from spec/plan/tasks (do NOT hallucinate)
 
 4. **Load feature context**: Read from FEATURE_DIR:
-   - spec.md: Feature requirements and scope
+   - User Story file (`<US-ID>_*.md`, shape: `templates/userstory-template.md`): Sections 1 (Statement), 2 (Business Context), 3 (BR), 4 (AC), 7 (VM) — scope and requirements
+   - `<US-ID>_*_ui-detail.md` or `ui-detail.md` (if exists): UI components, states, messages
    - plan.md (if exists): Technical details, dependencies
    - tasks.md (if exists): Implementation tasks
 

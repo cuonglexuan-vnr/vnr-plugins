@@ -31,10 +31,10 @@ Bạn là **QC Engineer** áp dụng **Shift-Left Testing**. Nhiệm vụ: đị
 
 | Tài liệu | Mục đích |
 |----------|---------|
-| `specs/<feature>/spec.md` | Yêu cầu nghiệp vụ, Acceptance Criteria |
+| `specs/<feature>/<feature>_*.md` | **User Story file** — Section 4 (AC — Given/When/Then → Happy Path + Validation scenarios), Section 3 (BR → guard scenarios), Section 7 (VM → expected feedback), Section 10 (`AC ↔ BR`, `VM ↔ BR ↔ AC` matrices) |
 | `specs/<feature>/plan.md` | API routes, data model, phân quyền |
 | `specs/<feature>/contracts/api-commitments.md` | Endpoint + request/response DTOs |
-| `specs/<feature>/ui-detail.md` | UI components, form fields, validation messages |
+| `specs/<feature>/<feature>_*_ui-detail.md` hoặc `specs/<feature>/ui-detail.md` | UI components, form fields, validation messages (BA file ưu tiên) |
 | `vnr-plugin/standards/backend/03-permission.md` | Phân quyền bitwise, permission keys |
 | `vnr-plugin/standards/frontend/03-permission.md` | AuthGuard, permission directive FE |
 
@@ -72,8 +72,11 @@ Tạo `specs/<feature>/test-scenarios.md`:
 ### Quy tắc viết scenario
 
 - Mỗi TC kiểm tra đúng **1 điều kiện** — không gộp.
+- **Mỗi AC trong Section 4** phải được cover bằng ≥1 TC (Given/When/Then có thể bám sát AC).
+- **Mỗi VM trong Section 7** phải xuất hiện trong ít nhất 1 TC (kiểm tra message + vị trí + thời gian hiển thị).
+- **Mỗi BR trong Section 3** phải có ≥1 negative TC (dùng ma trận `AC ↔ BR` của Section 10 để tìm đúng AC trigger).
 - Authorization: 1 scenario per role pair có ý nghĩa.
-- Edge cases: null/empty optional fields, duplicate records, boundary dates.
+- Edge cases: null/empty optional fields, duplicate records, boundary dates (tham chiếu ràng buộc ở Section 6).
 - Đặt TC-ID tăng dần, không bỏ số.
 - Priority: **High** = happy path + auth; **Medium** = validation; **Low** = edge case.
 

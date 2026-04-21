@@ -119,15 +119,16 @@ Level 3 — INTEGRATION (tùy chọn — cần device + cần Key trên widget)
 
 ## Bước 1: Đọc Context
 
-1. Đọc `specs/<feature-id>/spec.md` → user stories, acceptance criteria
-2. Đọc `specs/<feature-id>/tasks.md` → task list, có widget mới không?
-3. Đọc `specs/<feature-id>/test-cases.md` → manual test cases (nếu có)
-4. Scan source code:
+1. Đọc `specs/<US-ID>/<US-ID>_*.md` (User Story file, shape: `templates/userstory-template.md`) → Section 1 (User Story Statement), Section 4 (Acceptance Criteria), Section 8 (UI/UX Mô tả)
+2. Đọc `specs/<US-ID>/tasks.md` → task list, có widget mới không?
+3. Đọc `specs/<US-ID>/testcases.md` → manual test cases (nếu có)
+4. Đọc `specs/<US-ID>/<US-ID>_*_ui-detail.md` hoặc `specs/<US-ID>/ui-detail.md` (nếu có) → chi tiết components/states
+5. Scan source code:
    - Controller: `src/app-mobile/lib/modules/**/controller/*controller.dart`
    - Widgets mới: `src/app-mobile/lib/modules/**/widgets/**/*.dart`
    - Use cases: `src/app-mobile/lib/modules/**/domain/usecases/*.dart`
    - Repository: `src/app-mobile/lib/modules/**/data/repositories/*impl.dart`
-5. Kiểm tra test hiện có: `src/app-mobile/test/`, `src/app-mobile/integration_test/`
+6. Kiểm tra test hiện có: `src/app-mobile/test/`, `src/app-mobile/integration_test/`
 
 **Quyết định level cần generate:**
 

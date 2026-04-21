@@ -169,11 +169,56 @@ function Get-FeatureDir {
     return (Join-Path $RepoRoot "specs/$Branch")
 }
 
+function Resolve-UserStoryPath {
+    # Resolve the BA User Story file inside a feature folder.
+    # Convention: `<US-ID>_<slug>.md` (e.g., SCC-E01-F01-U02_Thiet_Lap_Phan_Tang_Nhan_Tai.md).
+    # Fallbacks: any *.md that isn't a generated SWE artifact, then a legacy 'spec.md'.
+    param([string]$FeatureDir)
+
+    if (-not (Test-Path -LiteralPath $FeatureDir -PathType Container)) {
+        return (Join-Path $FeatureDir 'spec.md')  # legacy fallback
+    }
+
+    $reserved = @(
+        'plan.md', 'tasks.md', 'research.md', 'data-model.md',
+        'quickstart.md', 'spec.md'
+    )
+
+    $candidate = Get-ChildItem -LiteralPath $FeatureDir -Filter '*.md' -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            ($_.Name -notmatch '_ui-detail\.md$') -and
+            ($reserved -notcontains $_.Name.ToLowerInvariant())
+        } |
+        Select-Object -First 1 -ExpandProperty FullName
+
+    if ($candidate) { return $candidate }
+
+    # Legacy fallback so existing features keep working
+    return (Join-Path $FeatureDir 'spec.md')
+}
+
+function Resolve-UiDetailPath {
+    # BA's `<US-ID>_*_ui-detail.md` takes precedence; fall back to SWE-generated 'ui-detail.md'.
+    param([string]$FeatureDir)
+
+    if (-not (Test-Path -LiteralPath $FeatureDir -PathType Container)) {
+        return (Join-Path $FeatureDir 'ui-detail.md')
+    }
+
+    $baUiDetail = Get-ChildItem -LiteralPath $FeatureDir -Filter '*_ui-detail.md' -File -ErrorAction SilentlyContinue |
+        Select-Object -First 1 -ExpandProperty FullName
+    if ($baUiDetail) { return $baUiDetail }
+
+    return (Join-Path $FeatureDir 'ui-detail.md')
+}
+
 function Get-FeaturePathsEnv {
     $repoRoot = Get-RepoRoot
     $currentBranch = Get-CurrentBranch
     $hasGit = Test-HasGit
     $featureDir = Get-FeatureDir -RepoRoot $repoRoot -Branch $currentBranch
+    $userStory = Resolve-UserStoryPath -FeatureDir $featureDir
+    $uiDetail  = Resolve-UiDetailPath  -FeatureDir $featureDir
 
     [PSCustomObject]@{
         REPO_ROOT      = $repoRoot
@@ -181,7 +226,11 @@ function Get-FeaturePathsEnv {
         CURRENT_BRANCH = $currentBranch
         HAS_GIT        = $hasGit
         FEATURE_DIR    = $featureDir
-        FEATURE_SPEC   = Join-Path $featureDir 'spec.md'
+        USER_STORY     = $userStory
+        UI_DETAIL      = $uiDetail
+        # FEATURE_SPEC kept as alias of USER_STORY for backwards compatibility
+        # with skills/scripts that still reference the old name.
+        FEATURE_SPEC   = $userStory
         IMPL_PLAN      = Join-Path $featureDir 'plan.md'
         TASKS          = Join-Path $featureDir 'tasks.md'
         RESEARCH       = Join-Path $featureDir 'research.md'

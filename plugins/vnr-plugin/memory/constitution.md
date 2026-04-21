@@ -65,7 +65,7 @@ hrm-core/
 │   ├── schema/           # Agent configs (AGENTS.md, workflows.yaml)
 │   └── tools/            # Doc tools (sync-wiki.sh, validate-spec.sh)
 ├── specs/
-│   └── NNN-feature/      # Feature specs (00-spec.md → 99-result.md)
+│   └── <US-ID>/          # Per-User-Story specs (<US-ID>_<slug>.md is BA output; plan.md/tasks.md are SWE output)
 ├── src/
 │   ├── backend/          # Backend services
 │   ├── frontend/         # Web app
@@ -83,9 +83,9 @@ hrm-core/
 
 ### Phase 1: Planning (Planner Agent)
 
-**Input:** User requirements  
-**Output:** `00-spec.md`, `01-plan.md`, `02-tasks.md`  
-**Gate:** Spec rõ ràng + Tasks actionable + Approved by PO
+**Input:** BA User Story file (`<US-ID>_<slug>.md` following `templates/userstory-template.md`) — delivered by the BA team and copied into `specs/<US-ID>/`  
+**Output:** `plan.md`, `tasks.md` (plus `data-model.md`, `contracts/`, `research.md`, optional `ui-detail.md` fallback)  
+**Gate:** User Story covers all 11 sections + Tasks map 1:1 to ACs/BRs/VMs + Approved by PO
 
 ### Phase 2: Development (Developer Agent)
 
@@ -296,7 +296,7 @@ hrm-core/
 
 ### For Planner Agent
 
-1. **Đọc trước**: `docs/wiki/`, `specs/<feature>/spec.md`, `vnr-plugin/standards/`
+1. **Đọc trước**: `docs/wiki/`, `specs/<US-ID>/<US-ID>_*.md` (BA User Story file), `vnr-plugin/standards/`
 2. **Research phase**: giải quyết "NEEDS CLARIFICATION" → `research.md`
 3. **Data model**: Entity definitions → `data-model.md`
 4. **API contracts**: Endpoints + DTOs → `contracts/api-commitments.md`

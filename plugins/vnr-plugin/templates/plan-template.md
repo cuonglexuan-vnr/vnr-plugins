@@ -1,13 +1,14 @@
-# Implementation Plan: [FEATURE]
+# Implementation Plan: [US-ID — Title]
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Branch**: `[<US-ID>]` | **Date**: [DATE] | **User Story**: [link to `<US-ID>_*.md`]
+**Input**: User Story file at `/specs/<US-ID>/<US-ID>_*.md` (shape: `templates/userstory-template.md`).
+Optional: `/specs/<US-ID>/<US-ID>_*_ui-detail.md` (BA-provided) or `/specs/<US-ID>/ui-detail.md` (SWE fallback).
 
-**Note**: This template is filled in by the `/vnr-plan` command. See `vnr-plugin/templates/plan-template.md` for the execution workflow.
+**Note**: This template is filled in by the `/vnr-plan` command. The scope of the plan is exactly one User Story.
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+[Extract from User Story: statement (Section 1), business context (Section 2), primary ACs (Section 4), and research-driven technical approach.]
 
 ## Technical Context
 
@@ -38,13 +39,16 @@
 ### Documentation (this feature)
 
 ```text
-specs/[###-feature]/
-├── plan.md              # This file (/vnr-plan command output)
-├── research.md          # Phase 0 output (/vnr-plan command)
-├── data-model.md        # Phase 1 output (/vnr-plan command)
-├── quickstart.md        # Phase 1 output (/vnr-plan command)
-├── contracts/           # Phase 1 output (/vnr-plan command)
-└── tasks.md             # Phase 2 output (/vnr-tasks command - NOT created by /vnr-plan)
+specs/<US-ID>/
+├── <US-ID>_<slug>.md              # BA-provided User Story (input — do not edit)
+├── <US-ID>_<slug>_ui-detail.md    # BA-provided UI detail (optional input)
+├── plan.md                        # This file (/vnr-plan command output)
+├── research.md                    # Phase 0 output (/vnr-plan command)
+├── data-model.md                  # Phase 1 output — derived from US Section 6
+├── quickstart.md                  # Phase 1 output (/vnr-plan command)
+├── contracts/                     # Phase 1 output (/vnr-plan command)
+├── ui-detail.md                   # Phase 1 output — ONLY if BA ui-detail missing and US has UI screens
+└── tasks.md                       # Phase 2 output (/vnr-tasks command - NOT created by /vnr-plan)
 ```
 
 ### Source Code (repository root)

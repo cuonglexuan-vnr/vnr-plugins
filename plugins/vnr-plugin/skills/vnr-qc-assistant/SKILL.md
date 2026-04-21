@@ -112,26 +112,29 @@ Hiển thị mode đã chọn:
 > Chỉ thực hiện nếu mode = Reviewer
 
 1. **Đọc thêm tài liệu đặc tả**:
-   - `specs/<feature>/spec.md` (bắt buộc)
+   - `specs/<feature>/<US-ID>_*.md` (bắt buộc — User Story file, shape: `templates/userstory-template.md`)
+     - Section 3 (Business Rules), Section 4 (Acceptance Criteria), Section 7 (Validation Messages), Section 10 (Traceability matrices) là nguồn chính cho review
    - `specs/<feature>/plan.md` (bắt buộc)
    - `specs/<feature>/tasks.md` (bắt buộc)
    - `specs/<feature>/contracts/api-commitments.md` (nếu có)
-   - `specs/<feature>/ui-detail.md` (nếu có)
+   - `specs/<feature>/<US-ID>_*_ui-detail.md` hoặc `specs/<feature>/ui-detail.md` (nếu có)
    - Wiki context (nếu cần hiểu business rules)
 
    Nếu thiếu file bắt buộc → cảnh báo nhưng vẫn tiếp tục review với dữ liệu có sẵn.
 
-2. **Đối chiếu chéo (Cross-check)** — chạy 10 checks:
-   - CHECK-01: Positive testcase cho mỗi Acceptance Criteria
-   - CHECK-02: Negative testcase cho mỗi field/rule
-   - CHECK-03: Boundary testcase (min, max, empty, null)
+2. **Đối chiếu chéo (Cross-check)** — chạy 12 checks:
+   - CHECK-01: Positive testcase cho mỗi AC trong US Section 4
+   - CHECK-02: Negative testcase cho mỗi BR trong US Section 3 (dùng ma trận `AC ↔ BR` từ Section 10)
+   - CHECK-03: Boundary testcase (min, max, empty, null) theo ràng buộc ở US Section 6
    - CHECK-04: Authorization testcase cho mỗi role pair
    - CHECK-05: Integration/E2E testcase cho luồng chính
    - CHECK-06: Security testcase (injection, XSS)
    - CHECK-07: Priority phân bổ hợp lý
    - CHECK-08: Test data cụ thể, không placeholder
-   - CHECK-09: Expected result đo được, không mơ hồ
+   - CHECK-09: Expected result đo được — đối chiếu VM codes trong US Section 7 (message + vị trí + thời gian)
    - CHECK-10: Format testcase đúng chuẩn QTC
+   - CHECK-11: Mỗi VM trong US Section 7 có ít nhất 1 testcase cover (dùng ma trận `VM ↔ BR ↔ AC`)
+   - CHECK-12: Mỗi màn hình trong US Section 8 có testcase cho 4 trạng thái (Loading / Data / Empty / Error)
 
 3. **Hiển thị kết quả review**:
    ```
@@ -152,7 +155,7 @@ Hiển thị mode đã chọn:
 
    | # | Loại | Mô tả đề xuất | Lý do | Priority |
    |---|------|----------------|-------|----------|
-   | 1 | Thêm mới | Thêm QTC cho XSS validation field Name | spec.md AC-3 yêu cầu validate, chưa có security test | P1 |
+   | 1 | Thêm mới | Thêm QTC cho XSS validation field Name | User Story Section 4 AC-003 yêu cầu validate, chưa có security test | P1 |
    | 2 | Sửa | QTC-005 cần expected result cụ thể hơn | "Thành công" không đo được — cần mô tả HTTP status + response | P2 |
    ```
 

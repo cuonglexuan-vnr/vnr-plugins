@@ -27,7 +27,7 @@ Plugin chạy trên harness Claude Code / agent, cung cấp một pipeline phát
 
 | Skill | Lệnh | Mục đích |
 |---|---|---|
-| `vnr-specify` | `/vnr-specify` | Tạo hoặc cập nhật đặc tả tính năng (`spec.md`) từ mô tả ngôn ngữ tự nhiên |
+| `vnr-specify` | `/vnr-specify` | **Fallback** — tạo stub User Story (`<US-ID>_*.md`) từ mô tả ngôn ngữ tự nhiên khi BA chưa giao file. Quy trình chuẩn: BA tạo User Story file và dev copy vào `specs/<US-ID>/`. |
 | `vnr-clarify` | `/vnr-clarify` | Đặt tối đa 5 câu hỏi làm rõ các vùng chưa xác định trong spec |
 | `vnr-analyze` | `/vnr-analyze` | Phân tích chéo các artifact (spec, plan, tasks) để tìm thiếu sót và mâu thuẫn |
 | `vnr-checklist` | `/vnr-checklist` | Sinh checklist kiểm tra chất lượng đặc tả ("unit test cho spec") |
@@ -50,7 +50,7 @@ Plugin chạy trên harness Claude Code / agent, cung cấp một pipeline phát
 Skill chủ đạo chạy toàn bộ pipeline phát triển theo trình tự có checkpoint:
 
 ```
-spec.md → plan.md → tasks.md → QC scenarios → implement → unit tests → arch review → sec review → E2E tests → final report
+BA User Story file (<US-ID>_*.md) → plan.md → tasks.md → QC scenarios → implement → unit tests → arch review → sec review → E2E tests → final report
 ```
 
 Mỗi giai đoạn uỷ quyền cho agent chuyên biệt tương ứng. Pipeline có checkpoint — có thể tiếp tục từ giai đoạn bị lỗi mà không cần chạy lại từ đầu.
@@ -68,7 +68,7 @@ Plugin đi kèm một đội agent chuyên biệt. Mỗi agent có vai trò, h�
 | Thuộc tính | Chi tiết |
 |---|---|
 | **Vai trò** | Software Architect / Tech Lead |
-| **Đầu vào** | `spec.md`, `memory/constitution.md`, wiki context, templates |
+| **Đầu vào** | BA User Story file (`<US-ID>_*.md`, shape: `templates/userstory-template.md`), optional BA `<US-ID>_*_ui-detail.md`, `memory/constitution.md`, wiki context, templates |
 | **Đầu ra** | `plan.md`, `data-model.md`, `contracts/api-commitments.md`, `research.md` |
 
 **Ràng buộc:** Chỉ đọc so với triển khai (không viết code). Báo lỗi khi có điểm chưa giải quyết. Phải tuân theo templates và kiểm tra constitution.
@@ -110,7 +110,7 @@ Plugin đi kèm một đội agent chuyên biệt. Mỗi agent có vai trò, h�
 | Thuộc tính | Chi tiết |
 |---|---|
 | **Vai trò** | QC Engineer |
-| **Đầu vào** | Wiki (index/concepts/entities), `spec.md`, `plan.md`, standards |
+| **Đầu vào** | Wiki (index/concepts/entities), BA User Story file (`<US-ID>_*.md`) §3/§4/§7, `plan.md`, standards |
 | **Đầu ra** | `specs/<feature>/test-scenarios.md` (dạng Gherkin), `src/frontend/e2e/<feature>.e2e.spec.ts` (stubs với `test.todo`) |
 
 **Ràng buộc:** Chỉ tạo stub (`test.todo`) — không cài đặt thân test.
@@ -138,7 +138,7 @@ Plugin đi kèm một đội agent chuyên biệt. Mỗi agent có vai trò, h�
 | Thuộc tính | Chi tiết |
 |---|---|
 | **Vai trò** | QA/QC Assistant |
-| **Đầu vào** | `specs/<feature>/testcases.md` (bắt buộc); chế độ Reviewer thêm `spec.md`, `plan.md`, `tasks.md`, wiki |
+| **Đầu vào** | `specs/<US-ID>/testcases.md` (bắt buộc); chế độ Reviewer thêm User Story file (`<US-ID>_*.md`), `plan.md`, `tasks.md`, wiki |
 | **Đầu ra** | **Chế độ Feedback:** `testcases.md` đã cập nhật + tóm tắt chỉnh sửa. **Chế độ Reviewer:** bảng review 10 tiêu chí + danh sách gợi ý cải thiện |
 
 **Ràng buộc:** Chế độ Feedback chỉ áp dụng đúng phản hồi QC. Chế độ Reviewer không sửa file trừ khi QC cho phép. Hỏi người dùng khi chế độ chưa rõ.
@@ -152,7 +152,7 @@ Plugin đi kèm một đội agent chuyên biệt. Mỗi agent có vai trò, h�
 | Thuộc tính | Chi tiết |
 |---|---|
 | **Vai trò** | QA Test Analyst |
-| **Đầu vào** | `spec.md`, `plan.md`, `tasks.md`, wiki |
+| **Đầu vào** | User Story file (`<US-ID>_*.md`), `plan.md`, `tasks.md`, wiki |
 | **Đầu ra** | `specs/<feature>/testcases.md` — testcase manual với điều kiện tiên quyết, dữ liệu test, các bước, kết quả mong đợi |
 
 **Ràng buộc:** Tạo testcase có thể đọc và thực thi bởi con người. Map với automation TC ID khi có thể. Không viết test code.
@@ -207,20 +207,21 @@ Mỗi tính năng tạo ra artifact theo cây thư mục nhất quán:
 
 ```
 specs/
- └── <feature-folder>/
-      ├── spec.md               # phạm vi nghiệp vụ — nguồn sự thật
-      ├── research.md           # phân tích & background (tùy chọn)
-      ├── data-model.md         # phụ thuộc dữ liệu (chỉ đọc với hầu hết agent)
-      ├── plan.md               # kế hoạch triển khai (đầu ra vnr-planner)
-      ├── tasks.md              # phân rã task (đầu ra vnr-task-breaker)
-      ├── test-scenarios.md     # QC scenarios (đầu ra vnr-qc-generator)
-      ├── testcases.md          # testcase manual (đầu ra vnr-testcase-writer)
-      ├── checklists/           # checklist chất lượng đặc tả
+ └── <US-ID>/                           # mỗi folder = một User Story (vd SCC-E01-F01-U02)
+      ├── <US-ID>_<slug>.md             # BA User Story file — nguồn sự thật (SWE chỉ đọc)
+      ├── <US-ID>_<slug>_ui-detail.md   # BA UI detail (tuỳ chọn; ui-detail.md là SWE fallback)
+      ├── research.md                   # phân tích & background (tùy chọn)
+      ├── data-model.md                 # phụ thuộc dữ liệu (chỉ đọc với hầu hết agent)
+      ├── plan.md                       # kế hoạch triển khai (đầu ra vnr-planner)
+      ├── tasks.md                      # phân rã task (đầu ra vnr-task-breaker)
+      ├── test-scenarios.md             # QC scenarios (đầu ra vnr-qc-generator)
+      ├── testcases.md                  # testcase manual (đầu ra vnr-testcase-writer)
+      ├── checklists/                   # checklist chất lượng yêu cầu
       ├── contracts/
       │    └── api-commitments.md
       └── result/
-           ├── final-report.md  # tóm tắt pipeline (đầu ra vnr-tech-writer)
-           └── user-guide.md    # tài liệu người dùng cuối
+           ├── final-report.md          # tóm tắt pipeline (đầu ra vnr-tech-writer)
+           └── user-guide.md            # tài liệu người dùng cuối
 
 src/
  ├── backend/                   # code backend (đầu ra vnr-developer)

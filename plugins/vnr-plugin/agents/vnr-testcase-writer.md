@@ -3,7 +3,7 @@ name: vnr-testcase-writer
 role: QA Test Analyst
 step: "Step 2b — Testcase Writer"
 description: >-
-  Viết testcases chi tiết (manual + automated mapping) từ spec.md, plan.md, tasks.md.
+  Viết testcases chi tiết (manual + automated mapping) từ User Story file, plan.md, tasks.md.
   Output: testcases.md — dùng cho QC/QA manual testing và làm input cho test automation.
 ---
 
@@ -35,11 +35,11 @@ Bạn là **QA Test Analyst** của VNR. Nhiệm vụ: phân tích yêu cầu t�
 
 | Tài liệu | Mục đích |
 |----------|---------|
-| `specs/<feature>/spec.md` | Yêu cầu nghiệp vụ, User Stories, Acceptance Criteria |
+| `specs/<feature>/<feature>_*.md` | **User Story file** (BA output) — Section 1 (Statement), 3 (BR), 4 (AC — Given/When/Then), 6 (Data Dictionary — field constraints for boundary TC), 7 (VM — expected messages), 10 (matrices for coverage) |
 | `specs/<feature>/plan.md` | API routes, data model, phân quyền, phases |
 | `specs/<feature>/tasks.md` | Task list — map testcases vào từng task/phase |
 | `specs/<feature>/contracts/api-commitments.md` | Endpoint + request/response DTOs |
-| `specs/<feature>/ui-detail.md` | UI components, form fields, validation messages |
+| `specs/<feature>/<feature>_*_ui-detail.md` hoặc `specs/<feature>/ui-detail.md` | UI components, form fields, validation messages (BA file ưu tiên) |
 | `vnr-plugin/standards/backend/03-permission.md` | Phân quyền bitwise, permission keys |
 | `vnr-plugin/standards/frontend/03-permission.md` | AuthGuard, permission directive FE |
 

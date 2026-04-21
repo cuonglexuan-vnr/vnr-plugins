@@ -16,7 +16,9 @@ disable-model-invocation: true
 $ARGUMENTS
 ```
 
-Parse `$ARGUMENTS` → lấy `<feature>` (bắt buộc) và `--from=N` (tuỳ chọn, default = 0).
+Parse `$ARGUMENTS` → lấy `<feature>` (bắt buộc — tên folder trong `specs/`, thường là US-ID như `SCC-E01-F01-U02`) và `--from=N` (tuỳ chọn, default = 0).
+
+> **Lưu ý đổi hướng**: Từ khi BA chuyển sang output per-User-Story, pipeline chạy **cho một User Story duy nhất**. Input chính tại `specs/<feature>/<feature>_*.md` (shape: `templates/userstory-template.md`). Nếu BA cung cấp `<feature>_*_ui-detail.md` → dùng; nếu không, vnr-planner sẽ sinh `ui-detail.md` fallback khi feature có mobile screens.
 
 **Path Resolution**: `$PLUGIN_DIR` = thư mục `vnr-plugin` tại repo root (tìm bằng cách scan ngược từ thư mục hiện tại cho đến khi thấy `vnr-plugin/`). Dùng trong tất cả các agent prompts bên dưới.
 
@@ -70,8 +72,8 @@ src/
 Nếu `--from=N` được truyền vào → bỏ qua validate, nhảy thẳng đến Step N.
 
 ```bash
-# Kiểm tra spec tồn tại
-ls specs/<feature>/spec.md
+# Kiểm tra User Story file tồn tại
+ls specs/<feature>/<feature>_*.md
 
 # Kiểm tra branch trong CẢ 2 repo
 cd src/backend && rtk git branch --show-current
@@ -91,7 +93,7 @@ Hiển thị progress tracker:
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  VNR AUTO-PIPELINE  [Feature: <feature>]
- Spec: specs/<feature>/spec.md
+ User Story: specs/<feature>/<feature>_*.md
  BE branch: feature/<feature> (src/backend/)
  FE branch: feature/<feature> (src/frontend/)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -123,7 +125,7 @@ Dùng Skill tool:
 ```
 
 Skill `vnr-plan` sẽ đọc `$PLUGIN_DIR/agents/vnr-planner.md` nội bộ, thực hiện:
-- Đọc `specs/<feature>/spec.md` + standards + docs
+- Đọc `specs/<feature>/<feature>_*.md` + standards + docs
 - Sinh `plan.md`, `data-model.md`, `contracts/`, `research.md`
 
 **Checkpoint nội bộ**: Khi vnr-plan hỏi `[A] Approve / [E] Edit` → **dừng, chờ user**.
@@ -174,7 +176,7 @@ Dùng Agent tool:
     (Tuân theo $PLUGIN_DIR/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
 
     ĐỌC SPEC:
-    - specs/<feature>/spec.md
+    - specs/<feature>/<feature>_*.md
     - specs/<feature>/plan.md
     - specs/<feature>/contracts/api-commitments.md (nếu có)
     - $PLUGIN_DIR/standards/backend/03-permission.md
@@ -212,11 +214,11 @@ Dùng Agent tool:
     (Tuân theo vnr-plugin/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
 
     ĐỌC SPEC & PLAN:
-    - specs/<feature>/spec.md
+    - specs/<feature>/<feature>_*.md
     - specs/<feature>/plan.md
     - specs/<feature>/tasks.md
     - specs/<feature>/contracts/api-commitments.md (nếu có)
-    - specs/<feature>/ui-detail.md (nếu có)
+    - specs/<feature>/<feature>_*_ui-detail.md hoặc specs/<feature>/ui-detail.md (nếu có)
     - $PLUGIN_DIR/standards/backend/03-permission.md
     - $PLUGIN_DIR/standards/frontend/03-permission.md
 
@@ -491,7 +493,7 @@ Dùng Agent tool:
     - Playwright screenshots: src/frontend/test-results/ và src/frontend/playwright-report/
 
     ĐỌC SPEC & ARTIFACTS:
-    - specs/<feature>/spec.md
+    - specs/<feature>/<feature>_*.md
     - specs/<feature>/plan.md
     - specs/<feature>/test-scenarios.md
     - specs/<feature>/testcases.md (nếu có — từ Step 2b)

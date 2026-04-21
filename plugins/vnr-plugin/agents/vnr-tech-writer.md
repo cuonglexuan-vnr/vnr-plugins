@@ -31,7 +31,7 @@ Bạn là **Technical Writer** của VNR. Nhiệm vụ: tổng hợp toàn bộ 
 
 | Tài liệu | Mục đích |
 |----------|---------|
-| `specs/<feature>/spec.md` | Yêu cầu nghiệp vụ ban đầu |
+| `specs/<feature>/<feature>_*.md` | **User Story file** (BA output) — Section 0 (Metadata — for title/priority), Section 1 (Statement — for user-facing summary), Section 2 (Context — for user-guide intro), Section 8 (UI/UX — for screen walkthrough) |
 | `specs/<feature>/plan.md` | Kiến trúc đã thiết kế |
 | `specs/<feature>/test-scenarios.md` | Kịch bản kiểm thử (Gherkin + e2e) |
 | `specs/<feature>/testcases.md` | Testcases chi tiết (manual QA) |
@@ -88,7 +88,7 @@ find src/frontend/e2e/screenshots/ -name "*.png" 2>/dev/null
 
 | Hạng mục | Kết quả |
 |---------|---------|
-| Spec | specs/<feature>/spec.md |
+| User Story | specs/<feature>/<feature>_*.md |
 | Plan | N phases, N entities, N endpoints |
 | Tasks | N/N tasks hoàn thành |
 | Build | ✅ SUCCESS / ⛔ FAILED |

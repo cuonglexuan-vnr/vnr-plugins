@@ -19,10 +19,11 @@ Bạn là **Tech Lead** của VNR. Nhiệm vụ: đọc `plan.md` đã được 
 
 | Tài liệu                                                         | Mục đích                                                             |
 | ---------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `specs/<feature>/<feature>_*.md`                                 | **User Story file** (BA output) — Sections 3 (BR), 4 (AC), 6 (Data Dict), 7 (VM), 8 (UI/UX) drive task granularity |
 | `specs/<feature>/plan.md`                                        | Kiến trúc, phases, quyết định kỹ thuật                               |
 | `specs/<feature>/data-model.md`                                  | Entities, relationships, migrations                                  |
 | `specs/<feature>/contracts/api-commitments.md`                   | API contracts đã thiết kế                                            |
-| `specs/<feature>/ui-detail.md`                                   | **Mobile UI spec** — màn hình, widgets, states (đọc nếu có)          |
+| `specs/<feature>/<feature>_*_ui-detail.md` hoặc `ui-detail.md`   | **UI spec** — màn hình, widgets, states (ưu tiên BA file; fallback SWE) |
 | `vnr-plugin/standards/backend/02-architecture-and-structure.md` | Naming conventions, file path patterns BE                            |
 | `vnr-plugin/standards/mobile/01-vnr-app-ui-standards.md`        | **Mobile** — widget rules, banned patterns (đọc nếu có mobile tasks) |
 
@@ -60,7 +61,7 @@ Bạn là **Tech Lead** của VNR. Nhiệm vụ: đọc `plan.md` đã được 
 
 #### Quy tắc riêng cho Mobile tasks
 
-- Mỗi màn hình trong `ui-detail.md` → ít nhất 1 task View + 1 task Controller
+- Mỗi màn hình (resolved từ `<feature>_*_ui-detail.md` của BA nếu có, else từ SWE `ui-detail.md`, else từ User Story Section 8) → ít nhất 1 task View + 1 task Controller
 - Bottom sheet/modal → task riêng, ghi rõ pattern: `Get.bottomSheet → VnRTopModal → VnRListActions`
 - **KHÔNG dùng** `AlertDialog`, `ElevatedButton`, `Colors.*` trực tiếp — ghi rõ trong `Chi tiết` task
 - Widget phải có trong `docs/wiki/concepts/widget-mobile-catalog.md` — nếu không tìm thấy, flag trong task
@@ -72,7 +73,7 @@ Bạn là **Tech Lead** của VNR. Nhiệm vụ: đọc `plan.md` đã được 
 - **File**: `src/app-mobile/lib/modules/.../file.dart`
 - **Action**: Tạo mới | Cập nhật
 - **Chi tiết**:
-  - Widgets dùng: VnR<Widget1>(prop1, prop2), VnR<Widget2>(...)  ← tên class chính xác từ ui-detail.md
+  - Widgets dùng: VnR<Widget1>(prop1, prop2), VnR<Widget2>(...)  ← tên class chính xác từ BA `<feature>_*_ui-detail.md` (hoặc SWE `ui-detail.md` fallback)
   - State fields cần bind: controller.state.fieldName (Rx type)
   - API/Usecase gọi: <UsecaseName>.execute(params)  ← nếu task là Controller
   - Pattern đặc biệt: bottom sheet / skeleton / snackbar  ← nếu có

@@ -58,9 +58,9 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-1. **Setup**: Run `vnr-plugin/scripts/powershell/setup-plan.ps1 -Json` from repo root and parse JSON for PLUGIN_DIR, FEATURE_SPEC, IMPL_PLAN, SPECS_DIR, BRANCH. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+1. **Setup**: Run `vnr-plugin/scripts/powershell/setup-plan.ps1 -Json` from repo root and parse JSON for PLUGIN_DIR, USER_STORY (primary input — the BA User Story file `<US-ID>_*.md`, shape: `templates/userstory-template.md`), UI_DETAIL (optional — BA `<US-ID>_*_ui-detail.md` or SWE fallback `ui-detail.md`), IMPL_PLAN, SPECS_DIR, BRANCH. `FEATURE_SPEC` is retained as an alias of USER_STORY for backwards compatibility. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
-2. **Load context**: Read FEATURE_SPEC and `$PLUGIN_DIR/memory/constitution.md`. Load IMPL_PLAN template (already copied).
+2. **Load context**: Read USER_STORY (and UI_DETAIL if present) plus `$PLUGIN_DIR/memory/constitution.md`. Load IMPL_PLAN template (already copied).
 
 3. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
    - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")
@@ -131,10 +131,11 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 **Prerequisites:** `research.md` complete
 
-1. **Extract entities from feature spec** → `data-model.md`:
-   - Entity name, fields, relationships
-   - Validation rules from requirements
-   - State transitions if applicable
+1. **Extract entities from the User Story** → `data-model.md`:
+   - Pull field-level details from **US Section 6 (Data Dictionary)** — one table row per field, with business type mapped to a concrete storage type in plan.md.
+   - Derive relationships from **US Section 2 (Cấu trúc dữ liệu / Master-Detail)**.
+   - Derive validation rules from **US Section 3 (Business Rules)** and required/constraint columns in Section 6.
+   - Derive state transitions from **US Section 5 (Activity Diagram)** if applicable.
 
 2. **Define interface contracts** (if project has external interfaces) → `/contracts/`:
    - Identify what interfaces the project exposes to users or other systems

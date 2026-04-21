@@ -71,6 +71,8 @@ if ($PathsOnly) {
             PLUGIN_DIR   = $paths.PLUGIN_DIR
             BRANCH       = $paths.CURRENT_BRANCH
             FEATURE_DIR  = $paths.FEATURE_DIR
+            USER_STORY   = $paths.USER_STORY
+            UI_DETAIL    = $paths.UI_DETAIL
             FEATURE_SPEC = $paths.FEATURE_SPEC
             IMPL_PLAN    = $paths.IMPL_PLAN
             TASKS        = $paths.TASKS
@@ -81,6 +83,8 @@ if ($PathsOnly) {
         Write-Output "PLUGIN_DIR: $($paths.PLUGIN_DIR)"
         Write-Output "BRANCH: $($paths.CURRENT_BRANCH)"
         Write-Output "FEATURE_DIR: $($paths.FEATURE_DIR)"
+        Write-Output "USER_STORY: $($paths.USER_STORY)"
+        Write-Output "UI_DETAIL: $($paths.UI_DETAIL)"
         Write-Output "FEATURE_SPEC: $($paths.FEATURE_SPEC)"
         Write-Output "IMPL_PLAN: $($paths.IMPL_PLAN)"
         Write-Output "TASKS: $($paths.TASKS)"
@@ -91,7 +95,17 @@ if ($PathsOnly) {
 # Validate required directories and files
 if (-not (Test-Path $paths.FEATURE_DIR -PathType Container)) {
     Write-Output "ERROR: Feature directory not found: $($paths.FEATURE_DIR)"
-    Write-Output "Run /vnr-specify first to create the feature structure."
+    Write-Output "Create it and copy the BA User Story file(s) in, e.g.:"
+    Write-Output "  mkdir specs/<US-ID>"
+    Write-Output "  cp <BA-delivery>/<US-ID>_*.md specs/<US-ID>/"
+    Write-Output "Or run /vnr-specify as a fallback to stub a User Story locally."
+    exit 1
+}
+
+if (-not (Test-Path $paths.USER_STORY -PathType Leaf)) {
+    Write-Output "ERROR: User Story file not found in $($paths.FEATURE_DIR)"
+    Write-Output "Expected a file matching '<US-ID>_*.md' (shape: templates/userstory-template.md)."
+    Write-Output "Copy the BA-delivered User Story file into this folder, or run /vnr-specify as a fallback."
     exit 1
 }
 
@@ -132,11 +146,15 @@ if ($Json) {
     [PSCustomObject]@{
         PLUGIN_DIR     = $paths.PLUGIN_DIR
         FEATURE_DIR    = $paths.FEATURE_DIR
+        USER_STORY     = $paths.USER_STORY
+        UI_DETAIL      = $paths.UI_DETAIL
         AVAILABLE_DOCS = $docs
     } | ConvertTo-Json -Compress
 }
 else {
     Write-Output "FEATURE_DIR:$($paths.FEATURE_DIR)"
+    Write-Output "USER_STORY:$($paths.USER_STORY)"
+    Write-Output "UI_DETAIL:$($paths.UI_DETAIL)"
     Write-Output "AVAILABLE_DOCS:"
 
     Test-FileExists -Path $paths.RESEARCH -Description 'research.md' | Out-Null

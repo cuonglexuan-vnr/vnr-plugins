@@ -276,26 +276,42 @@ else {
 $featureDir = Join-Path $specsDir $branchName
 New-Item -ItemType Directory -Path $featureDir -Force | Out-Null
 
-$specFile = Join-Path $featureDir 'spec.md'
-if (-not (Test-Path -PathType Leaf $specFile)) {
-    $template = $null
+# The canonical input is a BA-provided User Story file (<US-ID>_<slug>.md).
+# This script is a fallback for developers prototyping before BA output exists:
+# it creates a stub based on userstory-template.md, using the branch name as the US-ID.
+# If a BA User Story file already exists in $featureDir, skip stub creation.
+$baFile = Get-ChildItem -LiteralPath $featureDir -Filter '*.md' -File -ErrorAction SilentlyContinue |
+    Where-Object {
+        ($_.Name -notmatch '_ui-detail\.md$') -and
+        (@('plan.md','tasks.md','research.md','data-model.md','quickstart.md','spec.md') -notcontains $_.Name.ToLowerInvariant())
+    } |
+    Select-Object -First 1
 
-    try {
-        $template = Resolve-Template -TemplateName 'spec-template' -RepoRoot $repoRoot
-    }
-    catch {
+if ($baFile) {
+    $specFile = $baFile.FullName
+}
+else {
+    $specFile = Join-Path $featureDir ("{0}.md" -f $branchName)
+    if (-not (Test-Path -PathType Leaf $specFile)) {
         $template = $null
-    }
 
-    if (-not $template) {
-        $template = Join-Path $pluginDir 'templates/spec-template.md'
-    }
+        try {
+            $template = Resolve-Template -TemplateName 'userstory-template' -RepoRoot $repoRoot
+        }
+        catch {
+            $template = $null
+        }
 
-    if ($template -and (Test-Path $template)) {
-        Copy-Item $template $specFile -Force
-    }
-    else {
-        New-Item -ItemType File -Path $specFile | Out-Null
+        if (-not $template) {
+            $template = Join-Path $pluginDir 'templates/userstory-template.md'
+        }
+
+        if ($template -and (Test-Path $template)) {
+            Copy-Item $template $specFile -Force
+        }
+        else {
+            New-Item -ItemType File -Path $specFile | Out-Null
+        }
     }
 }
 
@@ -306,7 +322,8 @@ $env:SPECIFY_FEATURE = $branchName
 if ($Json) {
     $obj = [PSCustomObject]@{
         BRANCH_NAME = $branchName
-        SPEC_FILE   = $specFile
+        USER_STORY  = $specFile
+        SPEC_FILE   = $specFile   # alias kept for backwards compatibility
         FEATURE_DIR = $featureDir
         FEATURE_NUM = $featureNum
         HAS_GIT     = $hasGit
@@ -315,6 +332,7 @@ if ($Json) {
 }
 else {
     Write-Output "BRANCH_NAME: $branchName"
+    Write-Output "USER_STORY: $specFile"
     Write-Output "SPEC_FILE: $specFile"
     Write-Output "FEATURE_DIR: $featureDir"
     Write-Output "FEATURE_NUM: $featureNum"

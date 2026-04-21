@@ -37,11 +37,11 @@ specs/<feature>/testcases.md    ← Bắt buộc — đây là file chính để
 
 | Tài liệu | Mục đích |
 |----------|---------|
-| `specs/<feature>/spec.md` | Yêu cầu nghiệp vụ, User Stories, Acceptance Criteria |
+| `specs/<feature>/<feature>_*.md` | **User Story file** — Sections 3 (BR), 4 (AC), 7 (VM), 10 (traceability matrices) for cross-check |
 | `specs/<feature>/plan.md` | API routes, data model, phân quyền, phases |
 | `specs/<feature>/tasks.md` | Task list — đối chiếu coverage |
 | `specs/<feature>/contracts/api-commitments.md` | Endpoint + request/response DTOs (nếu có) |
-| `specs/<feature>/ui-detail.md` | UI components, form fields, validation messages (nếu có) |
+| `specs/<feature>/<feature>_*_ui-detail.md` hoặc `specs/<feature>/ui-detail.md` | UI components, form fields, validation messages (nếu có) |
 
 ### 3. Wiki (đọc khi ở mode Reviewer và cần hiểu business context)
 
@@ -109,23 +109,25 @@ Review file `testcases.md` để đảm bảo chất lượng, kiểm tra covera
 ### Input
 
 - File `testcases.md` hiện tại
-- Tài liệu đặc tả: `spec.md`, `plan.md`, `tasks.md` (và contracts, ui-detail nếu có)
+- Tài liệu đặc tả: User Story file `<US-ID>_*.md` (bắt buộc), `plan.md`, `tasks.md` (và contracts, BA `<US-ID>_*_ui-detail.md` hoặc SWE `ui-detail.md` nếu có)
 
 ### Quy trình
 
 ```
 Bước 1 → Đọc testcases.md và tất cả tài liệu đặc tả
        - Parse testcases hiện có
-       - Parse spec.md: User Stories, Acceptance Criteria
+       - Parse User Story file: Section 3 (BR), 4 (AC), 7 (VM), 10 (matrices)
        - Parse plan.md: API routes, data model, phân quyền
        - Parse tasks.md: task list, phases
 
 Bước 2 → Đối chiếu chéo (Cross-check)
-       - Mỗi Acceptance Criteria trong spec.md có ít nhất 1 testcase cover?
+       - Mỗi AC trong Section 4 có ≥1 positive testcase cover?
+       - Mỗi BR trong Section 3 có ≥1 negative testcase (dùng ma trận `AC ↔ BR`)?
+       - Mỗi VM trong Section 7 có ≥1 testcase verify message + vị trí hiển thị?
        - Mỗi API endpoint trong plan.md có testcase cho happy path + error?
        - Mỗi permission/role có testcase authorization?
-       - Mỗi validation rule có negative testcase?
        - Mỗi task quan trọng trong tasks.md có testcase liên quan?
+       - Mỗi screen trong Section 8 có testcase cho 4 trạng thái (Loading / Data / Empty / Error)?
 
 Bước 3 → Đánh giá chất lượng
        Kiểm tra theo checklist:
