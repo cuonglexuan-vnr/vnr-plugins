@@ -4,62 +4,79 @@
 
 ---
 
-## Route Convention
+## Route Convention — RESTful Standard
 
 ```csharp
-✅ [Route("api/v{version:apiVersion}/[controller]")]
+// ✅ Template chuẩn (tên controller = tên resource, số ít)
+[Route("api/v{version:apiVersion}/[controller]")]
+// → api/v1/TalentTier
 
-❌ [Route("api/goals")]   // hardcode, không versioning
-❌ [Route("/goals")]      // thiếu prefix api
+// ❌ Sai
+[Route("api/goals")]          // hardcode, không versioning
+[Route("/goals")]             // thiếu prefix api
+[Route("api/v1/TalentTiers")] // hardcode version + số nhiều
 ```
+
+### RESTful HTTP verb mapping
+
+| Action | HTTP Verb | Route | Ví dụ |
+|--------|-----------|-------|-------|
+| Lấy danh sách (grid) | `POST` | `/list-data` | `POST api/v1/TalentTier/list-data` |
+| Lấy theo ID | `GET` | `/{id}` | `GET api/v1/TalentTier/{id}` |
+| Tạo mới | `POST` | `/` | `POST api/v1/TalentTier` |
+| Cập nhật | `PUT` | `/{id}` | `PUT api/v1/TalentTier/{id}` |
+| Xóa một | `DELETE` | `/{id}` | `DELETE api/v1/TalentTier/{id}` |
+| Xóa nhiều | `DELETE` | `/batch` | `DELETE api/v1/TalentTier/batch` |
+
+> **Quy tắc:** Tên route = tên controller (số ít, PascalCase từ `[controller]` token). Không hardcode, không thêm `/s`.
+> **Golden Rule**: Route names must follow the standard RESTful convention (use hyphens).
+---
 
 ## ✅ Controller mỏng — kế thừa BaseCrudApiController
 
 ```csharp
 [ApiVersion("1")]
 [Route("api/v{version:apiVersion}/[controller]")]
-[CheckAccessBaseCRUD("HRM_GOAL")]
-public class GoalController : BaseCrudApiController<
-    GoalDto,              // TResult
-    BaseRequestGridModel, // TRequestList
-    BaseRequestGridModel, // TRequestGrid
-    CreateGoalRequest,    // TRequestCreate
-    UpdateGoalRequest,    // TRequestUpdate
-    Guid>                 // TKey
+[CheckAccessBaseCRUD("HRM_TALENT_TIER")]
+public class TalentTierController : BaseCrudApiController<
+    TalentTierDto,              // TResult
+    BaseRequestGridModel,       // TRequestList
+    BaseRequestGridModel,       // TRequestGrid
+    CreateTalentTierCommandRequest,  // TRequestCreate
+    UpdateTalentTierCommandRequest,  // TRequestUpdate
+    Guid>                            // TKey
 {
     // Không cần code thêm — base đã xử lý CRUD
 
     // Chỉ override khi cần custom action
-    [HttpPost("custom")]
-    [CheckAccess(PermissionKey = "HRM_GOAL_CUSTOM")]
-    public async Task<IActionResult> CustomAction([FromBody] CustomRequest request)
-        => await HandleRequest(new CustomCommand { ... });
+    [HttpPost("recalculate")]
+    [CheckAccess(PermissionKey = "HRM_TALENT_TIER_RECALCULATE")]
+    public async Task<IActionResult> Recalculate([FromBody] RecalculateTalentTierCommand command)
+        => await HandleRequest(command);
 }
 ```
+
+---
 
 ## ❌ Sai — Controller chứa business logic
 
 ```csharp
-// ĐỪNG LÀM NHƯ NÀY
-public class GoalController : ControllerBase
+public class TalentTierController : ControllerBase
 {
-    private readonly IGoalRepository _goalRepo;
+    private readonly IGenericRepository<TalentTier, Guid> _repo;
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateGoalRequest request)
+    public async Task<IActionResult> Create([FromBody] CreateTalentTierCommandRequest request)
     {
-        // ❌ Validation trong controller
-        if (string.IsNullOrEmpty(request.Title)) return BadRequest("...");
-
-        // ❌ Business logic trong controller
-        var goal = new Goal { Title = request.Title, ... };
-
-        // ❌ Gọi trực tiếp repository từ controller
-        await _goalRepo.AddAsync(goal);
-        return Ok(goal);
+        if (string.IsNullOrEmpty(request.Name)) return BadRequest("...");  // ❌ Validation trong controller
+        var entity = new TalentTier { Name = request.Name };               // ❌ Business logic
+        await _repo.AddAsync(entity);                                      // ❌ Direct repository
+        return Ok(entity);
     }
 }
 ```
+
+---
 
 ## BaseCrudApiController Variants
 
@@ -74,16 +91,18 @@ BaseCrudApiController<TResult, TQueryList, TCreateRequest, TUpdateRequest, TKey>
 BaseCrudApiController<TResult, TQueryList, TQueryListGrid, TCreateRequest, TUpdateRequest, TKey>
 ```
 
+---
+
 ## Security — bắt buộc trên mọi endpoint
 
 ```csharp
 // ✅ Trên action
-[CheckAccess(PermissionKey = "HRM_GOAL_CREATE")]
+[CheckAccess(PermissionKey = "HRM_TALENT_TIER_CREATE")]
 public async Task<IActionResult> Create(...) => await HandleRequest(command);
 
 // ✅ Trên controller (CRUD tự động)
-[CheckAccessBaseCRUD("HRM_GOAL")]
-public class GoalController : BaseCrudApiController<...> { }
+[CheckAccessBaseCRUD("HRM_TALENT_TIER")]
+public class TalentTierController : BaseCrudApiController<...> { }
 
 // ❌ Thiếu attribute
 [HttpPost]

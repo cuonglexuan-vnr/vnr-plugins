@@ -45,23 +45,39 @@
 
 ## Commands / Queries / Handlers
 
+Pattern chung: `{Verb}{Entity}{Type}` — verb trước, entity ở giữa, type suffix cuối.
+
 ```
-// Commands
-✅ CreateGoalCommand
-✅ UpdateGoalCommand
-✅ DeleteGoalCommand
+// ── Commands (write-side) ──────────────────────────────────
+✅ CreateTalentTierCommand          // command class (IRequest)
+✅ CreateTalentTierCommandHandler   // handler class
+✅ UpdateTalentTierCommand
+✅ UpdateTalentTierCommandHandler
+✅ DeleteTalentTierCommand
+✅ DeleteTalentTierCommandHandler
 
-// Queries
-✅ GetGoalByIdQuery
-✅ QueryListGridGoal
+// ── Queries (read-side) ────────────────────────────────────
+✅ GetListTalentTierQuery           // list / grid query
+✅ GetListTalentTierQueryHandler
+✅ GetTalentTierByIdQuery           // single-entity query
+✅ GetTalentTierByIdQueryHandler
 
-// Handlers
-✅ CreateGoalCommandHandler
-✅ GetGoalByIdQueryHandler
+// ── Request models (DTOs, NOT commands/queries) ────────────
+✅ CreateTalentTierCommandRequest   // model in .Models project
+✅ UpdateTalentTierCommandRequest
 
-❌ GoalCreateCommand    (sai thứ tự)
-❌ CreateGoalHandler    (thiếu "Command")
+❌ TalentTierCreateCommand          (verb phải đứng đầu)
+❌ CreateTalentTierHandler          (thiếu "Command" trước Handler)
+❌ CreateTalentTierRequest          (nhầm lẫn với CommandRequest — phải rõ ngữ cảnh)
+❌ ListTalentTierQuery              (thiếu "Get" prefix)
+❌ QueryListGridTalentTier          (pattern cũ, không dùng nữa)
 ```
+
+> **Lưu ý quan trọng:**
+> - `CreateTalentTierCommand` = class Command thực sự (trong `.Application`), **không phải** DTO.
+> - `CreateTalentTierCommandRequest` = DTO / model (trong `.Models`), chỉ chứa dữ liệu input.
+> - Command giữ một property `Request` kiểu `CreateTalentTierCommandRequest`.
+> - Handler luôn có suffix `CommandHandler` hoặc `QueryHandler` — không rút gọn.
 
 ## Controllers
 

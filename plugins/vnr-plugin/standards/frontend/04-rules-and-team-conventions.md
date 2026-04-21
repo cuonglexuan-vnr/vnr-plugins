@@ -105,6 +105,9 @@
 ## 9. Accessibility & i18n
 
 - Dùng `@ngx-translate/core` cho tất cả strings; keys: `module.component.text`.
+- **Tất cả file i18n đều tập trung tại `apps/shell/assets/i18n/`** (VN.json, EN.json, CN.json).
+  - Không tạo thư mục `assets/i18n/` riêng trong các remote app.
+  - Khi thêm tính năng mới, append keys vào đúng section trong các file shell i18n.
 - ARIA attributes cho interactive components (dialogs, grids).
 - Storybook cho UI documentation & accessibility checks.
 

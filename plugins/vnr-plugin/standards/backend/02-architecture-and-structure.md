@@ -36,17 +36,28 @@ HTTP Request
 ```
 VNR.Solution/
 ├── Src/
-│   ├── Cores/           ← shared kernel, used by all services
-│   ├── Infrastructure/  ← cross-cutting infrastructure implementations
-│   ├── Services/        ← business vertical slices (one slice = one bounded context)
-│   ├── Hosting/         ← DI wiring + worker host
-│   ├── Monitoring/      ← HealthChecks.UI
-│   └── Tools/           ← CLI tooling (migration, security)
+│   ├── Cores/               ← shared kernel, used by all services
+│   ├── Infrastructure/      ← cross-cutting infrastructure implementations
+│   ├── Services/            ← business vertical slices (one slice = one bounded context)
+│   ├── Hosting/             ← DI wiring + worker host
+│   ├── Monitoring/          ← HealthChecks.UI
+│   └── Tools/               ← CLI tooling (migration, security)
 ├── Tests/
-├── SQL/                 ← MSSQL / PostgreSQL scripts
-├── Docs/                ← Architecture guides, TDRs, coding guides
-├── k8s/                 ← Kubernetes manifests
-└── appsettings*.json    ← Configuration files
+├── SQL/                     ← MSSQL / PostgreSQL scripts
+│   ├── MSSQL/
+│   └── PostgreSQL/          ← categorised by domain (Category, Competencies, HRE, Training, …)
+├── Config/                  ← per-service appsettings overrides (checked into repo)
+│   ├── *.json               ← shared config slices (Auth, Cache, Connections, Serilog, …)
+│   └── Services/            ← per-service appsettings.{env}.json
+├── Docs/                    ← Architecture guides, TDRs, coding guides
+├── Resources/               ← runtime artefacts (not compiled)
+│   ├── Settings/            ← GridConfigStores, FormConfig, DetailConfig, …
+│   ├── i18n/                ← server-side i18n bundles (vi/en per service)
+│   ├── Exports/             ← export templates
+│   └── Templates/           ← notification / email templates
+├── k8s/                     ← Kubernetes manifests (backend + db + nginx)
+├── SetupLocalEnviroments/   ← local dev start/publish scripts
+└── appsettings*.json        ← root appsettings (base defaults)
 ```
 
 ---
@@ -90,37 +101,65 @@ Shared kernel projects referenced by every service. **Never add service-specific
 
 ## 5. Service Slice Layout
 
-Each service is a self-contained **vertical slice**. All 5 projects follow the same pattern:
+Each service is a self-contained **vertical slice** (modular monolith). All services follow the same 5-project pattern:
 
 ```
 Src/Services/{Name}/
-├── VNR.Service.{Name}.Api/            ← Web API host
-│   ├── Controllers/                   ← HTTP endpoints (thin, one-liner)
-│   ├── Program.cs                     ← Entry point via BaseProgram
-│   ├── Startup.cs                     ← DI wiring via StartupServices()
-│   └── Extensions/                    ← service-specific DI registrations
+├── VNR.Service.{Name}.Api/               ← Web API host
+│   ├── Controllers/                      ← HTTP endpoints (thin, one-liner per action)
+│   ├── Program.cs                        ← Entry point via BaseProgram
+│   ├── Startup.cs                        ← DI wiring via StartupServices()
+│   └── Extensions/                       ← service-specific DI registrations
 │
-├── VNR.Service.{Name}.Application/   ← business use cases
-│   ├── {Feature}/Commands/            ← write-side: CreateXxxCommand, UpdateXxxCommand, …
-│   ├── {Feature}/Queries/             ← read-side: ListXxxQuery, GetXxxByIdQuery, …
-│   ├── {Feature}/Services/            ← application service interfaces
-│   └── {Feature}/Events/              ← domain event handlers
+├── VNR.Service.{Name}.Application/      ← business use cases (CQRS)
+│   └── {Feature}/
+│       ├── Commands/
+│       │   ├── Create{Feature}Command.cs          ← IRequest command
+│       │   ├── Create{Feature}CommandHandler.cs   ← IRequestHandler
+│       │   ├── Update{Feature}Command.cs
+│       │   ├── Update{Feature}CommandHandler.cs
+│       │   ├── Delete{Feature}Command.cs
+│       │   └── Delete{Feature}CommandHandler.cs
+│       ├── Queries/
+│       │   ├── GetList{Feature}Query.cs           ← grid/list query
+│       │   ├── GetList{Feature}QueryHandler.cs
+│       │   ├── Get{Feature}ByIdQuery.cs           ← single entity query
+│       │   └── Get{Feature}ByIdQueryHandler.cs
+│       ├── Services/                              ← application service interfaces (I{X}Service)
+│       └── Validators/                            ← FluentValidation validators
 │
-├── VNR.Service.{Name}.Domain/        ← business model
-│   ├── Entities/                      ← domain entity classes
-│   ├── ValueObjects/                  ← value object classes
-│   ├── Events/                        ← domain events
-│   └── Repository/                    ← repository interfaces (no implementation)
+├── VNR.Service.{Name}.Domain/           ← (service-level domain, if needed)
+│   ├── ValueObjects/
+│   ├── Events/
+│   └── Repository/                      ← custom repository interfaces (if beyond GenericRepository)
 │
-├── VNR.Service.{Name}.Infrastructure/ ← data access & external integrations
-│   ├── Services/                      ← application service implementations
-│   ├── Jobs/                          ← background jobs
-│   └── Extensions/                    ← Add{Name}Services() DI extension
+├── VNR.Service.{Name}.Infrastructure/   ← data access & external integrations
+│   ├── Services/                        ← implementations of Application service interfaces
+│   ├── Jobs/                            ← background jobs
+│   └── Extensions/                      ← Add{Name}Services() DI extension
 │
-└── VNR.Service.{Name}.Models/        ← DTOs
+└── VNR.Service.{Name}.Models/           ← DTOs and input models ONLY
     ├── RequestDtos/
+    │   ├── Create{Feature}CommandRequest.cs
+    │   └── Update{Feature}CommandRequest.cs
     └── ResponseDtos/
+        └── {Feature}Dto.cs
 ```
+
+### Key placement rules
+
+| Artefact | Project | Example |
+|----------|---------|---------|
+| Entities | `VNR.Core.Domain/Entities/` | `TalentTier.cs` (shared across services) |
+| Command class | `.Application/{Feature}/Commands/` | `CreateTalentTierCommand.cs` |
+| Command handler | `.Application/{Feature}/Commands/` | `CreateTalentTierCommandHandler.cs` |
+| Query class | `.Application/{Feature}/Queries/` | `GetListTalentTierQuery.cs` |
+| Query handler | `.Application/{Feature}/Queries/` | `GetListTalentTierQueryHandler.cs` |
+| Service interface | `.Application/{Feature}/Services/` | `ITalentTierService.cs` |
+| Service implementation | `.Infrastructure/Services/` | `TalentTierService.cs` |
+| Input model | `.Models/RequestDtos/` | `CreateTalentTierCommandRequest.cs` |
+| Output DTO | `.Models/ResponseDtos/` | `TalentTierDto.cs` |
+| Validator | `.Application/{Feature}/Validators/` | `CreateTalentTierCommandValidator.cs` |
 
 **Active services:**
 
@@ -128,7 +167,7 @@ Src/Services/{Name}/
 |---------|----------------|
 | `HRE` | Core HR (profiles, contracts, org) |
 | `Evaluation` | Objectives / performance evaluation |
-| `Succession` | Succession planning |
+| `Succession` | Succession planning (+ `SuccessionShared` for cross-service types) |
 | `Training` | Training management |
 | `System` | System administration |
 | `Notification` | Messaging & push notifications |
@@ -137,16 +176,39 @@ Src/Services/{Name}/
 | `Gateway` (Ocelot) | API gateway routing |
 | `IdentityServer` | OAuth 2.0 / OIDC auth server |
 | `Shared` | Cross-service shared utilities |
+| `Sample` | Reference implementation / scaffold template |
+
+> **`SuccessionShared`** is a second vertical slice under `Src/Services/Succession/` that exposes shared Succession types consumed by other services. It follows the same 5-project pattern as all other services.
 
 ---
 
-## 6. Domain Layer Conventions
+## 6. Domain Layer — Centralized Entities
+
+### Entity location
+
+All domain entities are defined **centrally** in `VNR.Core.Domain`, not inside individual service projects:
+
+```
+Src/Cores/VNR.Core.Domain/
+└── Entities/
+    ├── Base/              ← EntityBase<TId>, IAuditableEntity, ISoftDelete, …
+    ├── HumanResource/     ← HRE entities (Employee, Contract, OrgUnit, …)
+    ├── Evaluation/        ← Evaluation entities (Goal, GoalForm, TalentTier, …)
+    ├── Training/          ← Training entities
+    ├── Succession/        ← Succession entities
+    ├── System/            ← System entities
+    ├── Notifications/     ← Notification entities
+    └── Category/          ← Shared category/lookup entities
+```
+
+> **Rule:** Never define entities inside a service project (`VNR.Service.*.Domain`). Service `.Domain` projects are reserved for ValueObjects, domain Events, and custom repository interfaces only.
 
 ### EntityBase
 
-All domain entities extend `EntityBase<TId>`:
+All entities extend `EntityBase<TId>`:
 
 ```csharp
+// Src/Cores/VNR.Core.Domain/Entities/Base/EntityBase.cs
 public abstract class EntityBase<TId> : IAuditableEntity, ISoftDelete
 {
     public TId Id { get; set; }
@@ -155,6 +217,14 @@ public abstract class EntityBase<TId> : IAuditableEntity, ISoftDelete
     public DateTimeOffset? DateCreate { get; set; }
     public DateTimeOffset? DateUpdate { get; set; }
     public bool IsDelete { get; set; } = false;  // soft-delete flag
+}
+
+// ✅ Example entity
+public class TalentTier : EntityBase<Guid>
+{
+    public string Name { get; set; }
+    public int Level { get; set; }
+    // ...
 }
 ```
 
@@ -197,6 +267,20 @@ Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action);
 ---
 
 ## 7. CQRS / MediatR Pattern
+
+### Naming Convention (enforced)
+
+| Class | Pattern | Example |
+|-------|---------|---------|
+| Command | `{Verb}{Entity}Command` | `CreateTalentTierCommand` |
+| Command Handler | `{Verb}{Entity}CommandHandler` | `CreateTalentTierCommandHandler` |
+| Query (list) | `GetList{Entity}Query` | `GetListTalentTierQuery` |
+| Query (single) | `Get{Entity}ByIdQuery` | `GetTalentTierByIdQuery` |
+| Query Handler | `{same as query}Handler` | `GetListTalentTierQueryHandler` |
+| Input model | `{Verb}{Entity}CommandRequest` | `CreateTalentTierCommandRequest` (in `.Models`) |
+
+> `CreateTalentTierCommand` **≠** `CreateTalentTierCommandRequest`.
+> The Command is the MediatR request object; the CommandRequest is the DTO input model held inside it.
 
 ### Flow
 
@@ -278,6 +362,8 @@ Supports optional `ICrudLifecycle<TEntity, TResult>` hooks: `BeforeCreate`, `Aft
 ## 8. API Layer Conventions
 
 ### Controller pattern
+
+**Golden Rule**: Route names must follow the standard RESTful convention (use hyphens).
 
 ```csharp
 [OpenApiTag("[{Domain}][{Feature}]", Description = "...")]

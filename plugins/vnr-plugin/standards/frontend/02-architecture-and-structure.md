@@ -1,7 +1,7 @@
 # Frontend Architecture & Structure — hrm-frontend-workspace
 
-> Source: GitNexus index (67,019 symbols · 173,833 relationships) + direct codebase inspection
-> Last updated: 2026-04-09
+> Source: GitNexus index + direct codebase inspection
+> Last updated: 2026-04-21
 
 ---
 
@@ -12,7 +12,7 @@ The workspace is a **Nx monorepo** following a **Micro-Frontend** architecture u
 ```
 hrm-frontend-workspace/
 ├── apps/           ← Deployable applications (shell + 11 remotes + 2 e2e + storybook)
-└── libs/           ← Shared libraries (14 packages published to internal npm registry)
+└── libs/           ← Shared libraries (published to internal npm registry)
 ```
 
 **Mental model:**
@@ -93,6 +93,7 @@ apps/
 │   │   └── pages/
 │   │       ├── auth/          ← Login, 403, 404 pages
 │   │       └── public/        ← Public (unauthenticated) pages
+│   ├── assets/                ← Shell-level static assets
 │   ├── module-federation.config.ts
 │   ├── webpack.config.ts
 │   └── webpack.prod.config.ts
@@ -123,13 +124,13 @@ libs/
 ├── ui/                        ← Shared UI components
 ├── layout/                    ← Layout shells
 ├── common/                    ← Pipes, directives, utilities, tokens
-├── design-tokens/             ← Design system tokens
+├── design-tokens/             ← Design system tokens (style-dictionary)
+├── ds-foundation/             ← Design System primitives (a11y, overlay, focus, css-vars)
+├── ds-theme/                  ← Design System theming (themes, runtime tokens)
 ├── dashboard-engine/          ← Dashboard rendering engine
 ├── ai/                        ← AI feature integration
-├── vnr-module/                ← VNR platform components
-├── ds-foundation/             ← Design System primitives (a11y, overlay, focus)
-├── ds-theme/                  ← Design System theming
-└── resources/                 ← Static shared resources
+├── vnr-module/                ← VNR platform smart components (grids, forms, pickers…)
+└── resources/                 ← Static shared resources (i18n, permissions, tokens)
 ```
 
 ---
@@ -274,23 +275,72 @@ common/
 Reusable smart & semi-smart components specific to the VNR platform. Each sub-package is independently consumable.
 
 ```
-vnr-module/components/
-├── grids/                     ← VNR grid (built on Kendo Grid): vnr-grid, vnr-grid-new
-├── treelist/                  ← VNR treelist (built on Kendo TreeList)
-├── filter/                    ← Advanced filter builder (quick & advanced modes)
-├── toolbar/                   ← Feature toolbar v1 & v2
-├── modal/                     ← Dialog/modal wrapper
-├── pickers/                   ← Various pickers (date, org, employee)
-├── selects/                   ← Advanced select components
-├── inputs/                    ← VNR-specific inputs
-├── uploads/                   ← File upload components
-├── listview/                  ← List view wrapper
-├── config/                    ← Runtime configuration components
-├── config-form/               ← Form configuration components
-├── formula-config/            ← Formula builder
-├── conversational-ui/         ← Chat/conversational UI components
-├── validation/                ← Form validation components
-└── vnr-select-emp/            ← Employee selector
+vnr-module/
+├── components/                ← UI-level smart components
+│   ├── grids/                 ← VNR grid (built on Kendo Grid): vnr-grid, vnr-grid-new
+│   ├── treelist/              ← VNR treelist (built on Kendo TreeList)
+│   ├── filter/                ← Advanced filter builder (quick & advanced modes)
+│   ├── toolbar/               ← Feature toolbar v1 & v2
+│   ├── modal/                 ← Dialog/modal wrapper
+│   ├── pickers/               ← Various pickers (date, org, employee)
+│   ├── selects/               ← Advanced select components
+│   ├── inputs/                ← VNR-specific inputs
+│   ├── uploads/               ← File upload components
+│   ├── listview/              ← List view wrapper
+│   ├── config/                ← Runtime configuration components
+│   ├── config-form/           ← Form configuration components
+│   ├── formula-config/        ← Formula builder
+│   ├── conversational-ui/     ← Chat/conversational UI components
+│   └── validation/            ← Form validation components
+├── core/                      ← VNR module core services & DI
+├── data-components/           ← Data-driven smart components
+├── data-core/                 ← Core data services and abstractions
+├── adapters/                  ← Adapter layer (legacy ↔ new API bridges)
+├── internal-foundation/       ← Internal base classes & contracts
+├── primitives/                ← Primitive UI building blocks
+├── shared/                    ← Shared utilities within vnr-module
+├── legacy/                    ← Deprecated components (maintained for compat)
+├── styles/                    ← Module-level SCSS
+└── testing/                   ← Test helpers & mocks for vnr-module consumers
+```
+
+### `libs/ds-foundation/` — Design System Primitives
+
+Low-level design system primitives with no Angular-specific UI logic.
+
+```
+ds-foundation/src/
+├── lib/                       ← Component & utility implementations
+├── contracts/                 ← Interface contracts (tokens, validators)
+├── constants/                 ← Design constants
+├── css-vars/                  ← CSS custom property definitions
+├── runtime/                   ← Runtime theming helpers
+├── themes/                    ← Theme definitions
+├── utils/                     ← Pure utility functions
+└── validators/                ← Design-system validators
+```
+
+### `libs/ds-theme/` — Design System Theming
+
+Runtime theme engine consumed by both shell and remotes.
+
+```
+ds-theme/src/
+├── constants/                 ← Theme constants
+├── contracts/                 ← Theme interface contracts
+├── css-vars/                  ← Generated CSS variable maps
+├── runtime/                   ← Runtime theme switching
+├── themes/                    ← Named theme bundles
+└── utils/                     ← Theme utility functions
+```
+
+### `libs/resources/` — Static Shared Resources
+
+```
+resources/
+├── i18n/                      ← Shared translation strings
+├── permissions/               ← Shared permission key constants
+└── tokens/                    ← Shared Angular injection tokens
 ```
 
 ---
@@ -307,16 +357,29 @@ apps/<remote>/src/app/
     └── <feature-group>/
         └── <feature>/
             ├── api/
-            │   └── <feature>.api.ts       ← HTTP calls (Angular service, one per feature)
+            │   └── <feature>.api.ts           ← HTTP calls (Angular service, one per feature)
             ├── container/
-            │   └── <feature>.component.ts ← Smart container (dispatches to store/facade)
+            │   └── <feature>.component.ts     ← Smart container (extends VnrContainerBaseComponent)
+            ├── components/
+            │   ├── <feature>-list.component.ts     ← Presentation list (OnPush, dumb)
+            │   └── <feature>-detail.component.ts   ← Form/detail (extends VnrFormBaseComponent)
             ├── data/
-            │   └── <feature>.model.ts     ← Local models (if not in libs/models)
+            │   └── <feature>.model.ts         ← Local models (if not in libs/models)
             ├── facade/
-            │   └── <feature>.facade.ts    ← Facade (wraps store + API calls)
+            │   └── <feature>.facade.ts        ← Facade (wraps store + API calls)
             ├── <feature>-routing.module.ts
             └── <feature>.module.ts
 ```
+
+**Container conventions (`extends VnrContainerBaseComponent`):**
+- Call `this.initContainerBase()` in `ngOnInit()`.
+- Override `handleEvent()` to handle toolbar events.
+- Open forms/drawers via `openComponentByType('drawer', Component, context)`.
+
+**Form conventions (`extends VnrFormBaseComponent`):**
+- Implement `buildForm(): FormGroup`.
+- Implement `getApiCreateUrl()`, `getApiUpdateUrl()`, `getApiDetailUrl()`.
+- Call `this.initializeForm()` in `ngOnInit()`.
 
 **Example — `human-resources` remote:**
 
@@ -325,6 +388,7 @@ apps/human-resources/src/app/pages/
 ├── hre-list-employee/
 │   ├── api/
 │   ├── container/
+│   ├── components/
 │   ├── data/
 │   ├── facade/
 │   ├── hre-list-employee-routing.module.ts
@@ -414,7 +478,8 @@ All routing is Angular lazy-loaded. The shell owns the top-level route table:
 | Rule | Detail |
 |------|--------|
 | Change detection | `OnPush` on all presentation (dumb) components |
-| Smart components | Own NgRx dispatch/select, use facades, rarely use `ChangeDetectorRef` |
+| Smart components | Extend `VnrContainerBaseComponent`; dispatch via facades; call `initContainerBase()` |
+| Form components | Extend `VnrFormBaseComponent`; implement `buildForm()`, `getApiCreateUrl/UpdateUrl/DetailUrl()` |
 | Dumb components | `@Input()` / `@Output()` only, no service injection beyond view helpers |
 | File naming | `kebab-case.component.ts`, `kebab-case.service.ts`, `kebab-case.facade.ts`, etc. |
 | CSS | BEM methodology in SCSS |
@@ -442,16 +507,34 @@ libs/store
   └── depends on → libs/models
 
 libs/ui
-  └── depends on → libs/models, libs/common
+  └── depends on → libs/models, libs/common, libs/ds-foundation, libs/ds-theme
+
+libs/vnr-module
+  └── depends on → libs/ui, libs/models, libs/common, libs/resources
 
 libs/core
   └── depends on → libs/models, libs/common, libs/store
 
+libs/layout
+  └── depends on → libs/ui, libs/common, libs/models, libs/store
+
 libs/common
   └── depends on → libs/models
 
+libs/resources
+  └── depends on → (no internal lib dependencies — static constants only)
+
 libs/models
   └── (no internal lib dependencies — pure TypeScript)
+
+libs/ds-foundation
+  └── (no internal lib dependencies — pure primitives)
+
+libs/ds-theme
+  └── depends on → libs/ds-foundation
+
+libs/design-tokens
+  └── (no internal lib dependencies — generated output)
 ```
 
 Enforce with `dependency-cruiser` (`^16.10.2`) — rules defined in `.dependency-cruiser.js`.
@@ -459,6 +542,19 @@ Enforce with `dependency-cruiser` (`^16.10.2`) — rules defined in `.dependency
 ---
 
 ## 11. Build & Dev Workflow
+
+### i18n (Translations)
+
+**All service i18n files are centralized in the shell app:**
+
+```
+apps/shell/assets/i18n/
+├── VN.json    ← Vietnamese (default)
+├── EN.json    ← English
+└── CN.json    ← Chinese
+```
+
+> **Rule:** Do NOT create separate `assets/i18n/` folders inside remote apps. All translation keys for every domain (HRE, Evaluation, Training, Succession, System, …) live in these three shell files. Add new keys directly here.
 
 ### Development
 
