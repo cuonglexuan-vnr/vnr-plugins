@@ -1,6 +1,6 @@
 # Frontend Component Library — vnr-module vs ng-zorro
 
-> **MANDATORY**: Tất cả agents (vnr-planner, vnr-task-breaker, vnr-developer) phải tuân theo chuẩn này.  
+> **MANDATORY**: Tất cả agents (vnr-planner, vnr-task-breaker, vnr-backend-developer, vnr-frontend-developer) phải tuân theo chuẩn này.  
 > **KHÔNG BAO GIỜ** dùng `nz-*` components trực tiếp trong thiết kế plan hoặc task.  
 > **LUÔN LUÔN** dùng `vnr-module` equivalents từ `@hrm-frontend-workspace/vnr-module`.
 

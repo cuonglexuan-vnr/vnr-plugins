@@ -39,7 +39,8 @@ KNOWN_SKILLS = [
 ]
 
 KNOWN_AGENTS = [
-  "vnr-arch-reviewer", "vnr-developer", "vnr-planner",
+  "vnr-arch-reviewer", "vnr-backend-developer", "vnr-frontend-developer",
+  "vnr-mobile-developer", "vnr-plan-reviewer", "vnr-planner",
   "vnr-qc-generator", "vnr-sec-reviewer", "vnr-task-breaker",
   "vnr-tech-writer", "vnr-test-engineer", "vnr-testcase-writer"
 ]
@@ -75,7 +76,7 @@ Parse `$ARGUMENTS` to extract three components:
    ```
    What type do you want to customize?
    [1] Skill (slash command — e.g., /vnr-plan, /vnr-tasks)
-   [2] Agent (system prompt — e.g., vnr-planner, vnr-developer)
+   [2] Agent (system prompt — e.g., vnr-planner, vnr-backend-developer, vnr-frontend-developer)
    ```
 
 3. If **name** is missing for **override**, list available items:
@@ -390,9 +391,10 @@ Group findings by the referencing file and present as a structured report:
 │      vnr-auto-pipeline may need updating too.
 │
 │ 📄 vnr-plugin/skills/vnr-implement/SKILL.md
-│    Line 23:  <agent_to_use>vnr-developer agent</agent_to_use>
-│    → This skill binds to the vnr-developer agent.
-│      Override this skill to use your custom agent path.
+│    Lines 27-29: Scope Detection table — dispatches to vnr-backend-developer,
+│                  vnr-frontend-developer, vnr-mobile-developer based on task paths.
+│    → This skill auto-detects scope from tasks.md and adopts the correct agent persona.
+│      Override this skill to change dispatch logic or use custom agent paths.
 ├─────────────────────────────────────────────────
 │ ARTIFACT_DEPENDENCY references
 ├─────────────────────────────────────────────────
@@ -421,7 +423,7 @@ Based on the dependency scan, these related items may need customization:
 | # | Action | Item | Reason |
 |---|--------|------|--------|
 | 1 | Override skill | vnr-auto-pipeline | Calls vnr-plan directly (line 119) |
-| 2 | Override skill | vnr-implement | Binds to vnr-developer agent (line 23) |
+| 2 | Override skill | vnr-implement | Dispatches to vnr-backend-developer / vnr-frontend-developer / vnr-mobile-developer based on task scope |
 | 3 | Review script | check-prerequisites.ps1 | Checks plan.md output format |
 ```
 

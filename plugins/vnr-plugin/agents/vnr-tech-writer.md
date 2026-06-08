@@ -33,15 +33,13 @@ Bạn là **Technical Writer** của VNR. Nhiệm vụ: tổng hợp toàn bộ 
 |----------|---------|
 | `specs/<feature>/<feature>_*.md` | **User Story file** (BA output) — Section 0 (Metadata — for title/priority), Section 1 (Statement — for user-facing summary), Section 2 (Context — for user-guide intro), Section 8 (UI/UX — for screen walkthrough) |
 | `specs/<feature>/plan.md` | Kiến trúc đã thiết kế |
-| `specs/<feature>/test-scenarios.md` | Kịch bản kiểm thử (Gherkin + e2e) |
 | `specs/<feature>/testcases.md` | Testcases chi tiết (manual QA) |
 | `specs/<feature>/result/testcase-report.md` | Kết quả chạy testcases (nếu có) |
 | `specs/<feature>/contracts/api-commitments.md` | API đã implement |
-| Kết quả Step 5 (Arch Review) | Findings architecture |
-| Kết quả Step 6 (Security Review) | Findings security |
-| Kết quả Step 7 (Unit Tests) | Số test passed/failed, coverage |
-| Kết quả Step 8 (E2E) | Số e2e passed/failed/todo |
-| `src/frontend/e2e/<feature>.e2e.spec.ts` | Test stubs để liệt kê scenarios |
+| Kết quả Step 4 (Arch Review) | Findings architecture |
+| Kết quả Step 5 (Security Review) | Findings security |
+| Step 6 (E2E Stubs) | Path stub file + trạng thái (pending automation team) |
+| `src/frontend/e2e/<feature>.e2e.spec.ts` | E2E stub file (test.todo — chưa implemented) |
 
 ### 3. Cấu trúc source code
 
@@ -115,32 +113,19 @@ find src/frontend/e2e/screenshots/ -name "*.png" 2>/dev/null
 
 ---
 
-## 4. Unit Test Results
+## 4. E2E Test Stubs (Playwright)
 
-| Layer | Total | Passed | Failed | Coverage |
-|-------|-------|--------|--------|----------|
-| Backend (xUnit) | N | N | 0 | Z% |
-| Frontend (Jasmine) | N | N | 0 | Z% |
+| Hạng mục | Chi tiết |
+|----------|---------|
+| Stub file | `src/frontend/e2e/<feature>.e2e.spec.ts` |
+| Trạng thái | ⏭ Pending — automation team sẽ implement body |
+| Testcases tham chiếu | `specs/<feature>/testcases.md` (P0 + P1) |
 
----
-
-## 5. E2E Test Results (Playwright)
-
-| TC-ID | Scenario | Status |
-|-------|---------|--------|
-| TC-01 | ... | ✅ Passed |
-| TC-02 | ... | ⏭ Todo |
-| TC-0N | ... | ⛔ Failed |
-
-Screenshots (nếu có — kiểm tra các đường dẫn bên dưới):
-- `src/frontend/test-results/` — auto-captured on failure
-- `src/frontend/playwright-report/` — embedded in HTML report
-- `src/frontend/e2e/screenshots/` — manually captured
-- Copy vào: `specs/<feature>/result/screenshots/` để đính kèm report
+> E2E tests chưa chạy — đây là placeholder stub file cho automation team.
 
 ---
 
-## 6. Files Changed
+## 5. Files Changed
 
 ```bash
 # Backend changes
@@ -152,12 +137,12 @@ cd src/frontend && git diff --stat HEAD~5
 
 ---
 
-## 7. Sign-off Checklist
+## 6. Sign-off Checklist
 
 - [ ] Architecture Review: PASS ✅
 - [ ] Security Review: PASS ✅
-- [ ] Unit Tests: 0 failures ✅
-- [ ] E2E: Happy Path passed ✅
+- [ ] Manual Testcases: testcases.md đầy đủ ✅
+- [ ] E2E Stubs: stub file tồn tại (pending automation team) ⏭
 - [ ] Docs updated ✅
 
 **Ready for PR**: YES / NO (lý do nếu NO)

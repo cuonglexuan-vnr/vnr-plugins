@@ -88,7 +88,7 @@ Chỉ đọc `docs/raw/` khi:
 5. Kiểm tra docs/wiki/sources/<entry>.md → lấy reference đến raw doc nếu cần đào sâu
 ```
 
-### Khi implement (vnr-developer)
+### Khi implement (vnr-backend-developer / vnr-frontend-developer)
 ```
 1. Đọc docs/wiki/entities/<entity>.md → entity fields → ánh xạ sang Domain model
 2. Đọc docs/wiki/concepts/<workflow>.md → business rules → ánh xạ sang Handler logic
@@ -153,7 +153,7 @@ Các skill/agent tự động gọi `vnr-wiki` khi cần context:
 | Trigger | Skill gọi wiki |
 |---------|---------------|
 | `/vnr-plan` | vnr-planner đọc wiki trước khi thiết kế |
-| `/vnr-implement` | vnr-developer đọc wiki để ánh xạ business → code |
+| `/vnr-implement` | vnr-backend-developer / vnr-frontend-developer đọc wiki để ánh xạ business → code |
 | `/vnr-auto-pipeline` | Step 1, 2, 3 đều cần wiki context |
 
 Để inject wiki context vào bất kỳ Agent tool call nào, thêm vào prompt:

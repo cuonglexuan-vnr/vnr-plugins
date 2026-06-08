@@ -18,9 +18,17 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
-## Agent System Prompt
+## Scope Detection
 
-<agent_to_use>Sử dụng vnr-developer agent — đọc `$PLUGIN_DIR/agents/vnr-developer.md` để hiểu vai trò, quy tắc backend/frontend và convention bắt buộc trước khi implement.</agent_to_use>
+Trước khi thực hiện, agent sẽ tự động phát hiện scope từ `tasks.md` và adopt persona phù hợp:
+
+| Scope | Điều kiện phát hiện | Agent persona |
+|-------|---------------------|---------------|
+| Backend | Task có `File` path bắt đầu bằng `src/backend/` | Đọc `$PLUGIN_DIR/agents/vnr-backend-developer.md` |
+| Frontend | Task có `File` path bắt đầu bằng `src/frontend/` (trừ `src/frontend/e2e/`) | Đọc `$PLUGIN_DIR/agents/vnr-frontend-developer.md` |
+| Mobile | Task có `File` path bắt đầu bằng `src/app-mobile/` | Đọc `$PLUGIN_DIR/agents/vnr-mobile-developer.md` |
+
+Dispatch là **tuần tự**: Backend → Frontend → Mobile. Nếu BE build fail → dừng, không chuyển sang FE.
 
 ## Pre-Execution Checks
 
@@ -151,12 +159,57 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **Task details**: ID, description, file paths, parallel markers [P]
    - **Execution flow**: Order and dependency requirements
 
-6. Execute implementation following the task plan:
-   - **Phase-by-phase execution**: Complete each phase before moving to the next
-   - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
-   - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
-   - **File-based coordination**: Tasks affecting the same files must run sequentially
-   - **Validation checkpoints**: Verify each phase completion before proceeding
+5.5 **Detect task scope** — scan tasks.md content for path prefixes:
+   - `HAS_BE` = có task nào có `File` path chứa `src/backend/`
+   - `HAS_FE` = có task nào có `File` path chứa `src/frontend/` và KHÔNG chứa `src/frontend/e2e/`
+   - `HAS_MOBILE` = có task nào có `File` path chứa `src/app-mobile/`
+
+   Hiển thị scope summary:
+   ```
+   Scope detected:
+     Backend  [src/backend/]    : ✅ YES / ⬜ NO
+     Frontend [src/frontend/]   : ✅ YES / ⬜ NO
+     Mobile   [src/app-mobile/] : ✅ YES / ⬜ NO
+   Dispatch order: [danh sách scope theo thứ tự BE → FE → Mobile]
+   ```
+
+6. **Execute implementation — Sequential per-scope dispatch**:
+
+   ### 6a — Backend Phase (nếu HAS_BE = true)
+
+   <agent_to_use>Adopt vnr-backend-developer persona — đọc `$PLUGIN_DIR/agents/vnr-backend-developer.md` để nắm đầy đủ quy tắc Clean Architecture, CQRS, naming và git convention cho BE.</agent_to_use>
+
+   - Filter tasks: chỉ execute tasks có `File` path `src/backend/`
+   - Phase-by-phase: Domain → Application → Infrastructure → API → Tests
+   - Parallel tasks `[P]` trong cùng phase: thực hiện song song
+   - Sau khi hoàn thành tất cả BE tasks: **chạy `cd src/backend && dotnet build`**
+   - **Nếu build FAIL → dừng toàn bộ, báo lỗi, KHÔNG chuyển sang 6b**
+   - Đánh dấu `[x]` từng task BE vào tasks.md ngay sau khi hoàn thành
+
+   ### 6b — Frontend Phase (nếu HAS_FE = true)
+
+   > Chỉ bắt đầu sau khi 6a hoàn thành (BE build PASS hoặc HAS_BE = false).
+
+   <agent_to_use>Adopt vnr-frontend-developer persona — đọc `$PLUGIN_DIR/agents/vnr-frontend-developer.md` để nắm đầy đủ quy tắc Angular 19, Micro-frontend, permission và git convention cho FE.</agent_to_use>
+
+   - **Đọc `specs/<feature>/contracts/api-commitments.md` trước khi implement bất kỳ API service call nào**
+   - Filter tasks: chỉ execute tasks có `File` path `src/frontend/` (trừ `src/frontend/e2e/`)
+   - Phase-by-phase theo plan.md
+   - Parallel tasks `[P]` trong cùng phase: thực hiện song song
+   - Sau khi hoàn thành tất cả FE tasks: **chạy `cd src/frontend && npm run build-libs && npm run build-apps:prod`**
+   - **Nếu build FAIL → dừng, báo lỗi, KHÔNG chuyển sang 6c**
+   - Đánh dấu `[x]` từng task FE vào tasks.md ngay sau khi hoàn thành
+
+   ### 6c — Mobile Phase (nếu HAS_MOBILE = true)
+
+   > Chỉ bắt đầu sau khi các phase trước hoàn thành.
+
+   <agent_to_use>Adopt vnr-mobile-developer persona — đọc `$PLUGIN_DIR/agents/vnr-mobile-developer.md` để nắm đầy đủ quy tắc Flutter/GetX, VnR widgets và git convention cho Mobile.</agent_to_use>
+
+   - Filter tasks: chỉ execute tasks có `File` path `src/app-mobile/`
+   - Phase-by-phase theo plan.md
+   - Parallel tasks `[P]` trong cùng phase: thực hiện song song
+   - Đánh dấu `[x]` từng task Mobile vào tasks.md ngay sau khi hoàn thành
 
 7. Implementation execution rules:
    - **Setup first**: Initialize project structure, dependencies, configuration
@@ -174,11 +227,21 @@ You **MUST** consider the user input before proceeding (if not empty).
    - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
 
 9. Completion validation:
-   - Verify all required tasks are completed
+   - Verify all required tasks are completed (across all scopes: BE + FE + Mobile)
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements
    - Confirm the implementation follows the technical plan
-   - Report final status with summary of completed work
+   - Report final status with summary:
+     ```
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Implementation Complete
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Backend  : X/N tasks ✅ | Build: ✅ PASS / ⛔ FAIL
+     Frontend : X/N tasks ✅ | Build: ✅ PASS / ⛔ FAIL
+     Mobile   : X/N tasks ✅
+     Files: N created, N modified
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     ```
 
 Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/vnr-tasks` first to regenerate the task list.
 

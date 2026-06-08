@@ -698,7 +698,7 @@ Get.dialog(
 
 ## 🛠️ Enforcement
 
-**vnr-developer agent** will:
+**vnr-mobile-developer agent** will:
 
 1. Reject code using banned patterns
 2. Require VnR widgets for all UI

@@ -38,7 +38,7 @@ reference: >-
 ### 4. Quality Over Speed
 
 - **Code quality > Delivery speed**
-- Mỗi PR phải qua: linting, unit tests (≥80%), integration tests, code review
+- Mỗi PR phải qua: linting, manual testcases, code review, arch review, security review
 - Không skip steps trong workflow
 
 ### 5. Knowledge Preservation
@@ -220,14 +220,15 @@ hrm-core/
 
 ## 📊 Quality Gates (Điều kiện bắt buộc)
 
-| Gate                  | Điều kiện                                        |
-| --------------------- | ------------------------------------------------ |
-| **Plan → Tasks**      | `plan.md` được user approve                      |
-| **Tasks → Implement** | `tasks.md` + test scenarios được user approve    |
-| **Implement → Tests** | Build thành công (0 errors)                      |
-| **Tests → Review**    | Unit tests 0 failures                            |
-| **Review → Merge**    | Arch PASS + Security PASS + Code review approved |
-| **Merge → Deploy**    | All tests pass + Documentation updated           |
+| Gate                     | Điều kiện                                              |
+| ------------------------ | ------------------------------------------------------ |
+| **Plan → Plan Review**   | Tự động — Plan Review chạy ngay sau Plan               |
+| **Plan Review → Tasks**  | `plan.md` được user approve (sau plan-reviewer feedback) |
+| **Tasks → Testcase**     | `tasks.md` được user approve                           |
+| **Testcase → Implement** | `testcases.md` được user approve                       |
+| **Implement → Review**   | Build thành công (0 errors)                            |
+| **Review → Merge**       | Arch PASS + Security PASS + Code review approved       |
+| **Merge → Deploy**       | All gates passed + Documentation updated               |
 
 ---
 
@@ -302,6 +303,7 @@ hrm-core/
 4. **API contracts**: Endpoints + DTOs → `contracts/api-commitments.md`
 5. **Plan**: Phases breakdown → `plan.md`
 6. **Tham chiếu Constitution**: đảm bảo tuân theo principles I-VI
+7. **Sau khi xong**: dừng và chờ Plan Review agent (Step 1b) chạy tự động
 
 ### For Developer Agent
 
@@ -313,11 +315,12 @@ hrm-core/
 
 ### For QA Agent
 
-1. **Đọc**: `05-test-cases.md`, quality standards
+1. **Đọc**: `testcases.md`, quality standards
 2. **Execute**: all test cases, performance benchmarks
 3. **Validate**: against spec requirements
-4. **Report**: `99-result.md` với pass/fail status
+4. **Report**: `testcase-report.md` với pass/fail status
 5. **Gate check**: no critical bugs, docs updated
+6. **E2E Stubs**: chỉ là placeholder — automation team sẽ implement body sau
 
 ### For Documenter Agent
 

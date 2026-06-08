@@ -13,27 +13,32 @@
 - **Không** trả lời dài dòng — mỗi kết quả ≤ 1 dòng per item.
 - **Không** thêm disclaimer, caveat, hoặc "lưu ý rằng...".
 - **Dùng table** thay vì prose cho danh sách.
-- **Dùng `✅ / ⚠️ / ⛔`** thay vì "Passed / Warning / Failed".
+- **Dùng `✅ / ⚠️ / ⛔ / ⏭`** thay vì "Passed / Warning / Failed / Stub".
 - **Omit** header và context đã biết — chỉ report delta và kết quả.
 
 ---
 
 ## Format per bước
 
-### Step 1 — Plan & Tasks
+### Step 1a — Plan
 ```
 plan.md: N phases | data-model.md: N entities | contracts: N endpoints
+→ Plan Review sẽ chạy tự động...
+```
+
+### Step 1b — Plan Review
+```
+Plan Review: ✅ PASS / ⚠️ WARN (N issues) / ⛔ FAIL (N critical)
+→ Chờ duyệt [approve/modify/reject]
+```
+
+### Step 1c — Tasks
+```
 tasks.md: N tasks (N parallel groups)
 → Chờ duyệt [yes/edit/abort]
 ```
 
-### Step 2a — QC Generate
-```
-test-scenarios.md: N scenarios (H High, M Medium, L Low)
-e2e stubs: N test.todo() in src/frontend/e2e/<feature>.e2e.spec.ts
-```
-
-### Step 2b — Testcase Writer
+### Step 2 — Testcase Writer
 ```
 testcases.md: N testcases (P0: N, P1: N, P2: N, P3: N)
 → Chờ duyệt [yes/edit/abort]
@@ -45,41 +50,32 @@ Tasks: N/N ✅ | Files: N created, N modified
 Build: ✅ OK | ⛔ FAILED: <error summary>
 ```
 
-### Step 4 — Unit Tests
-```
-BE: N test methods | FE: N specs | Playwright: N/N Happy Path implemented
-```
-
-### Step 5+6 — Review (song song)
+### Step 4+5 — Review (song song)
 ```
 Arch:   ✅ PASS | ⚠️ WARN (N findings) | ⛔ FAIL (N critical)
 Sec:    ✅ PASS | ⚠️ WARN (N findings) | ⛔ FAIL (N critical)
 ```
 
-### Step 7 — Run Tests
+### Step 6 — E2E Stubs
 ```
-BE: N passed, N failed (coverage: Z%) | FE: N passed, N failed (coverage: Z%)
-```
-
-### Step 8 — E2E
-```
-E2E: N passed, N failed, N todo
+⏭ E2E Stubs: src/frontend/e2e/<feature>.e2e.spec.ts ✅ exists / ✅ created (stub)
+Status: Pending automation team implementation
 ```
 
-### Step 9 — Report
+### Step 7 — Report
 ```
 final-report.md ✅ | user-guide.md ✅
 ```
 
 ---
 
-## Findings table (Arch/Sec Review)
+## Findings table (Plan Review / Arch / Sec Review)
 
 ```
-| Mức | File:dòng | Vấn đề | Fix |
-|-----|-----------|--------|-----|
-| 🔴  | X.cs:45   | ... | ... |
-| 🟡  | Y.ts:12   | ... | ... |
+| Mức | Check | Vấn đề | Fix |
+|-----|-------|--------|-----|
+| 🔴  | P-01  | ... | ... |
+| 🟡  | P-07  | ... | ... |
 ```
 
 Không cần prose giải thích — table là đủ.
@@ -89,7 +85,7 @@ Không cần prose giải thích — table là đủ.
 ## Progress tracker (auto-pipeline)
 
 ```
-✅ Step 1  ✅ Step 2a+2b  🔄 Step 3  ⬜ 4  ⬜ 5+6  ⬜ 7  ⬜ 8  ⬜ 9
+✅ Step 1a+1b+1c  ✅ Step 2  🔄 Step 3  ⬜ 4+5  ⬜ 6  ⬜ 7
 ```
 
 Hiển thị sau mỗi checkpoint, không cần lặp lại toàn bộ pipeline description.

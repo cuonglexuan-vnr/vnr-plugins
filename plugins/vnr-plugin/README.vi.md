@@ -40,7 +40,7 @@ Plugin chạy trên harness Claude Code / agent, cung cấp một pipeline phát
 | `vnr-wiki` | `/vnr-wiki` | Đọc và điều hướng `docs/wiki/` để lấy context nghiệp vụ / domain |
 | `vnr-wiki-sync` | `/vnr-wiki-sync` | Đồng bộ LLM wiki đã biên dịch với tài liệu nguồn mới nhất |
 | `vnr-constitution` | `/vnr-constitution` | Tạo hoặc cập nhật constitution dự án và đồng bộ template phụ thuộc |
-| `vnr-auto-pipeline` | `/vnr-auto-pipeline` | Chạy pipeline tự động đầy đủ: spec → plan → tasks → QC → implement → test → review → report |
+| `vnr-auto-pipeline` | `/vnr-auto-pipeline` | Chạy pipeline tự động đầy đủ: spec → plan → plan review → tasks → testcases → implement → arch+sec review → e2e stubs → report |
 | `vnr-customize` | `/vnr-customize` | Tạo hoặc ghi đè skill/agent ở phạm vi project để tùy chỉnh plugin |
 
 ---
@@ -50,7 +50,7 @@ Plugin chạy trên harness Claude Code / agent, cung cấp một pipeline phát
 Skill chủ đạo chạy toàn bộ pipeline phát triển theo trình tự có checkpoint:
 
 ```
-BA User Story file (<US-ID>_*.md) → plan.md → tasks.md → QC scenarios → implement → unit tests → arch review → sec review → E2E tests → final report
+BA User Story file (<US-ID>_*.md) → plan.md → plan review (HITL) → tasks.md → testcases.md → implement → arch review + sec review → e2e stubs → final report
 ```
 
 Mỗi giai đoạn uỷ quyền cho agent chuyên biệt tương ứng. Pipeline có checkpoint — có thể tiếp tục từ giai đoạn bị lỗi mà không cần chạy lại từ đầu.
@@ -75,6 +75,20 @@ Plugin đi kèm một đội agent chuyên biệt. Mỗi agent có vai trò, h�
 
 ---
 
+### `vnr-plan-reviewer` — Người Review Kế Hoạch ✦ MỚI
+
+> Review `plan.md` đối chiếu User Story để kiểm tra spec coverage, alignment kiến trúc và tính khả thi. Chạy tự động sau `vnr-planner`; cung cấp PASS/WARN/FAIL kèm bảng findings để Human đưa ra quyết định approve/reject đúng đắn.
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Vai trò** | Plan Quality Reviewer |
+| **Đầu vào** | `plan.md`, `data-model.md`, `contracts/api-commitments.md`, BA User Story file, architecture standards, constitution |
+| **Đầu ra** | Verdict review (PASS/WARN/FAIL) + bảng findings (18 checks: spec coverage, API contracts, architecture alignment, feasibility) |
+
+**Ràng buộc:** Chỉ đọc — không sửa plan. Chỉ report. Human quyết định approve/reject/modify.
+
+---
+
 ### `vnr-task-breaker` — Tech Lead (Phân rã Task)
 
 > Phân rã kế hoạch giao hàng thành task chi tiết, đặc định file-path, có phụ thuộc rõ ràng.
@@ -89,17 +103,31 @@ Plugin đi kèm một đội agent chuyên biệt. Mỗi agent có vai trò, h�
 
 ---
 
-### `vnr-developer` — Full-Stack Developer
+### `vnr-backend-developer` — Backend Developer
 
-> Triển khai code từng phase theo tasks.md.
+> Triển khai code ASP.NET Core từng phase theo tasks.md. Chỉ xử lý các task `src/backend/`.
 
 | Thuộc tính | Chi tiết |
 |---|---|
-| **Vai trò** | Full-Stack Developer |
-| **Đầu vào** | `tasks.md` (bắt buộc), `plan.md` (bắt buộc), `data-model.md`, `contracts/`, `research.md` |
-| **Đầu ra** | Code trong `src/backend` và/hoặc `src/frontend`; đánh dấu task `[x]` khi hoàn thành |
+| **Vai trò** | Backend Developer |
+| **Đầu vào** | `tasks.md` (bắt buộc), `plan.md`, `data-model.md`, `contracts/api-commitments.md`, wiki context |
+| **Đầu ra** | Code trong `src/backend/`; đánh dấu BE task `[x]` khi hoàn thành; báo cáo build status |
 
-**Ràng buộc:** Không thêm tính năng ngoài tasks. Tuân theo Clean Architecture / CQRS và quy ước dự án. Không commit cross-repo trong một lệnh.
+**Ràng buộc:** Không thêm tính năng ngoài tasks. Tuân theo Clean Architecture / CQRS. Không đụng vào `src/frontend/` hay `src/app-mobile/`.
+
+---
+
+### `vnr-frontend-developer` — Frontend Developer
+
+> Triển khai code Angular 19 từng phase theo tasks.md. Chỉ xử lý các task `src/frontend/`.
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Vai trò** | Frontend Developer |
+| **Đầu vào** | `tasks.md` (bắt buộc), `plan.md`, `contracts/api-commitments.md` (đọc đầu tiên để lấy API shape), wiki context |
+| **Đầu ra** | Code trong `src/frontend/`; đánh dấu FE task `[x]` khi hoàn thành; báo cáo build status |
+
+**Ràng buộc:** Không thêm tính năng ngoài tasks. Tuân theo Angular 19 Micro-frontend conventions. Không đụng vào `src/backend/` hay `src/app-mobile/`.
 
 ---
 
@@ -224,7 +252,7 @@ specs/
            └── user-guide.md            # tài liệu người dùng cuối
 
 src/
- ├── backend/                   # code backend (đầu ra vnr-developer)
+ ├── backend/                   # code backend (đầu ra vnr-backend-developer)
  └── frontend/
       └── e2e/
            └── <feature>.e2e.spec.ts   # E2E tests (đầu ra vnr-test-engineer)
@@ -332,6 +360,6 @@ SKILL.md  →  workflow.md  →  steps/step-01.md … step-N.md
 ```
 
 - **Từng bước một**: harness load và thực thi từng file step riêng lẻ.
-- **Agent chuyên biệt**: mỗi bước uỷ quyền cho một agent được đặt tên (ví dụ: `vnr-planner`, `vnr-developer`) có hợp đồng I/O xác định.
+- **Agent chuyên biệt**: mỗi bước uỷ quyền cho một agent được đặt tên (ví dụ: `vnr-planner`, `vnr-backend-developer`, `vnr-frontend-developer`) có hợp đồng I/O xác định.
 - **Checkpoint BA**: pipeline tự động dừng tại các gate xác định để con người review trước khi tiếp tục.
 - **Templates**: mọi artifact đầu ra đều được render từ các template chuẩn trong `templates/`.

@@ -40,7 +40,7 @@ A content-driven plugin for the Claude Code / agent harness that provides a full
 | `vnr-wiki` | `/vnr-wiki` | Read and navigate `docs/wiki/` to gather domain/business context |
 | `vnr-wiki-sync` | `/vnr-wiki-sync` | Synchronize the compiled LLM wiki with the latest raw source documents |
 | `vnr-constitution` | `/vnr-constitution` | Create or update the project constitution and sync dependent templates |
-| `vnr-auto-pipeline` | `/vnr-auto-pipeline` | Run the full automated pipeline: spec → plan → tasks → QC → implement → tests → review → report |
+| `vnr-auto-pipeline` | `/vnr-auto-pipeline` | Run the full automated pipeline: spec → plan → plan review → tasks → testcases → implement → arch+sec review → e2e stubs → report |
 | `vnr-customize` | `/vnr-customize` | Create or override project-scoped skills/agents to customize plugin defaults |
 
 ---
@@ -50,7 +50,7 @@ A content-driven plugin for the Claude Code / agent harness that provides a full
 The flagship skill runs the entire development pipeline end-to-end with checkpoints:
 
 ```
-BA User Story file (<US-ID>_*.md) → plan.md → tasks.md → QC scenarios → implement → unit tests → arch review → sec review → E2E tests → final report
+BA User Story file (<US-ID>_*.md) → plan.md → plan review (HITL) → tasks.md → testcases.md → implement → arch review + sec review → e2e stubs → final report
 ```
 
 Each stage delegates to the appropriate specialized agent. The pipeline is checkpointed — it can be resumed from any failed stage.
@@ -75,6 +75,20 @@ The plugin ships a team of specialized agents. Each agent has a defined role, I/
 
 ---
 
+### `vnr-plan-reviewer` — Plan Quality Reviewer ✦ NEW
+
+> Reviews `plan.md` against the User Story for spec coverage, architecture alignment and feasibility. Runs automatically after `vnr-planner`; provides PASS/WARN/FAIL with findings table to help humans make an informed approve/reject decision.
+
+| Attribute | Detail |
+|---|---|
+| **Role** | Plan Quality Reviewer |
+| **Inputs** | `plan.md`, `data-model.md`, `contracts/api-commitments.md`, BA User Story file, architecture standards, constitution |
+| **Outputs** | Review verdict (PASS/WARN/FAIL) + findings table (18 checks: spec coverage, API contracts, architecture alignment, feasibility) |
+
+**Constraints:** Read-only — does not modify plan. Reports only. Human decides approve/reject/modify.
+
+---
+
 ### `vnr-task-breaker` — Tech Lead (Task Breaker)
 
 > Breaks a delivery plan into granular, file-path-specific, dependency-aware tasks.
@@ -89,17 +103,31 @@ The plugin ships a team of specialized agents. Each agent has a defined role, I/
 
 ---
 
-### `vnr-developer` — Full-Stack Developer
+### `vnr-backend-developer` — Backend Developer
 
-> Implements code artifacts phase-by-phase following tasks.md.
+> Implements ASP.NET Core backend code phase-by-phase following tasks.md. Handles `src/backend/` tasks only.
 
 | Attribute | Detail |
 |---|---|
-| **Role** | Full-Stack Developer |
-| **Inputs** | `tasks.md` (required), `plan.md` (required), `data-model.md`, `contracts/`, `research.md` |
-| **Outputs** | Implemented code in `src/backend` and/or `src/frontend`; marks tasks `[x]` when done |
+| **Role** | Backend Developer |
+| **Inputs** | `tasks.md` (required), `plan.md`, `data-model.md`, `contracts/api-commitments.md`, wiki context |
+| **Outputs** | Implemented code in `src/backend/`; marks BE tasks `[x]` when done; reports build status |
 
-**Constraints:** Do not add features beyond tasks. Follows Clean Architecture / CQRS and project conventions. Does not commit cross-repo in a single command.
+**Constraints:** Do not add features beyond tasks. Follows Clean Architecture / CQRS. Does not touch `src/frontend/` or `src/app-mobile/`.
+
+---
+
+### `vnr-frontend-developer` — Frontend Developer
+
+> Implements Angular 19 frontend code phase-by-phase following tasks.md. Handles `src/frontend/` tasks only.
+
+| Attribute | Detail |
+|---|---|
+| **Role** | Frontend Developer |
+| **Inputs** | `tasks.md` (required), `plan.md`, `contracts/api-commitments.md` (read first for API shape), wiki context |
+| **Outputs** | Implemented code in `src/frontend/`; marks FE tasks `[x]` when done; reports build status |
+
+**Constraints:** Do not add features beyond tasks. Follows Angular 19 Micro-frontend conventions. Does not touch `src/backend/` or `src/app-mobile/`.
 
 ---
 
@@ -224,7 +252,7 @@ specs/
            └── user-guide.md            # end-user documentation
 
 src/
- ├── backend/                   # backend implementation (vnr-developer output)
+ ├── backend/                   # backend implementation (vnr-backend-developer output)
  └── frontend/
       └── e2e/
            └── <feature>.e2e.spec.ts   # E2E tests (vnr-test-engineer output)
@@ -333,6 +361,6 @@ SKILL.md  →  workflow.md  →  steps/step-01.md … step-N.md
 ```
 
 - **One step at a time**: the harness loads and executes each step file individually.
-- **Specialized agents**: each step delegates to a named agent (e.g., `vnr-planner`, `vnr-developer`) that has a defined I/O contract.
+- **Specialized agents**: each step delegates to a named agent (e.g., `vnr-planner`, `vnr-backend-developer`, `vnr-frontend-developer`) that has a defined I/O contract.
 - **Human checkpoints**: the automated pipeline pauses at defined gates for human review before proceeding.
 - **Templates**: all output artifacts are rendered using the canonical templates in `templates/`.

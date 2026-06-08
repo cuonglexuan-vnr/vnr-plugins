@@ -46,7 +46,7 @@ Bộ vnr-plugin cung cấp sẵn các skill (slash command) và agent (system pr
 | Tình huống | Giải pháp |
 |------------|-----------|
 | Muốn thay đổi cách `vnr-plan` sinh plan.md (ví dụ: thêm section riêng của dự án) | `/vnr-customize override skill vnr-plan` |
-| Muốn chỉnh sửa system prompt của vnr-developer (ví dụ: thêm coding convention riêng) | `/vnr-customize override agent vnr-developer` |
+| Muốn chỉnh sửa system prompt của vnr-backend-developer (ví dụ: thêm coding convention riêng) | `/vnr-customize override agent vnr-backend-developer` |
 | Dự án cần một skill mới để chạy lint trước khi implement | `/vnr-customize new skill vnr-lint` |
 | Cần một agent chuyên dụng review database migration | `/vnr-customize new agent vnr-db-reviewer` |
 | Muốn chỉnh sửa vnr-wiki | **Không được phép** — xem [mục 9](#9-skillagent-không-được-phép-customize) |
@@ -122,10 +122,10 @@ Sau đó bạn chỉnh sửa nội dung Markdown bên dưới frontmatter theo n
 
 ### 4.2 Override agent có sẵn
 
-**Mục tiêu**: Thêm coding convention riêng cho vnr-developer agent.
+**Mục tiêu**: Thêm coding convention riêng cho vnr-backend-developer agent.
 
 ```
-/vnr-customize override agent vnr-developer
+/vnr-customize override agent vnr-backend-developer
 ```
 
 **Kết quả:**
@@ -134,12 +134,10 @@ Sau đó bạn chỉnh sửa nội dung Markdown bên dưới frontmatter theo n
 repo/
   .claude/
     agents/
-      vnr-developer.md   <-- Bản ghi đè, có thể chỉnh sửa tự do
+      vnr-backend-developer.md   <-- Bản ghi đè, có thể chỉnh sửa tự do
 ```
 
-**Lưu ý quan trọng**: Các skill đang tham chiếu agent qua đường dẫn gốc `vnr-plugin/agents/vnr-developer.md`. Sau khi override agent, bạn cần **override luôn các skill** liên quan và cập nhật đường dẫn agent sang `.claude/agents/vnr-developer.md`.
-
-Skill sẽ tự động quét và cảnh báo bạn về điều này (xem [mục 6](#6-dependency-scan--cảnh-báo)).
+**Lưu ý quan trọng**: Skill `vnr-implement` tự động dispatch đến agent theo scope. Sau khi override agent, bạn cần **override luôn skill `vnr-implement`** và cập nhật đường dẫn agent sang `.claude/agents/vnr-backend-developer.md`.
 
 ---
 
@@ -226,7 +224,7 @@ Bạn muốn làm gì?
 
 Bạn muốn customize loại nào?
 [1] Skill (slash command — ví dụ: /vnr-plan, /vnr-tasks)
-[2] Agent (system prompt — ví dụ: vnr-planner, vnr-developer)
+[2] Agent (system prompt — ví dụ: vnr-planner, vnr-backend-developer, vnr-frontend-developer)
 
 > 1
 
@@ -306,7 +304,7 @@ repo/
       vnr-lint/                   <-- Skill mới
         SKILL.md
     agents/                       <-- Project-scope agents
-      vnr-developer.md
+      vnr-backend-developer.md
       vnr-db-reviewer.md          <-- Agent mới
     settings.json
   vnr-plugin/                     <-- Plugin gốc — KHÔNG CHỈNH SỬA
@@ -326,7 +324,7 @@ Sau mỗi lần tạo/override, skill **tự động quét** toàn bộ bộ vnr
 | Loại | Ví dụ | Mức độ |
 |------|-------|--------|
 | **DIRECT_CALL** | `vnr-auto-pipeline` gọi `skill: "vnr-plan"` | Cần override caller |
-| **AGENT_BINDING** | `vnr-implement` có `<agent_to_use>vnr-developer</agent_to_use>` | Cần override skill và cập nhật path |
+| **AGENT_BINDING** | `vnr-implement` dispatches to `vnr-backend-developer` / `vnr-frontend-developer` / `vnr-mobile-developer` | Cần override skill và cập nhật path |
 | **ARTIFACT_DEPENDENCY** | Script kiểm tra `plan.md` tồn tại | Đảm bảo output tương thích |
 | **DOCUMENTATION_REF** | Tên xuất hiện trong bảng, comment | Chỉ thông tin |
 | **SCRIPT_REF** | Script tham chiếu tên skill/agent | Cần review thủ công |
@@ -396,7 +394,7 @@ Khi customize, bạn **phải** tuân thủ các rule sau:
 rm -rf .claude/skills/vnr-plan/
 
 # Hoàn tác agent override
-rm .claude/agents/vnr-developer.md
+rm .claude/agents/vnr-backend-developer.md
 ```
 
 Sau khi xóa, Claude Code sẽ tự động sử dụng lại phiên bản gốc từ plugin.
@@ -430,7 +428,7 @@ Có. Chạy `/vnr-customize` nhiều lần, hoặc sử dụng tính năng **int
 
 ### Q: Tôi override agent nhưng slash command vẫn dùng agent cũ?
 
-Đúng. Skill tham chiếu agent qua **đường dẫn file** (ví dụ `vnr-plugin/agents/vnr-developer.md`). Sau khi override agent sang `.claude/agents/vnr-developer.md`, bạn cần **override luôn skill** và cập nhật đường dẫn. Skill sẽ tự động cảnh báo bạn về điều này trong Dependency Scan.
+Đúng. Skill `vnr-implement` dispatch đến agent theo scope (BE/FE/Mobile) dựa trên path prefix trong `tasks.md`. Sau khi override agent sang `.claude/agents/vnr-backend-developer.md` (hoặc `vnr-frontend-developer.md`), bạn cần **override luôn skill `vnr-implement`** và cập nhật đường dẫn. Skill sẽ tự động cảnh báo bạn về điều này trong Dependency Scan.
 
 ### Q: Override có bị mất khi update plugin không?
 

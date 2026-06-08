@@ -1,9 +1,9 @@
 ---
 name: "vnr-auto-pipeline"
 description: >-
-  Pipeline tự động từ spec → report: Plan → Tasks → QC → Implement → Unit Test →
-  Arch + Sec Review (song song) → Run Tests → E2E → Report.
-  Checkpoint confirm sau mỗi bước quan trọng.
+  Pipeline tự động từ spec → report: Plan → Plan Review → Tasks → Testcases →
+  Implement → Arch + Sec Review (song song) → E2E Stubs → Report.
+  Checkpoint HITL sau mỗi bước quan trọng.
 argument-hint: "<feature-name> [--from=N]"
 compatibility: "Requires spec-kit project structure with vnr-plugin/ directory"
 user-invocable: true
@@ -40,12 +40,12 @@ src/
 
 ## Nguyên tắc thực thi
 
-- **Checkpoint**: Dừng và chờ user confirm `[yes]` trước khi sang bước tiếp theo tại các bước đánh dấu 🛑.
+- **Checkpoint**: Dừng và chờ user confirm trước khi sang bước tiếp theo tại các bước đánh dấu 🛑.
 - **Skill tool**: Dùng cho các bước có sẵn skill (vnr-plan, vnr-tasks, vnr-implement). Không chạy PS script thủ công.
 - **Agent tool**: Dùng `subagent_type: "general-purpose"` cho các bước cần agent chuyên dụng. Mỗi Agent prompt phải bắt đầu bằng việc đọc file agent tương ứng.
-- **Song song**: Steps 5+6 dispatch cả 2 Agent tool calls trong cùng 1 message.
+- **Song song**: Steps 4+5 dispatch cả 2 Agent tool calls trong cùng 1 message.
 - **Constitution**: `$PLUGIN_DIR/memory/constitution.md` là tài liệu quy tắc gốc — mọi agent phải tuân thủ.
-- **Wiki context**: Các bước Plan (1), QC (2), Implement (3), Report (9) phải đọc `docs/wiki/` trước khi thực hiện. Xem hướng dẫn tại `$PLUGIN_DIR/skills/vnr-wiki/SKILL.md`.
+- **Wiki context**: Các bước Plan (1a), Testcase (2), Implement (3), Report (7) phải đọc `docs/wiki/` trước khi thực hiện. Xem hướng dẫn tại `$PLUGIN_DIR/skills/vnr-wiki/SKILL.md`.
 
 ---
 
@@ -53,17 +53,16 @@ src/
 
 | Step | Agent | File | Cách gọi |
 |------|-------|------|----------|
-| Pre | — | `docs/wiki/` | Skill tool: `vnr-wiki` (Steps 1,2,3,9) |
+| Pre | — | `docs/wiki/` | Skill tool: `vnr-wiki` (Steps 1a, 2, 3, 7) |
 | 1a | vnr-planner | `$PLUGIN_DIR/agents/vnr-planner.md` | Skill tool: `vnr-plan` |
-| 1b | vnr-task-breaker | `$PLUGIN_DIR/agents/vnr-task-breaker.md` | Skill tool: `vnr-tasks` |
-| 2 | vnr-qc-generator | `$PLUGIN_DIR/agents/vnr-qc-generator.md` | Agent tool |
-| 3 | vnr-developer | `$PLUGIN_DIR/agents/vnr-developer.md` | Skill tool: `vnr-implement` |
-| 4 | vnr-test-engineer | `$PLUGIN_DIR/agents/vnr-test-engineer.md` | Agent tool |
-| 5 | vnr-arch-reviewer | `$PLUGIN_DIR/agents/vnr-arch-reviewer.md` | Agent tool (song song) |
-| 6 | vnr-sec-reviewer | `$PLUGIN_DIR/agents/vnr-sec-reviewer.md` | Agent tool (song song) |
-| 7 | — | — | CLI: `dotnet test` / `npm test` |
-| 8 | — | — | CLI: `npx playwright test` |
-| 9 | vnr-tech-writer | `$PLUGIN_DIR/agents/vnr-tech-writer.md` | Agent tool |
+| 1b | vnr-plan-reviewer | `$PLUGIN_DIR/agents/vnr-plan-reviewer.md` | Agent tool |
+| 1c | vnr-task-breaker | `$PLUGIN_DIR/agents/vnr-task-breaker.md` | Skill tool: `vnr-tasks` |
+| 2 | vnr-testcase-writer | `$PLUGIN_DIR/agents/vnr-testcase-writer.md` | Agent tool |
+| 3 | vnr-backend-developer / vnr-frontend-developer / vnr-mobile-developer | auto-detected by scope from tasks.md | Skill tool: `vnr-implement` |
+| 4 | vnr-arch-reviewer | `$PLUGIN_DIR/agents/vnr-arch-reviewer.md` | Agent tool (song song) |
+| 5 | vnr-sec-reviewer | `$PLUGIN_DIR/agents/vnr-sec-reviewer.md` | Agent tool (song song) |
+| 6 | — | — | CLI: stub check/create |
+| 7 | vnr-tech-writer | `$PLUGIN_DIR/agents/vnr-tech-writer.md` | Agent tool |
 
 ---
 
@@ -86,7 +85,7 @@ cd src/frontend && rtk git branch --show-current
   cd src/backend && git checkout -b feature/<feature>
   cd src/frontend && git checkout -b feature/<feature>
   ```
-- `specs/<feature>/plan.md` và `tasks.md` đã tồn tại → hỏi: "Plan & Tasks đã có. Bắt đầu từ Step 2? `[yes]` / `[chạy lại từ Step 1]`"
+- `specs/<feature>/plan.md` và `tasks.md` đã tồn tại → hỏi: "Plan & Tasks đã có. Bắt đầu từ Step 2? `[yes]` / `[chạy lại từ Step 1a]`"
 
 Hiển thị progress tracker:
 
@@ -97,26 +96,23 @@ Hiển thị progress tracker:
  BE branch: feature/<feature> (src/backend/)
  FE branch: feature/<feature> (src/frontend/)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- ⬜ Step 1    Plan + Tasks
- ⬜ Step 2a   QC Generate (e2e stubs)
- ⬜ Step 2b   Testcase Writer (testcases.md)
+ ⬜ Step 1a   Plan
+ ⬜ Step 1b   Plan Review
+ ⬜ Step 1c   Tasks
+ ⬜ Step 2    Testcases
  ⬜ Step 3    Implement
- ⬜ Step 4    Unit Test Write
- ⬜ Step 5+6  Arch Review + Security Review
- ⬜ Step 7    Run Tests
- ⬜ Step 8    E2E Automation
- ⬜ Step 9    Report
+ ⬜ Step 4+5  Arch Review + Security Review
+ ⬜ Step 6    E2E Stubs
+ ⬜ Step 7    Report
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Bắt đầu pipeline? [yes] / [no]
 ```
 
 ---
 
-## Step 1 — Plan & Tasks 🛑
+## Step 1a — Plan
 
-<agent_to_use>Sử dụng vnr-planner agent (Step 1a) và vnr-task-breaker agent (Step 1b)</agent_to_use>
-
-### 1a. Plan
+<agent_to_use>Sử dụng vnr-planner agent</agent_to_use>
 
 ```
 Dùng Skill tool:
@@ -131,7 +127,61 @@ Skill `vnr-plan` sẽ đọc `$PLUGIN_DIR/agents/vnr-planner.md` nội bộ, th�
 **Checkpoint nội bộ**: Khi vnr-plan hỏi `[A] Approve / [E] Edit` → **dừng, chờ user**.
 **Failure**: gate fail hoặc NEEDS CLARIFICATION không resolve → dừng pipeline.
 
-### 1b. Tasks (sau khi plan approved)
+---
+
+## Step 1b — Plan Review 🛑
+
+<agent_to_use>Sử dụng vnr-plan-reviewer agent</agent_to_use>
+
+Chạy ngay sau khi `vnr-plan` sinh artifacts xong (tự động, không cần user trigger).
+
+```
+Dùng Agent tool:
+  subagent_type: "general-purpose"
+  prompt: |
+    Đọc và tuân theo system prompt: $PLUGIN_DIR/agents/vnr-plan-reviewer.md
+
+    FEATURE: <feature>
+
+    ĐỌC BẮT BUỘC (theo thứ tự):
+    - specs/<feature>/<feature>_*.md          (User Story gốc — source of truth)
+    - specs/<feature>/plan.md                 (plan vừa sinh)
+    - specs/<feature>/data-model.md           (data model)
+    - specs/<feature>/contracts/api-commitments.md (API contracts)
+    - specs/<feature>/research.md             (nếu có)
+    - $PLUGIN_DIR/standards/backend/02-architecture-and-structure.md
+    - $PLUGIN_DIR/standards/frontend/02-architecture-and-structure.md
+    - $PLUGIN_DIR/memory/constitution.md
+
+    THỰC HIỆN:
+    Chạy đầy đủ 18 checks (P-01 đến P-18) từ agent file.
+    Phân loại: Critical (🔴) và Warning (🟡).
+
+    OUTPUT: Kết luận PASS ✅ / WARN ⚠️ / FAIL ⛔ + bảng findings + gợi ý Human Reviewer.
+```
+
+**Checkpoint** 🛑:
+
+```
+✅ Step 1b hoàn thành — Plan Review
+  Verdict: ✅ PASS / ⚠️ WARN (N issues) / ⛔ FAIL (N critical)
+  [Bảng findings hiển thị bên trên]
+
+[Nếu FAIL] ⛔ Plan có vấn đề critical. Vui lòng:
+  → [reject — sửa plan rồi chạy lại: /vnr-auto-pipeline <feature> --from=1a]
+  → [override — tiếp tục dù FAIL (không khuyến nghị)]
+
+[Nếu PASS/WARN] → Duyệt plan?
+  [approve] — tiếp tục Step 1c (Tasks)
+  [modify] — điều chỉnh plan.md trực tiếp rồi gõ [approve]
+  [reject] — chạy lại từ Step 1a: /vnr-auto-pipeline <feature> --from=1a
+```
+
+---
+
+## Step 1c — Tasks
+
+<agent_to_use>Sử dụng vnr-task-breaker agent</agent_to_use>
 
 ```
 Dùng Skill tool:
@@ -141,61 +191,18 @@ Dùng Skill tool:
 
 Skill `vnr-tasks` sẽ đọc `$PLUGIN_DIR/agents/vnr-task-breaker.md` nội bộ, sinh `tasks.md`.
 
-**Checkpoint**:
+Sau khi hoàn thành, hiển thị summary và **tự động chuyển sang Step 2**:
 
 ```
-✅ Step 1 hoàn thành
+✅ Step 1c hoàn thành
   plan.md — [N phases] | data-model.md — [N entities] | contracts: [N endpoints]
   tasks.md — [N tasks] ([N parallel groups])
-→ Tiếp tục Step 2? [yes] / [xem plan/tasks trước] / [abort]
+→ Tự động chuyển sang Step 2 (Testcase Writer)...
 ```
 
 ---
 
-## Step 2 — QC Generate + Testcase Writer (SONG SONG) 🛑
-
-Dispatch **cả 2 Agent tool calls trong cùng 1 message**:
-
-### Step 2a — QC Generate (e2e stubs)
-
-<agent_to_use>Sử dụng vnr-qc-generator agent</agent_to_use>
-
-```
-Dùng Agent tool:
-  subagent_type: "general-purpose"
-  prompt: |
-    Đọc và tuân theo system prompt: $PLUGIN_DIR/agents/vnr-qc-generator.md
-
-    FEATURE: <feature>
-
-    ĐỌC WIKI TRƯỚC (business context):
-    - docs/wiki/index.md → xác định entries liên quan
-    - docs/wiki/concepts/<feature>.md → AC, business rules → Happy Path scenarios
-    - docs/wiki/entities/<entity>.md → validation rules → Validation & Error scenarios
-    - docs/wiki/concepts/<auth>.md → phân quyền → Authorization scenarios
-    (Tuân theo $PLUGIN_DIR/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
-
-    ĐỌC SPEC:
-    - specs/<feature>/<feature>_*.md
-    - specs/<feature>/plan.md
-    - specs/<feature>/contracts/api-commitments.md (nếu có)
-    - $PLUGIN_DIR/standards/backend/03-permission.md
-    - $PLUGIN_DIR/standards/frontend/03-permission.md
-
-    CẤU TRÚC SOURCE: src/frontend/ là git repo riêng, e2e tests tại src/frontend/e2e/
-
-    THỰC HIỆN:
-    1. Tạo specs/<feature>/test-scenarios.md:
-       - Nhóm: Happy Path, Validation & Error, Authorization, Edge Cases
-       - Format: Given/When/Then với TC-ID, Priority (High/Medium/Low), Role
-    2. Tạo src/frontend/e2e/<feature>.e2e.spec.ts:
-       - test.todo() cho mỗi scenario, group bằng test.describe
-       - Không implement body — chỉ stubs
-
-    BÁO CÁO: số scenarios per nhóm, path 2 files.
-```
-
-### Step 2b — Testcase Writer
+## Step 2 — Testcase Writer
 
 <agent_to_use>Sử dụng vnr-testcase-writer agent</agent_to_use>
 
@@ -230,22 +237,20 @@ Dùng Agent tool:
 
     BÁO CÁO: số testcases per module, path file.
 ```
-**Checkpoint**:
-**Sau khi CẢ 2 hoàn thành**, tổng hợp:
+
+Sau khi hoàn thành, hiển thị summary và **tự động chuyển sang Step 3**:
 
 ```
 ✅ Step 2 hoàn thành
-  Step 2a: test-scenarios.md — [N scenarios] (H High, M Medium, L Low)
-           e2e stubs — [N test.todo()] in src/frontend/e2e/<feature>.e2e.spec.ts
-  Step 2b: testcases.md — [N testcases] (P0/P1/P2/P3)
-→ Tiếp tục Step 3? [yes] / [review scenarios/testcases] / [abort]
+  testcases.md — [N testcases] (P0: N, P1: N, P2: N, P3: N)
+→ Tự động chuyển sang Step 3 (Implement)...
 ```
 
 ---
 
 ## Step 3 — Implement 🛑
 
-<agent_to_use>Sử dụng vnr-developer agent</agent_to_use>
+<agent_to_use>vnr-implement skill tự động dispatch đến vnr-backend-developer / vnr-frontend-developer / vnr-mobile-developer dựa trên scope của tasks.md</agent_to_use>
 
 ```
 Dùng Skill tool:
@@ -253,10 +258,12 @@ Dùng Skill tool:
   args: ""
 ```
 
-Skill `vnr-implement` sẽ đọc `$PLUGIN_DIR/agents/vnr-developer.md` nội bộ, thực hiện:
-- Load tasks.md + plan.md + contracts/ + data-model.md
-- Execute từng task theo phase, đánh dấu `[x]` khi done
-- Dừng nếu non-parallel task fails
+Skill `vnr-implement` tự động phát hiện scope từ `tasks.md` và dispatch **tuần tự**:
+- `src/backend/` tasks → vnr-backend-developer (ASP.NET Core)
+- `src/frontend/` tasks → vnr-frontend-developer (Angular 19)
+- `src/app-mobile/` tasks → vnr-mobile-developer (Flutter)
+
+Dispatch: Backend → Frontend → Mobile (BE build phải PASS trước khi FE bắt đầu).
 
 **Checkpoint nội bộ**: Khi vnr-implement hỏi về checklists → **dừng, chờ user**.
 **Build fail** → dừng pipeline.
@@ -267,68 +274,12 @@ Skill `vnr-implement` sẽ đọc `$PLUGIN_DIR/agents/vnr-developer.md` nội b�
 ✅ Step 3 hoàn thành
   Tasks: X/N ✅ | Files: N created, N modified
   Build: ✅ OK
-→ Tiếp tục Step 4? [yes] / [review code] / [abort]
+→ Tiếp tục Step 4+5? [yes] / [review code] / [abort]
 ```
 
 ---
 
-## Step 4 — Unit Test Write
-
-<agent_to_use>Sử dụng vnr-test-engineer agent</agent_to_use>
-
-```
-Dùng Agent tool:
-  subagent_type: "general-purpose"
-  prompt: |
-    Đọc và tuân theo system prompt: $PLUGIN_DIR/agents/vnr-test-engineer.md
-
-    FEATURE: <feature>
-
-    ĐỌC WIKI (business context để viết đúng test cases):
-    - docs/wiki/index.md → entries liên quan
-    - docs/wiki/entities/<entity>.md → validation rules → boundary test cases
-    - docs/wiki/concepts/<feature>.md → business rules → exception test cases
-    (Tuân theo $PLUGIN_DIR/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
-
-    CẤU TRÚC SOURCE:
-    - src/backend/ = git repo riêng (ASP.NET Core)
-    - src/frontend/ = git repo riêng (Angular 19)
-    - E2E tests tại src/frontend/e2e/
-
-    ĐỌC SPEC & CODE:
-    - specs/<feature>/test-scenarios.md
-    - specs/<feature>/plan.md
-    - specs/<feature>/contracts/api-commitments.md (nếu có)
-    - Chạy: cd src/backend && git diff --name-only HEAD~1 (xác định BE files)
-    - Chạy: cd src/frontend && git diff --name-only HEAD~1 (xác định FE files)
-
-    THỰC HIỆN:
-    1. BACKEND (xUnit + Moq): test per Handler + Validator
-       - Output: src/backend/Tests/...
-       - Happy path, validation fail, business rules, repository verify
-    2. FRONTEND (Jasmine): test per Component + Service
-       - Output: src/frontend/apps/<remote-app>/**/*.spec.ts
-       - Create, load on init, empty state, HTTP calls
-    3. PLAYWRIGHT: implement body cho tất cả Happy Path (thay test.todo)
-       - File: src/frontend/e2e/<feature>.e2e.spec.ts
-       - Giữ test.todo cho scenarios cần data phức tạp
-
-    TARGET: coverage ≥ 80%
-    KHÔNG modify source code — chỉ viết test files.
-    BÁO CÁO: số test methods (BE / FE), số Playwright stubs implemented.
-```
-
-**Không checkpoint** — tự động chuyển sang Step 5+6.
-
-```
-✅ Step 4 hoàn thành
-  BE: [N methods] | FE: [N specs] | Playwright: [X/Y Happy Path implemented]
-→ Chuyển sang Step 5+6 (Review song song)...
-```
-
----
-
-## Step 5+6 — Arch Review + Security Review (SONG SONG) 🛑
+## Step 4+5 — Arch Review + Security Review (SONG SONG) 🛑
 
 Dispatch **cả 2 Agent tool calls trong cùng 1 message**:
 
@@ -385,90 +336,68 @@ Dùng Agent tool:
 
     OUTPUT: Kết luận PASS ✅ / WARN ⚠️ / FAIL ⛔ + bảng findings + OWASP ref.
 ```
+
 **Checkpoint**:
 **Sau khi CẢ 2 hoàn thành**, tổng hợp:
 
 ```
-✅ Step 5+6 hoàn thành
+✅ Step 4+5 hoàn thành
   Architecture: ✅ PASS / ⚠️ WARN (N findings) / ⛔ FAIL (N critical)
   Security:     ✅ PASS / ⚠️ WARN (N findings) / ⛔ FAIL (N critical)
 
 [Nếu FAIL] ⛔ Pipeline dừng. Cần fix trước khi tiếp tục.
-  → [fix rồi chạy lại: /vnr-auto-pipeline <feature> --from=5] / [abort]
+  → [fix rồi chạy lại: /vnr-auto-pipeline <feature> --from=4] / [abort]
 
-[Nếu PASS/WARN] → Tiếp tục Step 7? [yes] / [abort]
+[Nếu PASS/WARN] → Tiếp tục Step 6? [yes] / [abort]
 ```
 
 ---
 
-## Step 7 — Run Unit Tests 🛑
+## Step 6 — E2E Stubs (Placeholder)
+
+> Bước này là **placeholder** cho automation test team. Pipeline **KHÔNG chạy tests**.
+> Automation team sẽ implement body sau — pipeline chỉ đảm bảo stub file tồn tại.
 
 ```bash
-# Backend (nếu có .cs changes)
-BE_SCOPE=$(cd src/backend && git diff --name-only HEAD~1)
-if echo "$BE_SCOPE" | grep -q '\.cs$'; then
-  cd src/backend && rtk dotnet test --verbosity normal --logger "console;verbosity=normal"
-fi
+E2E_FILE="src/frontend/e2e/<feature>.e2e.spec.ts"
 
-# Frontend (nếu có .ts changes)
-FE_SCOPE=$(cd src/frontend && git diff --name-only HEAD~1)
-if echo "$FE_SCOPE" | grep -q '\.ts$'; then
-  cd src/frontend && rtk npm test -- --watch=false --browsers=ChromeHeadless
-fi
-```
-
-Parse kết quả: Total / Passed / Failed / Skipped / Coverage.
-
-**Điều kiện**:
-- **PASS**: Failed = 0 (Coverage ≥ 80% nếu đo được)
-- **FAIL**: Bất kỳ failure nào
-
-```
-✅ Step 7 hoàn thành
-  Backend: X passed (coverage: Z%)
-  Frontend: X passed (coverage: Z%)
-
-[Nếu FAIL] ⛔ Tests failed.
-  → [fix rồi chạy lại: /vnr-auto-pipeline <feature> --from=7] / [abort]
-
-[Nếu PASS] → Tiếp tục Step 8? [yes] / [abort]
-```
-
----
-
-## Step 8 — E2E Automation (Playwright)
-
-```bash
-# Health check backend trước
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/health 2>/dev/null || echo "000")
-
-if [ "$HTTP_CODE" != "200" ]; then
-  echo "⚠️ Backend API chưa chạy (HTTP $HTTP_CODE). SKIP E2E — không FAIL pipeline."
-  echo "Start bằng: cd src/backend && dotnet run --project <ApiProject>"
+if [ -f "$E2E_FILE" ]; then
+  echo "✅ Stub file đã tồn tại: $E2E_FILE"
 else
-  cd src/frontend && rtk npx playwright test e2e/<feature>.e2e.spec.ts --reporter=list
+  echo "⚠️ Stub file chưa có — tạo minimal stub từ testcases.md (P0+P1)..."
+  mkdir -p src/frontend/e2e
+  # Tạo stub với test.todo() cho mỗi testcase P0+P1
+  cat > "$E2E_FILE" << 'STUB'
+import { test } from '@playwright/test';
+
+// AUTO-GENERATED STUB — Automation team implements body
+// Source: specs/<feature>/testcases.md (P0 + P1 testcases)
+// DO NOT implement test body here — coordinate with automation team
+
+test.describe('<feature>', () => {
+  // TODO: Automation team sẽ implement từ testcases.md
+  test.todo('[P0] Happy path — điền từ testcases.md');
+  test.todo('[P0] Authorization — điền từ testcases.md');
+  test.todo('[P1] Validation — điền từ testcases.md');
+});
+STUB
+  echo "✅ Stub file đã tạo: $E2E_FILE"
 fi
 ```
 
-Parse: X passed, Y failed, Z skipped (test.todo = skipped).
-
-**Điều kiện**:
-- **PASS**: 0 failed
-- **WARN**: chỉ có skipped (todo stubs) và 0 failed
-- **FAIL**: ≥ 1 failed
-- **SKIP**: API down — không FAIL pipeline
-
-**Không checkpoint** — tự động chuyển sang Step 9.
+Trạng thái luôn là **⏭ STUB** — không FAIL pipeline.
 
 ```
-✅ Step 8 hoàn thành
-  E2E: X passed, Y todo / ⚠️ tất cả stubs / ⛔ X failed / ⏭ SKIPPED (API down)
-→ Chuyển sang Step 9 (Report)...
+⏭ Step 6 — E2E Stubs
+  Stub file: src/frontend/e2e/<feature>.e2e.spec.ts ✅ exists / ✅ created
+  Status: Pending automation team implementation
+  Testcases tham chiếu: specs/<feature>/testcases.md
+→ Chuyển sang Step 7 (Report)...
 ```
 
 ---
 
-## Step 9 — Report
+## Step 7 — Report
 
 <agent_to_use>Sử dụng vnr-tech-writer agent</agent_to_use>
 
@@ -490,31 +419,22 @@ Dùng Agent tool:
     CẤU TRÚC SOURCE:
     - src/backend/ = git repo riêng (ASP.NET Core)
     - src/frontend/ = git repo riêng (Angular 19)
-    - Playwright screenshots: src/frontend/test-results/ và src/frontend/playwright-report/
+    - E2E stubs: src/frontend/e2e/<feature>.e2e.spec.ts (stubs — chưa chạy)
 
     ĐỌC SPEC & ARTIFACTS:
     - specs/<feature>/<feature>_*.md
     - specs/<feature>/plan.md
-    - specs/<feature>/test-scenarios.md
-    - specs/<feature>/testcases.md (nếu có — từ Step 2b)
+    - specs/<feature>/testcases.md
     - specs/<feature>/contracts/api-commitments.md (nếu có)
 
     DỮ LIỆU TỪ CÁC BƯỚC TRƯỚC (đã có trong context):
-    - Step 5: Architecture Review verdict + findings
-    - Step 6: Security Review verdict + findings
-    - Step 7: Unit Test results (total, passed, failed, coverage)
-    - Step 8: E2E results (passed, failed, todo)
-
-    SCREENSHOTS TỪ PLAYWRIGHT:
-    Tìm screenshots tại các vị trí sau (theo thứ tự ưu tiên):
-    1. src/frontend/test-results/ — Playwright mặc định lưu screenshots khi test fail
-    2. src/frontend/playwright-report/ — HTML report có embedded screenshots
-    3. src/frontend/e2e/screenshots/ — Custom screenshots (nếu test code chụp thủ công)
-    Chỉ tham chiếu file tồn tại thực tế. Bỏ qua nếu không có.
+    - Step 4: Architecture Review verdict + findings
+    - Step 5: Security Review verdict + findings
+    - Step 6: E2E Stubs status (stub file path)
 
     THỰC HIỆN:
     1. Tạo specs/<feature>/result/final-report.md
-       - Summary table: Arch | Security | Unit Tests | E2E
+       - Summary table: Arch | Security | E2E Stubs
        - Findings chi tiết từ mỗi review step
        - Files changed: cd src/backend && git diff --stat HEAD~5; cd src/frontend && git diff --stat HEAD~5
        - Sign-off checklist
@@ -523,7 +443,6 @@ Dùng Agent tool:
        - Tiếng Việt, hướng end-user
        - Menu path, chức năng, phân quyền, FAQ
        - Nếu Playwright docs-reporter đã tạo → bổ sung, không ghi đè
-       - Screenshots: dùng relative path từ specs/<feature>/result/ đến src/frontend/test-results/ hoặc copy screenshots vào specs/<feature>/result/screenshots/
 
     BÁO CÁO: path 2 files, tóm tắt verdict tổng.
 ```
@@ -536,15 +455,15 @@ Dùng Agent tool:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  VNR AUTO-PIPELINE COMPLETE ✅  [Feature: <feature>]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- ✅ Plan + Tasks    ✅ QC + Testcases   ✅ Implement
- ✅ Unit Tests      ✅ Arch Review      ✅ Security
- ✅ Run Tests       ✅ E2E              ✅ Report
+ ✅ Plan + Plan Review  ✅ Tasks        ✅ Testcases
+ ✅ Implement           ✅ Arch Review  ✅ Security
+ ⏭ E2E Stubs (pending) ✅ Report
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Artifacts:
   specs/<feature>/result/final-report.md
   specs/<feature>/result/user-guide.md
-  specs/<feature>/test-scenarios.md
   specs/<feature>/testcases.md
+  src/frontend/e2e/<feature>.e2e.spec.ts  ← automation team next
 
 Next (commit riêng từng repo):
   cd src/backend  && rtk git add . && rtk git commit -m "feat(<feature>): <mô tả BE>"
@@ -558,11 +477,14 @@ Next (commit riêng từng repo):
 ## Recovery — Chạy lại từ bước cụ thể
 
 ```
-/vnr-auto-pipeline <feature> --from=2    ← từ QC Generate
+/vnr-auto-pipeline <feature> --from=1a   ← từ Plan (chạy lại planner)
+/vnr-auto-pipeline <feature> --from=1b   ← từ Plan Review (re-review plan hiện có)
+/vnr-auto-pipeline <feature> --from=1c   ← từ Tasks (plan đã approve)
+/vnr-auto-pipeline <feature> --from=2    ← từ Testcase Writer
 /vnr-auto-pipeline <feature> --from=3    ← từ Implement
-/vnr-auto-pipeline <feature> --from=5    ← từ Arch+Sec Review
-/vnr-auto-pipeline <feature> --from=7    ← từ Run Tests
-/vnr-auto-pipeline <feature> --from=9    ← chỉ Report
+/vnr-auto-pipeline <feature> --from=4    ← từ Arch+Sec Review
+/vnr-auto-pipeline <feature> --from=6    ← từ E2E Stubs check
+/vnr-auto-pipeline <feature> --from=7    ← chỉ Report
 ```
 
 Khi `--from=N`: bỏ qua validation các bước trước, nhảy thẳng đến Step N.
@@ -574,11 +496,11 @@ Nếu step trước đã sinh artifacts (plan.md, tasks.md, ...) → sử dụng
 
 | Chuyển tiếp | Điều kiện |
 |-------------|----------|
-| Step 1 → 2a+2b | plan.md + tasks.md được user approve |
-| Step 2a+2b → 3 | test-scenarios.md + testcases.md được user approve |
-| Step 3 → 4 | Build thành công (0 error) — cả BE và FE |
-| Step 4 → 5+6 | Tự động — không cần approve |
-| Step 5+6 → 7 | Arch PASS + Security PASS (hoặc user override WARN) |
-| Step 7 → 8 | Unit test 0 failures |
-| Step 8 → 9 | Tự động — WARN nếu có failures |
-| Step 9 → PR | Sign-off checklist đầy đủ |
+| Step 1a → 1b | Tự động — Plan Review chạy ngay sau Plan |
+| Step 1b → 1c | plan.md được user approve (sau khi xem findings của plan-reviewer) |
+| Step 1c → 2  | Tự động — Tasks xong → Testcase Writer bắt đầu ngay |
+| Step 2 → 3   | Tự động — Testcases xong → Implement bắt đầu ngay |
+| Step 3 → 4+5 | Build thành công (0 errors) — cả BE và FE |
+| Step 4+5 → 6 | Arch PASS + Security PASS (hoặc user override WARN) |
+| Step 6 → 7 | Tự động — stub luôn pass |
+| Step 7 → PR | Sign-off checklist đầy đủ |
