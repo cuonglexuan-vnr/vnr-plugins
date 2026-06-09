@@ -82,19 +82,23 @@ specs/<feature>/contracts/api-commitments.md
 
 ---
 
-## Quy tắc Frontend (Angular 19 / Micro-frontend)
+## Quy tắc Frontend (Angular 15 / Micro-frontend)
 
 - Screens: `pages/<feature>/` trong remote app tương ứng.
-- API service: `api/<feature>.service.ts` — dùng `HttpClient` với URL tương đối `/api/v1/<controller>`.
-  - **URL lấy từ `contracts/api-commitments.md`** — không tự đặt tên endpoint.
-- **Không** hardcode base URL, không `new HttpClient()`.
-- Route: lazy `loadComponent`, `canActivate: [authGuard]`.
+- API service: `api/<feature>.service.ts` — extend `VnrResourceService<T>`, inject `API_CONFIG` token, dùng `vnrSendRequest()` cho custom calls.
+  - **URL lấy từ `@Inject(API_CONFIG) private appConfig: IAppApiURL`** — không hardcode URL, không dùng relative URL `/api/v1/...`.
+- **Không** `new HttpClient()` riêng (bypass interceptor).
+- Route: lazy `loadChildren` + NgModule pattern. **Không dùng `loadComponent`** (standalone chỉ cho VNR shared components).
+  - `canActivate: [AuthGuard]` + `data: { permission: ScreenPermissionEnum.Key }` — dùng enum value, không hardcode string.
 - Menu: thêm vào `main-menu.data.ts` với permission check.
-- Permission: dùng `*appHasPermission="['HRM_<MODULE>_<FEATURE>', 'Create']"`.
-  - Permission key lấy từ `contracts/api-commitments.md`.
+- Permission directive: dùng `*vnrPermission="'key'; role:['Create']"`.
+  - **Tuyệt đối không dùng `*appHasPermission`** (directive không tồn tại) và không dùng `*ngIf` thuần cho permission.
+  - Permission key lấy từ `contracts/api-commitments.md` + enum trong `permission.enum.ts`.
+- Providers (API service, Facade, State) khai báo tập trung trong `<feature>-shared.module.ts` — không khai báo rải rác trong component.
+- Facade wraps API service — **component không được gọi API service trực tiếp**.
 - Không dùng `nz-sider`; icons register trong `icons-provider.ts`.
 - Interceptor order: base URL → auth → unauthorized.
-- **vnr-module components**: ưu tiên dùng vnr-module equivalents thay vì nz-* trực tiếp (xem `vnr-plugin/standards/05-internal-fe-framework-and-flow.md`).
+- **UI Component priority**: (1) `vnr-module` → (2) NG-Zorro → (3) Kendo UI (đặc thù nặng).
 
 ---
 
@@ -104,9 +108,40 @@ specs/<feature>/contracts/api-commitments.md
 2. Đọc toàn bộ `tasks.md` — chỉ chú ý các task có path `src/frontend/` (trừ `src/frontend/e2e/`).
 3. Execute từng task theo phase (Phase 0 → Phase 1 → ... → Phase N).
 4. Task `[P]` trong cùng phase: có thể thực hiện song song.
-5. Sau mỗi task: **đánh dấu `[x]`** vào `tasks.md`.
+5. **Sau mỗi task**: chạy Post-Implementation Checklist, sau đó **đánh dấu `[x]`** vào `tasks.md`.
 6. Nếu task fail (build error, dependency thiếu): **dừng ngay**, báo lỗi chi tiết, không chuyển sang task tiếp theo.
 7. Khi implement xong toàn bộ FE tasks: chạy FE build check.
+
+---
+
+## ✅ Post-Implementation Checklist (Bắt buộc — chạy trước khi đánh dấu task xong)
+
+### I18N
+
+- [ ] Thêm key vào cả `projects/shared-resources/[domain]/i18n/VN.ts` **VÀ** `EN.ts` (cùng lúc, không bỏ sót)
+- [ ] Mọi text trong template đi qua `| translate` pipe — không có raw string tiếng Việt
+- [ ] Feature module import `TranslateModule.forChild({ extend: true })`
+
+### PERMISSION
+
+- [ ] `permission.enum.ts` được cập nhật cho button/action keys mới
+- [ ] `screen-permission.enum.ts` được cập nhật cho screen keys mới
+  - Path: `projects/shared-resources/[module]/enums/`
+- [ ] Permission directive dùng đúng: `*vnrPermission="'key'; role:['View']"` (**KHÔNG** `*appHasPermission`, **KHÔNG** `*ngIf` thuần)
+- [ ] Route dùng `loadChildren` + NgModule (**KHÔNG** standalone `loadComponent`)
+- [ ] Route guard: `canActivate: [AuthGuard]` + `data: { permission: EnumKey }` (enum value, không hardcode string)
+
+### MODULE STRUCTURE
+
+- [ ] Providers (API, Facade, State) khai báo trong `<feature>-shared.module.ts` — không rải rác ở component
+- [ ] API service extends `VnrResourceService<T>` — không dùng bare `HttpClient`
+- [ ] Nếu thêm shared dependency mới: cập nhật `shared` trong `webpack.config.js` của cả shell **VÀ** MFE
+
+### CLEANUP
+
+- [ ] Mọi Observable subscription dùng `takeUntil(destroyed$)`
+- [ ] `ngOnDestroy()` complete `destroyed$` subject
+- [ ] Factory builder labels là i18n key — không có raw string tiếng Việt trong builder
 
 ---
 

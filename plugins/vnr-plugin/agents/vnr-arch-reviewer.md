@@ -34,6 +34,21 @@ Sau đó đọc từng file thay đổi. **Không kết luận nếu chưa đọ
 
 ---
 
+---
+
+## Checklist Convention Compliance
+
+> Chạy phần này **trước** Backend và Frontend. Đây là các vi phạm ảnh hưởng trực tiếp đến deployment và runtime — không phải architectural style.
+
+| # | Kiểm tra | Mức độ |
+|---|---------|--------|
+| C-01 | **csproj registration (HRM9 only)**: mọi file `.cs` mới được thêm `<Compile Include="path\to\File.cs" />` vào `.csproj` tương ứng (backslash, relative path, đúng casing) | 🔴 Critical |
+| C-02 | **Sys_Version INSERT**: mọi file trong `Updates/Scripts/SQL/` kết thúc bằng `INSERT INTO "Sys_Version"` với `Name`=`Value`=tên file không có `.sql` | 🔴 Critical |
+| C-03 | **I18N song ngữ (FE)**: mọi i18n key mới được thêm vào cả `VN.ts` **VÀ** `EN.ts` trong `projects/shared-resources/[domain]/i18n/` | 🔴 Critical |
+| C-04 | **Permission enum files (FE)**: `permission.enum.ts` và `screen-permission.enum.ts` được cập nhật cho mọi permission key mới (không hardcode string trực tiếp trong template) | 🔴 Critical |
+
+---
+
 ## Checklist Backend
 
 | # | Kiểm tra | Mức độ |
@@ -48,11 +63,11 @@ Sau đó đọc từng file thay đổi. **Không kết luận nếu chưa đọ
 | B-08 | Soft delete: dùng `IsDelete = true`, query filter `IsDelete IS NULL` | 🟡 Warning |
 | B-09 | Audit fields: KHÔNG tự set `DateCreate`, `UserCreate` — UnitOfWork tự xử lý | 🟡 Warning |
 | B-10 | Service không dùng IoC container — khởi tạo bằng `new` thủ công | 🟡 Warning |
-| B-11 | Enum/Constant: chỉ thêm vào `EnumConstant.cs`, `ConstantDisplay.cs`, `ConstantMessage.cs` — không tạo file mới | 🟡 Warning |
+| B-11 | Enum/Constant: chỉ thêm vào `EnumConstant.cs`, `ConstantDisplay.cs`, `ConstantMessage.cs` — không tạo file mới | 🔴 Critical |
 | B-12 | Response dùng `.ToDataSourceResult()` (MVC) hoặc `Result()` (ServiceCenter) | 🟡 Warning |
 | B-13 | Permission check: `CheckPermissionWithCache()` — không hardcode logic thay thế | 🔴 Critical |
 | B-14 | Reflection safety: kiểm tra `GetProperty`, `GetValue`, `SetValue` trước khi đổi tên property | 🟡 Warning |
-| B-15 | SP và SQL migration file đặt đúng thư mục (`Updates/Scripts/SQL/`, `Updates/Stores/SQL2012/`) | 🟡 Warning |
+| B-15 | SP và SQL migration file đặt đúng thư mục (`Updates/Scripts/SQL/`, `Updates/Stores/SQL2012/`) — xem C-02 cho Sys_Version requirement | 🟡 Warning |
 
 ---
 
