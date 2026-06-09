@@ -3,7 +3,7 @@ name: vnr-arch-reviewer
 role: Software Architect Reviewer
 step: "Step 5 — Architecture Review"
 description: >-
-  Review code mới theo Clean Architecture, CQRS, naming conventions.
+  Review code mới theo kiến trúc .NET Framework 4.6.2, Database-First, Controller pattern.
   Output: PASS / PASS+WARN / FAIL với bảng findings.
 ---
 
@@ -26,12 +26,11 @@ Sau đó đọc từng file thay đổi. **Không kết luận nếu chưa đọ
 
 | Tài liệu | Mục đích |
 |----------|---------|
-| `vnr-plugin/standards/backend/02-architecture-and-structure.md` | Clean Architecture, CQRS, naming |
-| `vnr-plugin/standards/backend/04-rules-and-team-conventions.md` | Naming conventions, controller rules, CQRS/handler patterns |
-| `vnr-plugin/standards/frontend/02-architecture-and-structure.md` | Angular structure, Module Federation |
-| `vnr-plugin/standards/frontend/04-rules-and-team-conventions.md` | Naming conventions, NgRx rules, Module Federation rules |
+| `vnr-plugin/standards/02-architecture-and-structure.md` | Kiến trúc tầng, cấu trúc source |
+| `vnr-plugin/standards/04-internal-be-framework-and-flow.md` | Controller flow, UnitOfWork, ActionService |
+| `vnr-plugin/standards/05-internal-fe-framework-and-flow.md` | vnr-module, shared libs, MFE pattern |
+| `vnr-plugin/memory/constitution.md` | Nguyên tắc bất khả xâm phạm |
 | `specs/<feature>/contracts/api-commitments.md` | API contracts đã duyệt |
-| `docs/raw/api-http-contracts.md` | Endpoint catalog hiện tại |
 
 ---
 
@@ -39,20 +38,21 @@ Sau đó đọc từng file thay đổi. **Không kết luận nếu chưa đọ
 
 | # | Kiểm tra | Mức độ |
 |---|---------|--------|
-| B-01 | Controller chỉ gọi `HandleRequest()` / `_mediator.Send()` — không chứa business logic | 🔴 Critical |
-| B-02 | Application không `using` namespace Infrastructure | 🔴 Critical |
-| B-03 | Domain không `using` namespace Application/Infrastructure | 🔴 Critical |
-| B-04 | Feature structure: `Features/<Feature>/Commands|Queries/` + `Handler` + `Validator` | 🟡 Warning |
-| B-05 | Repository interface trong Domain, implement trong Infrastructure | 🔴 Critical |
-| B-06 | Dùng `NotFoundException` / `ConflictException` — không `return BadRequest()` thủ công | 🟡 Warning |
-| B-07 | Route convention: `api/v{version:apiVersion}/[controller]` | 🟡 Warning |
-| B-08 | Response dùng `IApiResult<T>` — không trả raw object | 🟡 Warning |
-| B-09 | `[Authorize]` có trên controller/action; DevAuth guarded bởi `IsProduction` check | 🔴 Critical |
-| B-10 | `[CheckAccess]` hoặc `[CheckAccessBaseCRUD]` có đầy đủ; permission key format `HRM_<MODULE>_<FEATURE>` | 🔴 Critical |
-| B-11 | FluentValidation có `NotEmpty`, `MaximumLength` cho string fields | 🟡 Warning |
-| B-12 | `docs/raw/api-http-contracts.md` cập nhật nếu có endpoint mới | 🟡 Warning |
-| B-13 | Entity extend `EntityBase<TId>` — không tự tạo Id, audit fields | 🟡 Warning |
-| B-14 | Grid endpoint dùng `BaseRequestGridModel` / `POST /list-data` | 🟡 Warning |
+| B-01 | Controller kế thừa `BaseController` / `MainBaseController` — không kế thừa `Controller` trực tiếp | 🔴 Critical |
+| B-02 | Controller dùng `GetListDataAndReturn<>()` cho grid — không tự fetch data | 🔴 Critical |
+| B-03 | Controller không chứa business logic — chỉ gọi service/action | 🔴 Critical |
+| B-04 | Data access qua `UnitOfWork` — không dùng DbContext trực tiếp ngoài UnitOfWork | 🔴 Critical |
+| B-05 | Database-First: KHÔNG có Code-First migration commands | 🔴 Critical |
+| B-06 | Business logic nặng trong Stored Procedure — không thay thế SP bằng LINQ phức tạp | 🟡 Warning |
+| B-07 | Data permission: gọi `GetDataPermission<Hre_Profile>(userLogin)` cho query nhân viên | 🔴 Critical |
+| B-08 | Soft delete: dùng `IsDelete = true`, query filter `IsDelete IS NULL` | 🟡 Warning |
+| B-09 | Audit fields: KHÔNG tự set `DateCreate`, `UserCreate` — UnitOfWork tự xử lý | 🟡 Warning |
+| B-10 | Service không dùng IoC container — khởi tạo bằng `new` thủ công | 🟡 Warning |
+| B-11 | Enum/Constant: chỉ thêm vào `EnumConstant.cs`, `ConstantDisplay.cs`, `ConstantMessage.cs` — không tạo file mới | 🟡 Warning |
+| B-12 | Response dùng `.ToDataSourceResult()` (MVC) hoặc `Result()` (ServiceCenter) | 🟡 Warning |
+| B-13 | Permission check: `CheckPermissionWithCache()` — không hardcode logic thay thế | 🔴 Critical |
+| B-14 | Reflection safety: kiểm tra `GetProperty`, `GetValue`, `SetValue` trước khi đổi tên property | 🟡 Warning |
+| B-15 | SP và SQL migration file đặt đúng thư mục (`Updates/Scripts/SQL/`, `Updates/Stores/SQL2012/`) | 🟡 Warning |
 
 ---
 
@@ -61,15 +61,17 @@ Sau đó đọc từng file thay đổi. **Không kết luận nếu chưa đọ
 | # | Kiểm tra | Mức độ |
 |---|---------|--------|
 | F-01 | Screens trong `pages/<feature>/` trong remote app đúng | 🟡 Warning |
-| F-02 | HTTP calls trong `api/<feature>.service.ts` — không gọi trực tiếp từ component | 🔴 Critical |
-| F-03 | URL tương đối `/api/...` — không hardcode base URL | 🔴 Critical |
-| F-04 | Không `new HttpClient()` riêng (bypass interceptor) | 🔴 Critical |
-| F-05 | Interceptor order: base URL → auth → unauthorized | 🟡 Warning |
-| F-06 | Route có `loadComponent` lazy-load + `canActivate: [authGuard]` | 🔴 Critical |
-| F-07 | Menu thêm vào `main-menu.data.ts` đúng chỗ | 🟡 Warning |
-| F-08 | Không dùng `nz-sider`; icons register trong `icons-provider.ts` | 🟡 Warning |
-| F-09 | Permission check dùng `*appHasPermission` directive — không hardcode role | 🔴 Critical |
+| F-02 | HTTP calls trong `api/*.service.ts` — không gọi trực tiếp từ component | 🔴 Critical |
+| F-03 | Facade service tách riêng — transform response `.map(res => res['Data'])` | 🟡 Warning |
+| F-04 | URL tương đối — không hardcode base URL | 🔴 Critical |
+| F-05 | Không `new HttpClient()` riêng (bypass interceptor) | 🔴 Critical |
+| F-06 | Route có `canActivate: [AuthGuard]` | 🔴 Critical |
+| F-07 | UI ưu tiên vnr-module → NG-Zorro → Kendo UI | 🟡 Warning |
+| F-08 | Component dùng `UntypedFormBuilder`, `destroy$` Subject pattern | 🟡 Warning |
+| F-09 | Permission check dùng `*vnrPermission` / `*checkPermission` — không hardcode role | 🔴 Critical |
 | F-10 | Không `[innerHTML]` với data từ API nếu không qua `DomSanitizer` | 🔴 Critical |
+| F-11 | NgRx dùng class-based actions — không dùng `createAction` | 🟡 Warning |
+| F-12 | Module Federation: singleton khai báo trong webpack config | 🟡 Warning |
 
 ---
 
@@ -84,8 +86,8 @@ Sau đó đọc từng file thay đổi. **Không kết luận nếu chưa đọ
 
 | Mức độ | File:dòng | Vi phạm | Đề xuất sửa |
 |--------|-----------|---------|-------------|
-| 🔴 Critical | src/.../Controller.cs:45 | Business logic trong controller | Move sang Handler |
-| 🟡 Warning | src/.../Query.cs:12 | Missing MaximumLength | Thêm `.MaximumLength(255)` |
+| 🔴 Critical | HRM9/.../Controller.cs:45 | Business logic trong controller | Move sang Service |
+| 🟡 Warning | Frontend/.../component.ts:12 | Không dùng vnr-module control | Thay bằng vnr-input |
 
 ## Summary
 - Critical: X  →  FAIL nếu X > 0
