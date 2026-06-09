@@ -3,7 +3,7 @@ name: "vnr-auto-pipeline"
 description: >-
   Pipeline tự động từ spec → report: Plan → Plan Review → Tasks → Testcases →
   Implement → Arch + Sec Review (song song) → E2E Stubs → Report.
-  Checkpoint HITL sau mỗi bước quan trọng.
+  HITL checkpoint duy nhất: Plan Review (Step 1b). Sau khi approve plan, pipeline chạy hoàn toàn tự động.
 argument-hint: "<feature-name> [--from=N]"
 compatibility: "Requires spec-kit project structure with vnr-plugin/ directory"
 user-invocable: true
@@ -40,7 +40,8 @@ src/
 
 ## Nguyên tắc thực thi
 
-- **Checkpoint**: Dừng và chờ user confirm trước khi sang bước tiếp theo tại các bước đánh dấu 🛑.
+- **Checkpoint duy nhất**: Step 1b (Plan Review) — dừng và chờ user approve plan. Sau khi plan approved, pipeline chạy tự động đến hết.
+- **Auto-stop**: Pipeline tự dừng nếu build fail (Step 3) hoặc Arch/Security FAIL (Step 4+5). User phải fix rồi `--from=N` để tiếp.
 - **Skill tool**: Dùng cho các bước có sẵn skill (vnr-plan, vnr-tasks, vnr-implement). Không chạy PS script thủ công.
 - **Agent tool**: Dùng `subagent_type: "general-purpose"` cho các bước cần agent chuyên dụng. Mỗi Agent prompt phải bắt đầu bằng việc đọc file agent tương ứng.
 - **Song song**: Steps 4+5 dispatch cả 2 Agent tool calls trong cùng 1 message.
@@ -216,8 +217,8 @@ Dùng Agent tool:
 
     ĐỌC WIKI TRƯỚC (business context):
     - docs/wiki/index.md → xác định entries liên quan
-    - docs/wiki/concepts/<feature>.md → AC, business rules
-    - docs/wiki/entities/<entity>.md → validation rules, field constraints
+    - docs/wiki/domains/ → entities (validation rules, field constraints)
+    - docs/wiki/domains/permission-model.md → permission business rules
     (Tuân theo vnr-plugin/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
 
     ĐỌC SPEC & PLAN:
@@ -248,7 +249,7 @@ Sau khi hoàn thành, hiển thị summary và **tự động chuyển sang Step
 
 ---
 
-## Step 3 — Implement 🛑
+## Step 3 — Implement
 
 <agent_to_use>vnr-implement skill tự động dispatch đến vnr-backend-developer / vnr-frontend-developer / vnr-mobile-developer dựa trên scope của tasks.md</agent_to_use>
 
@@ -265,21 +266,20 @@ Skill `vnr-implement` tự động phát hiện scope từ `tasks.md` và dispat
 
 Dispatch: Backend → Frontend → Mobile (BE build phải PASS trước khi FE bắt đầu).
 
-**Checkpoint nội bộ**: Khi vnr-implement hỏi về checklists → **dừng, chờ user**.
-**Build fail** → dừng pipeline.
+**Auto-stop**: Build fail → dừng pipeline. User fix rồi `--from=3`.
 
-**Checkpoint**:
+Sau khi hoàn thành, hiển thị summary và **tự động chuyển sang Step 4+5**:
 
 ```
 ✅ Step 3 hoàn thành
   Tasks: X/N ✅ | Files: N created, N modified
   Build: ✅ OK
-→ Tiếp tục Step 4+5? [yes] / [review code] / [abort]
+→ Tự động chuyển sang Step 4+5 (Arch + Security Review)...
 ```
 
 ---
 
-## Step 4+5 — Arch Review + Security Review (SONG SONG) 🛑
+## Step 4+5 — Arch Review + Security Review (SONG SONG)
 
 Dispatch **cả 2 Agent tool calls trong cùng 1 message**:
 
@@ -337,18 +337,23 @@ Dùng Agent tool:
     OUTPUT: Kết luận PASS ✅ / WARN ⚠️ / FAIL ⛔ + bảng findings + OWASP ref.
 ```
 
-**Checkpoint**:
 **Sau khi CẢ 2 hoàn thành**, tổng hợp:
 
 ```
 ✅ Step 4+5 hoàn thành
   Architecture: ✅ PASS / ⚠️ WARN (N findings) / ⛔ FAIL (N critical)
   Security:     ✅ PASS / ⚠️ WARN (N findings) / ⛔ FAIL (N critical)
+```
 
-[Nếu FAIL] ⛔ Pipeline dừng. Cần fix trước khi tiếp tục.
-  → [fix rồi chạy lại: /vnr-auto-pipeline <feature> --from=4] / [abort]
+**Auto-stop nếu FAIL:**
+- Nếu Arch hoặc Security = ⛔ FAIL → pipeline dừng. User fix rồi `--from=4`.
+- Nếu PASS hoặc WARN → **tự động chuyển sang Step 6**.
 
-[Nếu PASS/WARN] → Tiếp tục Step 6? [yes] / [abort]
+```
+[Nếu FAIL] ⛔ Pipeline dừng tự động. Output:
+  → Fix issues rồi chạy lại: /vnr-auto-pipeline <feature> --from=4
+
+[Nếu PASS/WARN] → Tự động chuyển sang Step 6 (E2E Stubs)...
 ```
 
 ---
@@ -411,9 +416,8 @@ Dùng Agent tool:
 
     ĐỌC WIKI (để viết user guide đúng ngữ cảnh nghiệp vụ):
     - docs/wiki/index.md → entries liên quan
-    - docs/wiki/topics/<module>.md → tổng quan module → intro section
-    - docs/wiki/concepts/<feature>.md → workflow → hướng dẫn step-by-step
-    - docs/wiki/entities/<entity>.md → field labels → tên đúng với UI
+    - docs/wiki/patterns/ → tổng quan module, flow → intro section
+    - docs/wiki/domains/ → entities, workflows → hướng dẫn step-by-step
     (Tuân theo vnr-plugin/skills/vnr-wiki/SKILL.md nếu cần điều hướng thêm)
 
     CẤU TRÚC SOURCE:
@@ -497,10 +501,10 @@ Nếu step trước đã sinh artifacts (plan.md, tasks.md, ...) → sử dụng
 | Chuyển tiếp | Điều kiện |
 |-------------|----------|
 | Step 1a → 1b | Tự động — Plan Review chạy ngay sau Plan |
-| Step 1b → 1c | plan.md được user approve (sau khi xem findings của plan-reviewer) |
+| Step 1b → 1c | 🛑 **HITL duy nhất** — plan.md được user approve (sau khi xem findings) |
 | Step 1c → 2  | Tự động — Tasks xong → Testcase Writer bắt đầu ngay |
 | Step 2 → 3   | Tự động — Testcases xong → Implement bắt đầu ngay |
-| Step 3 → 4+5 | Build thành công (0 errors) — cả BE và FE |
-| Step 4+5 → 6 | Arch PASS + Security PASS (hoặc user override WARN) |
+| Step 3 → 4+5 | Tự động nếu build thành công (0 errors). Auto-stop nếu build fail. |
+| Step 4+5 → 6 | Tự động nếu Arch PASS/WARN + Security PASS/WARN. Auto-stop nếu FAIL. |
 | Step 6 → 7 | Tự động — stub luôn pass |
-| Step 7 → PR | Sign-off checklist đầy đủ |
+| Step 7 → Done | Tự động — pipeline hoàn thành |

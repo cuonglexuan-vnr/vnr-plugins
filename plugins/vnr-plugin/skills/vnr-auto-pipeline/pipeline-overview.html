@@ -529,7 +529,7 @@
 <body>
     <div class="container">
         <h1>VNR Auto-Pipeline Workflow</h1>
-        <p class="subtitle">Pipeline tự động từ spec &rarr; report: Plan &rarr; Plan Review &rarr; Tasks &rarr; Testcases &rarr; Implement &rarr; Arch + Sec Review &rarr; E2E Stubs &rarr; Report</p>
+        <p class="subtitle">Pipeline tự động từ spec &rarr; report &mdash; <strong style="color: var(--cyan);">1 HITL checkpoint duy nhất: Plan Review</strong>. Sau khi approve plan, mọi bước chạy tự động.</p>
 
         <!-- TOC -->
         <div class="toc">
@@ -553,7 +553,7 @@
             <div class="legend-item"><div class="legend-dot cyan"></div>Specialized Agents (vnr-backend-developer, vnr-frontend-developer)</div>
             <div class="legend-item"><div class="legend-dot orange"></div>CLI / Stub Check</div>
             <div class="legend-item"><div class="legend-dot yellow"></div>Parallel Execution</div>
-            <div class="legend-item"><div class="legend-dot red"></div>Checkpoint (HITL — user confirmation required)</div>
+            <div class="legend-item"><div class="legend-dot red"></div>HITL (Plan Review only) &mdash; Auto-stop on build fail / review FAIL</div>
         </div>
 
         <!-- Architecture -->
@@ -654,7 +654,6 @@
             <div class="flow-step">
                 <span class="step-num">Step 3</span>
                 <span class="step-name">Implement</span>
-                <span class="checkpoint-badge">HITL</span>
             </div>
             <span class="flow-arrow">&rarr;</span>
             <div class="flow-parallel">
@@ -958,8 +957,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="gate-info">
-                    <strong>HITL Checkpoint:</strong> Build fail = pipeline stops. User confirms to proceed to Step 4+5.
+                <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
+                    <strong style="color: var(--green);">Auto</strong> &mdash; Build success &rarr; Step 4+5 starts immediately. <strong style="color: var(--red);">Auto-stop</strong> if build fails &mdash; user must fix then <code>--from=3</code>.
                 </div>
             </div>
 
@@ -995,8 +994,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="gate-info">
-                    <strong>HITL Checkpoint:</strong> FAIL = pipeline stops (must fix, then <code>--from=4</code>). PASS/WARN = user confirms to continue.
+                <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
+                    <strong style="color: var(--green);">Auto</strong> &mdash; PASS/WARN &rarr; Step 6 starts immediately. <strong style="color: var(--red);">Auto-stop</strong> if FAIL &mdash; user must fix then <code>--from=4</code>.
                 </div>
             </div>
 
@@ -1162,13 +1161,13 @@
                 </tr>
                 <tr>
                     <td>Step 3 &rarr; 4+5</td>
-                    <td>Build success (0 errors) &mdash; both BE and FE</td>
-                    <td>Pipeline stops</td>
+                    <td>Automatic if build success (0 errors) &mdash; both BE and FE</td>
+                    <td>Auto-stop, fix then <code>--from=3</code></td>
                 </tr>
                 <tr>
                     <td>Step 4+5 &rarr; 6</td>
-                    <td>Arch PASS + Security PASS (or user overrides WARN)</td>
-                    <td>Pipeline stops, fix then <code>--from=4</code></td>
+                    <td>Automatic if Arch PASS/WARN + Security PASS/WARN</td>
+                    <td>Auto-stop if FAIL, fix then <code>--from=4</code></td>
                 </tr>
                 <tr>
                     <td>Step 6 &rarr; 7</td>
@@ -1176,9 +1175,9 @@
                     <td>&mdash;</td>
                 </tr>
                 <tr>
-                    <td>Step 7 &rarr; PR</td>
-                    <td>Sign-off checklist complete</td>
-                    <td>Incomplete report</td>
+                    <td>Step 7 &rarr; Done</td>
+                    <td>Automatic &mdash; pipeline complete, artifacts ready for PR</td>
+                    <td>&mdash;</td>
                 </tr>
             </tbody>
         </table>
@@ -1226,7 +1225,7 @@
 
         <!-- Footer -->
         <div style="text-align: center; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.82rem;">
-            VNR Auto-Pipeline Workflow Documentation &bull; Updated 2026-06-08
+            VNR Auto-Pipeline Workflow Documentation &bull; Updated 2026-06-09
         </div>
     </div>
 </body>
