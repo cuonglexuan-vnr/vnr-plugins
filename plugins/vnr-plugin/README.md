@@ -17,7 +17,7 @@ A content-driven plugin for the Claude Code / agent harness that provides a full
 | **QC & Testing** | Test scenario generation, testcase writing, E2E test execution, and QC review |
 | **Code Review** | Architecture and security review with PASS / PASS+WARN / FAIL verdicts |
 | **Documentation** | Final reports and end-user guides from pipeline artifacts |
-| **Knowledge base** | Wiki/docs reading and LLM-wiki synchronization |
+| **Knowledge base** | Wiki/docs reading, LLM-wiki synchronization, and automatic context-loading hooks before plan and implement |
 | **Automation** | Full automated pipeline from spec → plan → tasks → implement → test → review → report |
 | **Customization** | Project-scoped skill and agent overrides |
 
@@ -33,7 +33,7 @@ A content-driven plugin for the Claude Code / agent harness that provides a full
 | `vnr-checklist` | `/vnr-checklist` | Generate a requirements-quality checklist ("unit tests for the spec") |
 | `vnr-plan` | `/vnr-plan` | Produce `plan.md`, `data-model.md`, and `contracts/` from the feature spec |
 | `vnr-tasks` | `/vnr-tasks` | Break the plan into an ordered, dependency-aware `tasks.md` |
-| `vnr-implement` | `/vnr-implement` | Execute the implementation plan phase-by-phase using `tasks.md` |
+| `vnr-implement` | `/vnr-implement` | Execute tasks phase-by-phase; auto-detects scope and dispatches sequentially to `vnr-backend-developer` → `vnr-frontend-developer` → `vnr-mobile-developer` |
 | `vnr-run-testcases` | `/vnr-run-testcases` | Show, track, and update testcase statuses from `testcases.md` |
 | `vnr-run-e2e` | `/vnr-run-e2e` | Run Playwright E2E tests, collect screenshots, and generate an HTML report |
 | `vnr-qc-assistant` | `/vnr-qc-assistant` | Dual-mode QA assistant: apply QC feedback or audit testcases for improvements |
@@ -50,10 +50,10 @@ A content-driven plugin for the Claude Code / agent harness that provides a full
 The flagship skill runs the entire development pipeline end-to-end with checkpoints:
 
 ```
-BA User Story file (<US-ID>_*.md) → plan.md → plan review (HITL) → tasks.md → testcases.md → implement → arch review + sec review → e2e stubs → final report
+BA User Story file (<US-ID>_*.md) → plan.md → plan review (HITL) → tasks.md [auto] → testcases.md [auto] → implement → arch review + sec review → e2e stubs → final report
 ```
 
-Each stage delegates to the appropriate specialized agent. The pipeline is checkpointed — it can be resumed from any failed stage.
+Each stage delegates to the appropriate specialized agent. HITL checkpoints pause after plan review, after implementation build, and after arch+sec review. Steps 1c (Tasks), 2 (Testcases) proceed automatically without user confirmation.
 
 ---
 
@@ -131,7 +131,19 @@ The plugin ships a team of specialized agents. Each agent has a defined role, I/
 
 ---
 
-### `vnr-qc-generator` — QC Engineer (Shift-Left)
+### `vnr-mobile-developer` — Flutter Mobile Developer
+
+> Implements Flutter mobile code phase-by-phase following tasks.md. Handles `src/app-mobile/` tasks only.
+
+| Attribute | Detail |
+|---|---|
+| **Role** | Flutter Mobile Developer |
+| **Inputs** | `tasks.md` (required), UI detail file (`<feature>_*_ui-detail.md` or `ui-detail.md`), mobile standards (VnR widgets, GetX, naming) |
+| **Outputs** | Implemented code in `src/app-mobile/`; marks Mobile tasks `[x]` when done |
+
+**Constraints:** Do not add features beyond tasks. Follows Clean Architecture + GetX + VnR widget conventions. Does not touch `src/backend/` or `src/frontend/`.
+
+--- — QC Engineer (Shift-Left)
 
 > Generates test scenarios and Playwright stubs before implementation.
 
@@ -253,9 +265,10 @@ specs/
 
 src/
  ├── backend/                   # backend implementation (vnr-backend-developer output)
- └── frontend/
-      └── e2e/
-           └── <feature>.e2e.spec.ts   # E2E tests (vnr-test-engineer output)
+ ├── frontend/
+ │    └── e2e/
+ │         └── <feature>.e2e.spec.ts   # E2E tests (vnr-test-engineer output)
+ └── app-mobile/                # Flutter mobile (vnr-mobile-developer output)
 ```
 
 ---
@@ -362,5 +375,6 @@ SKILL.md  →  workflow.md  →  steps/step-01.md … step-N.md
 
 - **One step at a time**: the harness loads and executes each step file individually.
 - **Specialized agents**: each step delegates to a named agent (e.g., `vnr-planner`, `vnr-backend-developer`, `vnr-frontend-developer`) that has a defined I/O contract.
-- **Human checkpoints**: the automated pipeline pauses at defined gates for human review before proceeding.
+- **Human checkpoints (HITL)**: the pipeline pauses for human review at Plan Review (1b), after implementation build (3), and after arch+sec review (4+5). Steps 1c and 2 proceed automatically.
+- **Wiki hooks**: `before_plan` and `before_implement` automatically load wiki context; `after_implement` triggers wiki-sync.
 - **Templates**: all output artifacts are rendered using the canonical templates in `templates/`.

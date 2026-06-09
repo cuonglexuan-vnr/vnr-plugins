@@ -1,85 +1,251 @@
 ---
 name: "vnr-wiki-sync"
 description: "Synchronize the LLM wiki with the latest information from various sources docs/raw/"
-argument-hint: "Optional synchronization guidance or source filter"
+argument-hint: "Optional: tên raw file cụ thể cần sync, hoặc để trống để sync tất cả"
 compatibility: "Requires vnr-plugin project structure with vnr-plugin/ directory"
 metadata:
   author: "VNR"
 user-invocable: true
 ---
 
-# LLM Wiki
+## User Input
 
-A pattern for building personal knowledge bases using LLMs.
+```text
+$ARGUMENTS
+```
 
-This is an idea file, it is designed to be copy pasted to your own LLM Agent (e.g. OpenAI Codex, Claude Code, OpenCode / Pi, or etc.). Its goal is to communicate the high level idea, but your agent will build out the specifics in collaboration with you.
+Nếu `$ARGUMENTS` chứa tên file → chỉ sync file đó.
+Nếu rỗng → sync toàn bộ `docs/raw/`.
 
-## The core idea
+---
 
-Most people's experience with LLMs and documents looks like RAG: you upload a collection of files, the LLM retrieves relevant chunks at query time, and generates an answer. This works, but the LLM is rediscovering knowledge from scratch on every question. There's no accumulation. Ask a subtle question that requires synthesizing five documents, and the LLM has to find and piece together the relevant fragments every time. Nothing is built up. NotebookLM, ChatGPT file uploads, and most RAG systems work this way.
+## Mục đích
 
-The idea here is different. Instead of just retrieving from raw documents at query time, the LLM **incrementally builds and maintains a persistent wiki** — a structured, interlinked collection of markdown files that sits between you and the raw sources. When you add a new source, the LLM doesn't just index it for later retrieval. It reads it, extracts the key information, and integrates it into the existing wiki — updating entity pages, revising topic summaries, noting where new data contradicts old claims, strengthening or challenging the evolving synthesis. The knowledge is compiled once and then *kept current*, not re-derived on every query.
+`vnr-wiki-sync` **compile** raw source documents thành wiki pages có cấu trúc.
 
-This is the key difference: **the wiki is a persistent, compounding artifact.** The cross-references are already there. The contradictions have already been flagged. The synthesis already reflects everything you've read. The wiki keeps getting richer with every source you add and every question you ask.
+- **Input**: `docs/raw/*.md` (immutable — không bao giờ sửa)
+- **Output**: `docs/wiki/` (LLM-owned markdown files)
+- **Navigation**: `docs/wiki/index.md` (auto-generated từ frontmatter)
 
-You never (or rarely) write the wiki yourself — the LLM writes and maintains all of it. You're in charge of sourcing, exploration, and asking the right questions. The LLM does all the grunt work — the summarizing, cross-referencing, filing, and bookkeeping that makes a knowledge base actually useful over time. In practice, I have the LLM agent open on one side and Obsidian open on the other. The LLM makes edits based on our conversation, and I browse the results in real time — following links, checking the graph view, reading the updated pages. Obsidian is the IDE; the LLM is the programmer; the wiki is the codebase.
+---
 
-This can apply to a lot of different contexts. A few examples:
+## Wiki Structure
 
-- **Personal**: tracking your own goals, health, psychology, self-improvement — filing journal entries, articles, podcast notes, and building up a structured picture of yourself over time.
-- **Research**: going deep on a topic over weeks or months — reading papers, articles, reports, and incrementally building a comprehensive wiki with an evolving thesis.
-- **Reading a book**: filing each chapter as you go, building out pages for characters, themes, plot threads, and how they connect. By the end you have a rich companion wiki. Think of fan wikis like [Tolkien Gateway](https://tolkiengateway.net/wiki/Main_Page) — thousands of interlinked pages covering characters, places, events, languages, built by a community of volunteers over years. You could build something like that personally as you read, with the LLM doing all the cross-referencing and maintenance.
-- **Business/team**: an internal wiki maintained by LLMs, fed by Slack threads, meeting transcripts, project documents, customer calls. Possibly with humans in the loop reviewing updates. The wiki stays current because the LLM does the maintenance that no one on the team wants to do.
-- **Competitive analysis, due diligence, trip planning, course notes, hobby deep-dives** — anything where you're accumulating knowledge over time and want it organized rather than scattered.
+```
+docs/wiki/
+├── index.md            # Derived artifact — auto-generated từ frontmatter
+├── glossary.md         # Append-only term lookup table
+├── log.md              # Append-only sync history
+│
+├── domains/            # Business knowledge: entities + workflows
+├── patterns/           # Technical reference: how the system IS built
+├── guides/             # How-to recipes: building NEW things
+├── rules/              # Enforced coding standards
+└── decisions/          # ADRs + architectural rationale
+```
 
-## Architecture
+---
 
-There are three layers:
+## Workflow Step-by-Step
 
-**Raw sources** — your curated collection of source documents. Articles, papers, images, data files. These are immutable — the LLM reads from them but never modifies them. This is your source of truth.
+### Step 1 — Inventory
 
-**The wiki** — a directory of LLM-generated markdown files. Summaries, entity pages, concept pages, comparisons, an overview, a synthesis. The LLM owns this layer entirely. It creates pages, updates them when new sources arrive, maintains cross-references, and keeps everything consistent. You read it; the LLM writes it.
+```
+1a. Đọc docs/wiki/log.md → xác định timestamp sync gần nhất
+1b. Đọc docs/wiki/index.md → catalog các pages hiện có
+1c. List files trong docs/raw/ → xác định files cần xử lý:
+    - Nếu $ARGUMENTS có tên file → chỉ xử lý file đó
+    - Nếu rỗng → xử lý tất cả raw files
+```
 
-**The schema** — a document (e.g. CLAUDE.md for Claude Code or AGENTS.md for Codex) that tells the LLM how the wiki is structured, what the conventions are, and what workflows to follow when ingesting sources, answering questions, or maintaining the wiki. This is the key configuration file — it's what makes the LLM a disciplined wiki maintainer rather than a generic chatbot. You and the LLM co-evolve this over time as you figure out what works for your domain.
+### Step 2 — Process each raw file
 
-## Operations
+Với mỗi raw file cần xử lý:
 
-**Ingest.** You drop a new source into the raw collection and tell the LLM to process it. An example flow: the LLM reads the source, discusses key takeaways with you, writes a summary page in the wiki, updates the index, updates relevant entity and concept pages across the wiki, and appends an entry to the log. A single source might touch 10-15 wiki pages. Personally I prefer to ingest sources one at a time and stay involved — I read the summaries, check the updates, and guide the LLM on what to emphasize. But you could also batch-ingest many sources at once with less supervision. It's up to you to develop the workflow that fits your style and document it in the schema for future sessions.
+```
+2a. Đọc toàn bộ nội dung raw file
+2b. Phân tích → xác định content blocks
+2c. Với mỗi content block, classify theo bảng dưới
+2d. Xác định: page đã tồn tại? → UPDATE | page mới? → CREATE
+2e. Tạo/cập nhật page với frontmatter đúng format
+2f. Cập nhật cross-references ([[wikilinks]]) giữa các pages
+```
 
-**Query.** You ask questions against the wiki. The LLM searches for relevant pages, reads them, and synthesizes an answer with citations. Answers can take different forms depending on the question — a markdown page, a comparison table, a slide deck (Marp), a chart (matplotlib), a canvas. The important insight: **good answers can be filed back into the wiki as new pages.** A comparison you asked for, an analysis, a connection you discovered — these are valuable and shouldn't disappear into chat history. This way your explorations compound in the knowledge base just like ingested sources do.
+### Step 3 — Regenerate index.md
 
-**Lint.** Periodically, ask the LLM to health-check the wiki. Look for: contradictions between pages, stale claims that newer sources have superseded, orphan pages with no inbound links, important concepts mentioned but lacking their own page, missing cross-references, data gaps that could be filled with a web search. The LLM is good at suggesting new questions to investigate and new sources to look for. This keeps the wiki healthy as it grows.
+```
+3a. Đọc frontmatter của MỌI page trong tất cả 5 folders
+3b. Group theo folder: domains/, patterns/, guides/, rules/, decisions/
+3c. Build catalog table: [[id]] | type | summary (từ frontmatter)
+3d. Overwrite docs/wiki/index.md hoàn toàn từ frontmatter data
+```
 
-## Indexing and logging
+### Step 4 — Append log.md
 
-Two special files help the LLM (and you) navigate the wiki as it grows. They serve different purposes:
+```
+4a. Tạo entry mới:
+## [YYYY-MM-DD] sync | <tên raw file hoặc "full sync">
 
-**index.md** is content-oriented. It's a catalog of everything in the wiki — each page listed with a link, a one-line summary, and optionally metadata like date or source count. Organized by category (entities, concepts, sources, etc.). The LLM updates it on every ingest. When answering a query, the LLM reads the index first to find relevant pages, then drills into them. This works surprisingly well at moderate scale (~100 sources, ~hundreds of pages) and avoids the need for embedding-based RAG infrastructure.
+**Actor:** vnr-wiki-sync  
+**Sources processed:** [list raw files]  
+**Pages created:** [list new pages]  
+**Pages updated:** [list updated pages]  
+**Pages unchanged:** [count]
+```
 
-**log.md** is chronological. It's an append-only record of what happened and when — ingests, queries, lint passes. A useful tip: if each entry starts with a consistent prefix (e.g. `## [2026-04-02] ingest | Article Title`), the log becomes parseable with simple unix tools — `grep "^## \[" log.md | tail -5` gives you the last 5 entries. The log gives you a timeline of the wiki's evolution and helps the LLM understand what's been done recently.
+### Step 5 — Validate
 
-## Optional: CLI tools
+```
+5a. Orphan check: mọi page phải có ít nhất 1 inbound link từ page khác hoặc index.md
+5b. Frontmatter check: mọi page phải có đủ 8 fields (id, title, folder, type, tags, related, updated, summary)
+5c. Link check: mọi [[wikilink]] phải trỏ đến id tồn tại trong wiki
+5d. Summary check: mọi summary ≤ 120 chars
+5e. Báo cáo: số pages created/updated/unchanged, warnings nếu có
+```
 
-At some point you may want to build small tools that help the LLM operate on the wiki more efficiently. A search engine over the wiki pages is the most obvious one — at small scale the index file is enough, but as the wiki grows you want proper search. [qmd](https://github.com/tobi/qmd) is a good option: it's a local search engine for markdown files with hybrid BM25/vector search and LLM re-ranking, all on-device. It has both a CLI (so the LLM can shell out to it) and an MCP server (so the LLM can use it as a native tool). You could also build something simpler yourself — the LLM can help you vibe-code a naive search script as the need arises.
+---
 
-## Tips and tricks
+## Classification Flowchart
 
-- **Obsidian Web Clipper** is a browser extension that converts web articles to markdown. Very useful for quickly getting sources into your raw collection.
-- **Download images locally.** In Obsidian Settings → Files and links, set "Attachment folder path" to a fixed directory (e.g. `raw/assets/`). Then in Settings → Hotkeys, search for "Download" to find "Download attachments for current file" and bind it to a hotkey (e.g. Ctrl+Shift+D). After clipping an article, hit the hotkey and all images get downloaded to local disk. This is optional but useful — it lets the LLM view and reference images directly instead of relying on URLs that may break. Note that LLMs can't natively read markdown with inline images in one pass — the workaround is to have the LLM read the text first, then view some or all of the referenced images separately to gain additional context. It's a bit clunky but works well enough.
-- **Obsidian's graph view** is the best way to see the shape of your wiki — what's connected to what, which pages are hubs, which are orphans.
-- **Marp** is a markdown-based slide deck format. Obsidian has a plugin for it. Useful for generating presentations directly from wiki content.
-- **Dataview** is an Obsidian plugin that runs queries over page frontmatter. If your LLM adds YAML frontmatter to wiki pages (tags, dates, source counts), Dataview can generate dynamic tables and lists.
-- The wiki is just a git repo of markdown files. You get version history, branching, and collaboration for free.
+Dùng để quyết định page mới thuộc folder nào:
 
-## Why this works
+```
+Nội dung là term/abbreviation definition?
+  YES → append vào glossary.md (không tạo page riêng)
 
-The tedious part of maintaining a knowledge base is not the reading or the thinking — it's the bookkeeping. Updating cross-references, keeping summaries current, noting when new data contradicts old claims, maintaining consistency across dozens of pages. Humans abandon wikis because the maintenance burden grows faster than the value. LLMs don't get bored, don't forget to update a cross-reference, and can touch 15 files in one pass. The wiki stays maintained because the cost of maintenance is near zero.
+Nội dung mô tả DB table (fields, FK, validation)?
+  YES → domains/ (type: entity)
+        filename: {entity-name}.md (lowercase, kebab-case)
 
-The human's job is to curate sources, direct the analysis, ask good questions, and think about what it all means. The LLM's job is everything else.
+Nội dung mô tả business process (states, transitions, actors, rules)?
+  YES → domains/ (type: workflow)
+        filename: workflow-{name}.md
 
-The idea is related in spirit to Vannevar Bush's Memex (1945) — a personal, curated knowledge store with associative trails between documents. Bush's vision was closer to this than to what the web became: private, actively curated, with the connections between documents as valuable as the documents themselves. The part he couldn't solve was who does the maintenance. The LLM handles that.
+Nội dung có numbered steps để build tính năng MỚI?
+  YES → guides/ (type: recipe)
+        filename: how-to-{verb-noun}.md
 
+Nội dung mô tả HOW hệ thống hiện tại hoạt động (architecture, runtime flows, component structures)?
+  YES → patterns/ (type: architecture | flow | component)
+        filename: {descriptive-noun}.md
 
-## Note
+Nội dung là coding standard HIỆN đang được enforce (must/must-not)?
+  YES → rules/ (type: standard | convention | constraint)
+        filename: {noun}-conventions.md hoặc {noun}-rules.md
 
-This document is intentionally abstract. It describes the idea, not a specific implementation. The exact directory structure, the schema conventions, the page formats, the tooling — all of that will depend on your domain, your preferences, and your LLM of choice. Everything mentioned above is optional and modular — pick what's useful, ignore what isn't. For example: your sources might be text-only, so you don't need image handling at all. Your wiki might be small enough that the index file is all you need, no search engine required. You might not care about slide decks and just want markdown pages. You might want a completely different set of output formats. The right way to use this is to share it with your LLM agent and work together to instantiate a version that fits your needs. The document's only job is to communicate the pattern. Your LLM can figure out the rest.
+Nội dung giải thích TẠI SAO một quyết định kỹ thuật được đưa ra?
+  YES → decisions/ (type: adr)
+        filename: adr-{NNN}-{slug}.md
+```
+
+**Litmus test sentences:**
+- "The business **models** X as..." → `domains/`
+- "The system **does** X at runtime" → `patterns/`
+- "To **build** X, follow steps 1-N" → `guides/`
+- "X **must always** be Y" → `rules/`
+- "We **chose** X **because**..." → `decisions/`
+- "X **means**..." → `glossary.md`
+
+---
+
+## Page Format (Bắt buộc)
+
+Mọi wiki page phải có frontmatter đầy đủ:
+
+```yaml
+---
+id: hre-profile                    # kebab-case, globally unique across ENTIRE wiki
+title: "Hre_Profile Entity"        # Human-readable display name
+folder: domains                    # domains | patterns | guides | rules | decisions
+type: entity                       # See type taxonomy below
+tags: [employee, profile, HRE]     # Lowercase, for semantic search
+related: [sys-userinfo, hre-contract]  # [[wikilink]] target IDs
+updated: 2026-06-09                # Date of last sync
+summary: "..."                     # ≤120 chars — copied verbatim into index.md
+---
+```
+
+### Type Taxonomy
+
+| Folder | Valid types |
+|--------|-----------|
+| `domains/` | `entity`, `workflow` |
+| `patterns/` | `architecture`, `flow`, `component` |
+| `guides/` | `recipe` |
+| `rules/` | `standard`, `convention`, `constraint` |
+| `decisions/` | `adr` |
+
+---
+
+## Update vs Create Logic
+
+### UPDATE existing page
+
+Khi raw file có thêm thông tin về topic đã có page:
+
+- **Thêm** sections mới vào page — không overwrite
+- **Flag contradictions**: nếu thông tin mới mâu thuẫn với nội dung cũ:
+  ```markdown
+  > ⚠️ **Contradiction** (updated 2026-06-09): Raw source `05-*.md` states X,
+  > but earlier source `02-*.md` states Y. Verify with team.
+  ```
+- **Update frontmatter**: `updated`, `tags`, `related` nếu cần
+- **Update summary** nếu nội dung thay đổi đáng kể
+
+### CREATE new page
+
+Khi raw file có thông tin về topic chưa có page:
+
+1. Determine folder + type + filename theo flowchart
+2. Write full page với đủ frontmatter
+3. Add cross-references `[[wikilink]]` trong body
+4. Set `related` frontmatter field
+
+---
+
+## Invariants (Không bao giờ vi phạm)
+
+1. **`docs/raw/` là immutable** — không bao giờ sửa raw files
+2. **`index.md` là derived** — không edit thủ công, chỉ regenerate từ frontmatter
+3. **`log.md` là append-only** — chỉ thêm, không sửa entries cũ
+4. **`decisions/` là append-only** — không sửa ADRs cũ, chỉ tạo ADR mới supersede
+5. **Filenames globally unique** — không có 2 pages cùng id, dù khác folder
+6. **Không tạo subdirectories** — tất cả pages là flat files trong folder
+7. **Không tạo page chỉ để "link to"** — page phải có nội dung thực sự
+8. **summary ≤ 120 chars** — đây là gì xuất hiện trong index
+
+---
+
+## Ví dụ log entry
+
+```markdown
+## [2026-06-09] sync | docs/raw/03-data-and-auth.md
+
+**Actor:** vnr-wiki-sync  
+**Sources processed:** `docs/raw/03-data-and-auth.md`
+
+**Pages created:**
+- `domains/permission-model.md` — Business permission model extracted from data-and-auth
+
+**Pages updated:**
+- `patterns/data-permission-flow.md` — Added SP dimensions filter detail
+- `patterns/authentication-flow.md` — Added external provider config class names
+
+**Pages unchanged:** 19  
+**Warnings:** None
+```
+
+---
+
+## Sau khi sync
+
+Report tóm tắt:
+
+```
+✅ vnr-wiki-sync complete
+  Sources processed: N files
+  Pages created: N | Pages updated: N | Pages unchanged: N
+  Index: docs/wiki/index.md (regenerated, N total pages)
+  Log: docs/wiki/log.md (entry appended)
+  Warnings: [none | list issues]
+```

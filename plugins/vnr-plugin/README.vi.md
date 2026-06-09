@@ -17,7 +17,7 @@ Plugin chạy trên harness Claude Code / agent, cung cấp một pipeline phát
 | **QC & Kiểm thử** | Sinh test scenarios, viết testcase, chạy E2E và review QC |
 | **Code Review** | Review kiến trúc và bảo mật với kết quả PASS / PASS+WARN / FAIL |
 | **Tài liệu** | Báo cáo cuối pipeline và hướng dẫn người dùng từ kết quả thực tế |
-| **Cơ sở tri thức** | Đọc wiki/docs và đồng bộ LLM-wiki |
+| **Cơ sở tri thức** | Đọc wiki/docs, đồng bộ LLM-wiki, và hook tự động load context wiki trước khi plan và implement |
 | **Tự động hóa** | Pipeline đầy đủ: spec → plan → tasks → implement → test → review → report |
 | **Tùy chỉnh** | Ghi đè skill và agent ở phạm vi project |
 
@@ -33,7 +33,7 @@ Plugin chạy trên harness Claude Code / agent, cung cấp một pipeline phát
 | `vnr-checklist` | `/vnr-checklist` | Sinh checklist kiểm tra chất lượng đặc tả ("unit test cho spec") |
 | `vnr-plan` | `/vnr-plan` | Tạo `plan.md`, `data-model.md` và `contracts/` từ đặc tả tính năng |
 | `vnr-tasks` | `/vnr-tasks` | Phân rã kế hoạch thành `tasks.md` có thứ tự và phụ thuộc rõ ràng |
-| `vnr-implement` | `/vnr-implement` | Thực thi kế hoạch triển khai từng phase theo `tasks.md` |
+| `vnr-implement` | `/vnr-implement` | Thực thi kế hoạch triển khai từng phase theo `tasks.md`; tự động phát hiện scope và dispatch tuần tự đến `vnr-backend-developer` → `vnr-frontend-developer` → `vnr-mobile-developer` |
 | `vnr-run-testcases` | `/vnr-run-testcases` | Hiển thị, theo dõi và cập nhật trạng thái testcase trong `testcases.md` |
 | `vnr-run-e2e` | `/vnr-run-e2e` | Chạy Playwright E2E tests, thu thập screenshots và xuất HTML report |
 | `vnr-qc-assistant` | `/vnr-qc-assistant` | QA assistant hai chế độ: áp dụng phản hồi QC hoặc audit testcase |
@@ -50,10 +50,10 @@ Plugin chạy trên harness Claude Code / agent, cung cấp một pipeline phát
 Skill chủ đạo chạy toàn bộ pipeline phát triển theo trình tự có checkpoint:
 
 ```
-BA User Story file (<US-ID>_*.md) → plan.md → plan review (HITL) → tasks.md → testcases.md → implement → arch review + sec review → e2e stubs → final report
+BA User Story file (<US-ID>_*.md) → plan.md → plan review (HITL) → tasks.md [tự động] → testcases.md [tự động] → implement → arch review + sec review → e2e stubs → final report
 ```
 
-Mỗi giai đoạn uỷ quyền cho agent chuyên biệt tương ứng. Pipeline có checkpoint — có thể tiếp tục từ giai đoạn bị lỗi mà không cần chạy lại từ đầu.
+Mỗi giai đoạn uỷ quyền cho agent chuyên biệt tương ứng. Checkpoint HITL dừng sau plan review, sau build implementation và sau arch+sec review. Bước 1c (Tasks) và 2 (Testcases) chạy tự động không cần xác nhận người dùng.
 
 ---
 
@@ -131,7 +131,19 @@ Plugin đi kèm một đội agent chuyên biệt. Mỗi agent có vai trò, h�
 
 ---
 
-### `vnr-qc-generator` — QC Engineer (Shift-Left)
+### `vnr-mobile-developer` — Flutter Mobile Developer
+
+> Triển khai code Flutter mobile từng phase theo tasks.md. Chỉ xử lý các task `src/app-mobile/`.
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Vai trò** | Flutter Mobile Developer |
+| **Đầu vào** | `tasks.md` (bắt buộc), UI detail file (`<feature>_*_ui-detail.md` hoặc `ui-detail.md`), mobile standards (VnR widgets, GetX, naming) |
+| **Đầu ra** | Code trong `src/app-mobile/`; đánh dấu Mobile task `[x]` khi hoàn thành |
+
+**Ràng buộc:** Không thêm tính năng ngoài tasks. Tuân theo Clean Architecture + GetX + VnR widget conventions. Không đụng vào `src/backend/` hay `src/frontend/`.
+
+--- — QC Engineer (Shift-Left)
 
 > Sinh test scenarios và Playwright stubs trước khi triển khai.
 
@@ -253,9 +265,10 @@ specs/
 
 src/
  ├── backend/                   # code backend (đầu ra vnr-backend-developer)
- └── frontend/
-      └── e2e/
-           └── <feature>.e2e.spec.ts   # E2E tests (đầu ra vnr-test-engineer)
+ ├── frontend/
+ │    └── e2e/
+ │         └── <feature>.e2e.spec.ts   # E2E tests (đầu ra vnr-test-engineer)
+ └── app-mobile/                # Flutter mobile (đầu ra vnr-mobile-developer)
 ```
 
 ---
@@ -361,5 +374,6 @@ SKILL.md  →  workflow.md  →  steps/step-01.md … step-N.md
 
 - **Từng bước một**: harness load và thực thi từng file step riêng lẻ.
 - **Agent chuyên biệt**: mỗi bước uỷ quyền cho một agent được đặt tên (ví dụ: `vnr-planner`, `vnr-backend-developer`, `vnr-frontend-developer`) có hợp đồng I/O xác định.
-- **Checkpoint BA**: pipeline tự động dừng tại các gate xác định để con người review trước khi tiếp tục.
+- **Checkpoint HITL**: pipeline dừng để human review tại Plan Review (1b), sau build implementation (3) và sau arch+sec review (4+5). Bước 1c và 2 chạy tự động.
+- **Wiki hooks**: `before_plan` và `before_implement` tự động load wiki context; `after_implement` kích hoạt wiki-sync.
 - **Templates**: mọi artifact đầu ra đều được render từ các template chuẩn trong `templates/`.

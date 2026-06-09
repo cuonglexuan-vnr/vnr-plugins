@@ -1,18 +1,18 @@
 {
-  "mcpServers": {
-      "tfs": {
-          "type": "sse",
-          "url": "http://172.21.55.10:8000/sse",
-		  "env": {
-              "TFS_DEFAULT_PROJECT": "HRMCollection"
-          }
-      },
-      "amis-task": {
-          "type": "sse",
-          "url": "http://172.21.55.10:8001/sse",
-          "env": {
-              "AMIS_USER_ID": "your_user_id_here"
-          }
-      }
-  }
+    "mcpServers": {
+        "tfs": {
+            "type": "sse",
+            "url": "http://172.21.55.10:8000/sse",
+            "env": {
+                "TFS_DEFAULT_PROJECT": "HRMCollection"
+            }
+        },
+        "amis-task": {
+            "type": "sse",
+            "url": "http://172.21.55.10:8001/sse",
+            "env": {
+                "AMIS_USER_ID": "your_user_id_here"
+            }
+        }
+    }
 }
