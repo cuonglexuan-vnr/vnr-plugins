@@ -301,8 +301,7 @@ mkdir -p {PROJECT_AGENTS_DIR}          # for agents
 
    <!-- List files the agent must read before executing -->
    - `$PLUGIN_DIR/memory/constitution.md`
-   - `$PLUGIN_DIR/standards/backend/` (if backend-related)
-   - `$PLUGIN_DIR/standards/frontend/` (if frontend-related)
+   - `$PLUGIN_DIR/standards/` (relevant files: 01-tech-stack, 02-architecture, 03-data-and-auth, 04-be-framework, 05-fe-framework, 06-conventions)
 
    ## Quy trinh thuc hien
 

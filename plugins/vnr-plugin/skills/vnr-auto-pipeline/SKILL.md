@@ -150,8 +150,9 @@ Dùng Agent tool:
     - specs/<feature>/data-model.md           (data model)
     - specs/<feature>/contracts/api-commitments.md (API contracts)
     - specs/<feature>/research.md             (nếu có)
-    - $PLUGIN_DIR/standards/backend/02-architecture-and-structure.md
-    - $PLUGIN_DIR/standards/frontend/02-architecture-and-structure.md
+    - $PLUGIN_DIR/standards/02-architecture-and-structure.md
+    - $PLUGIN_DIR/standards/04-internal-be-framework-and-flow.md
+    - $PLUGIN_DIR/standards/05-internal-fe-framework-and-flow.md
     - $PLUGIN_DIR/memory/constitution.md
 
     THỰC HIỆN:
@@ -227,8 +228,7 @@ Dùng Agent tool:
     - specs/<feature>/tasks.md
     - specs/<feature>/contracts/api-commitments.md (nếu có)
     - specs/<feature>/<feature>_*_ui-detail.md hoặc specs/<feature>/ui-detail.md (nếu có)
-    - $PLUGIN_DIR/standards/backend/03-permission.md
-    - $PLUGIN_DIR/standards/frontend/03-permission.md
+    - $PLUGIN_DIR/standards/03-data-and-auth.md
 
     THỰC HIỆN:
     Tạo specs/<feature>/testcases.md:
@@ -296,8 +296,9 @@ Dùng Agent tool:
     FEATURE: <feature>
 
     ĐỌC BẮT BUỘC:
-    - $PLUGIN_DIR/standards/backend/02-architecture-and-structure.md
-    - $PLUGIN_DIR/standards/frontend/02-architecture-and-structure.md
+    - $PLUGIN_DIR/standards/02-architecture-and-structure.md
+    - $PLUGIN_DIR/standards/04-internal-be-framework-and-flow.md
+    - $PLUGIN_DIR/standards/05-internal-fe-framework-and-flow.md
     - specs/<feature>/contracts/api-commitments.md (nếu có)
     - docs/raw/api-http-contracts.md (nếu có)
     - $PLUGIN_DIR/memory/constitution.md (Principle II)
@@ -323,8 +324,7 @@ Dùng Agent tool:
     FEATURE: <feature>
 
     ĐỌC BẮT BUỘC:
-    - $PLUGIN_DIR/standards/backend/03-permission.md
-    - $PLUGIN_DIR/standards/frontend/03-permission.md
+    - $PLUGIN_DIR/standards/03-data-and-auth.md
     - $PLUGIN_DIR/hooks/security-hooks.json (scan patterns)
     - $PLUGIN_DIR/memory/constitution.md (Principle III)
 

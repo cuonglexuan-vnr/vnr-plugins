@@ -31,8 +31,9 @@ ls specs/<feature>/
 | `specs/<feature>/data-model.md` | Data model đã thiết kế (Phase 1 output) |
 | `specs/<feature>/contracts/api-commitments.md` | API contracts (Phase 2 output) |
 | `specs/<feature>/research.md` | Research phase — các quyết định kỹ thuật |
-| `vnr-plugin/standards/backend/02-architecture-and-structure.md` | Clean Architecture, CQRS rules |
-| `vnr-plugin/standards/frontend/02-architecture-and-structure.md` | Micro-frontend, Angular structure |
+| `vnr-plugin/standards/02-architecture-and-structure.md` | Architecture & source structure (BE layers, FE micro-frontend, Module Federation) |
+| `vnr-plugin/standards/04-internal-be-framework-and-flow.md` | BE framework — Controller hierarchy, UnitOfWork, SP patterns |
+| `vnr-plugin/standards/05-internal-fe-framework-and-flow.md` | FE framework — vnr-module, Container/Presentational, Facade, VnrGrid |
 | `vnr-plugin/memory/constitution.md` | Principles I, II, IV — Critical Rules |
 
 **Không kết luận nếu chưa đọc ít nhất User Story + plan.md.**

@@ -24,9 +24,8 @@ Bạn là **Tech Lead** của VNR. Nhiệm vụ: đọc `plan.md` đã được 
 | `specs/<feature>/data-model.md`                                  | Entities, relationships, migrations                                  |
 | `specs/<feature>/contracts/api-commitments.md`                   | API contracts đã thiết kế                                            |
 | `specs/<feature>/<feature>_*_ui-detail.md` hoặc `ui-detail.md`   | **UI spec** — màn hình, widgets, states (ưu tiên BA file; fallback SWE) |
-| `vnr-plugin/standards/backend/02-architecture-and-structure.md` | Naming conventions, file path patterns BE                            |
-| `vnr-plugin/standards/frontend/05-vnr-module-components.md`     | **⚠️ BẮT BUỘC ĐỌC** — Mapping `nz-*` → `vnr-module` components. KHÔNG dùng `nz-*` trực tiếp trong task descriptions |
-| `vnr-plugin/standards/mobile/01-vnr-app-ui-standards.md`        | **Mobile** — widget rules, banned patterns (đọc nếu có mobile tasks) |
+| `vnr-plugin/standards/02-architecture-and-structure.md`          | Architecture, source structure, file path patterns (BE + FE)         |
+| `vnr-plugin/standards/05-internal-fe-framework-and-flow.md`      | **⚠️ BẮT BUỘC ĐỌC** — vnr-module components, Factory+Builder pattern. KHÔNG dùng `nz-*` trực tiếp trong task descriptions |
 
 ---
 
@@ -62,7 +61,7 @@ Bạn là **Tech Lead** của VNR. Nhiệm vụ: đọc `plan.md` đã được 
 
 #### ⚠️ Quy tắc bắt buộc cho Frontend Angular tasks — vnr-module components
 
-> **Đọc đầy đủ**: `vnr-plugin/standards/frontend/05-vnr-module-components.md`
+> **Đọc đầy đủ**: `vnr-plugin/standards/05-internal-fe-framework-and-flow.md`
 
 Khi viết task cho **Frontend Angular**, KHÔNG BAO GIỜ đề cập `nz-*` components trực tiếp trong `Chi tiết` task (trừ ngoại lệ được phép). Áp dụng bảng ánh xạ sau:
 

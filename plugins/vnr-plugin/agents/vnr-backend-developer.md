@@ -61,9 +61,10 @@ src/
 | `specs/<feature>/plan.md`                                         | Kiến trúc, quyết định kỹ thuật, phase breakdown |
 | `specs/<feature>/data-model.md`                                   | Entity definitions, relationships               |
 | `specs/<feature>/contracts/api-commitments.md`                    | API contracts (endpoint, DTO, permission)       |
-| `vnr-plugin/standards/backend/02-architecture-and-structure.md`  | Clean Architecture, CQRS patterns               |
-| `vnr-plugin/standards/backend/03-permission.md`                  | `[CheckAccess]`, permission keys                |
-| `vnr-plugin/standards/backend/04-rules-and-team-conventions.md`  | Naming, controllers, handlers, DI, tests, PR checklist |
+| `vnr-plugin/standards/02-architecture-and-structure.md`          | Architecture & source structure (BE layers, Database-First, Controller patterns) |
+| `vnr-plugin/standards/03-data-and-auth.md`                       | Data permission (`Get_Data_Permission_New`), function permission (PrivilegeType), permission keys |
+| `vnr-plugin/standards/04-internal-be-framework-and-flow.md`      | **PRIMARY** — Controller hierarchy, ActionService, UnitOfWork, SP calling patterns, write flow, rules |
+| `vnr-plugin/standards/06-team-principles-and-conventions.md`     | I18N, enums/constants, DB migration, reflection caveats |
 | `docs/raw/backend-architecture.md`                                | Kiến trúc backend cụ thể của dự án              |
 | `docs/raw/solution-layout.md`                                     | Solution structure thực tế                      |
 

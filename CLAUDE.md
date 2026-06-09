@@ -98,8 +98,8 @@ specs/<US-ID>/
 
 ## Tech Stack
 
-- **Backend**: ASP.NET Core — Clean Architecture + CQRS
-- **Frontend**: Angular 19 — Micro-frontend + Module Federation
+- **Backend**: .NET Framework 4.6.2 — Database-First, EF6, Stored Procedures, Controller pattern
+- **Frontend**: Angular 15 — Micro-frontend (Module Federation), vnr-module design system, NgRx
 - **Mobile**: Flutter/Dart — Clean Architecture + GetX
 - **Monorepo**: `src/backend/` and `src/frontend/` are separate git repos
 
@@ -108,5 +108,5 @@ specs/<US-ID>/
 - Plugin is **content-driven** (markdown-based, no compiled code)
 - Each skill follows: `SKILL.md → workflow.md → steps/step-01..N.md`
 - Constitution (`memory/constitution.md`) is the governance root — all agents must comply
-- Standards in `standards/` define platform-specific architecture rules
+- Standards in `standards/` are **flat numbered files** (01 through 06) covering tech stack, architecture, data/auth, BE framework, FE framework, and team conventions
 - Templates in `templates/` ensure consistent output format across all agents

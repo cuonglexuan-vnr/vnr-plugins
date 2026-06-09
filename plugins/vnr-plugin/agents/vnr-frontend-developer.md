@@ -74,10 +74,10 @@ specs/<feature>/contracts/api-commitments.md
 | `specs/<feature>/plan.md`                                         | Kiến trúc FE, remote app target, module structure |
 | `specs/<feature>/<feature>_*.md`                                  | **User Story file** — Section 4 (AC), Section 7 (VM) cho validation messages + UI behavior |
 | `specs/<feature>/<feature>_*_ui-detail.md` hoặc `ui-detail.md`   | Screen layout, component details (ưu tiên BA file) |
-| `vnr-plugin/standards/frontend/02-architecture-and-structure.md` | Angular structure, Module Federation            |
-| `vnr-plugin/standards/frontend/03-permission.md`                 | Permission directive, AuthGuard                 |
-| `vnr-plugin/standards/frontend/04-rules-and-team-conventions.md` | Naming, NgRx/Facade, Module Federation, pre-merge checklist |
-| `vnr-plugin/standards/frontend/05-vnr-module-components.md`      | **⚠️ BẮT BUỘC** — Mapping nz-* → vnr-module components |
+| `vnr-plugin/standards/02-architecture-and-structure.md`          | Architecture & source structure (FE micro-frontend, Module Federation, shared libraries) |
+| `vnr-plugin/standards/03-data-and-auth.md`                       | Permission — `*vnrPermission` directive, AuthGuard, PrivilegeType bitwise check |
+| `vnr-plugin/standards/05-internal-fe-framework-and-flow.md`      | **⚠️ BẮT BUỘC** — VnrGrid, vnr-module Factory+Builder, Container/Presentational, Facade, API Service, component catalog |
+| `vnr-plugin/standards/06-team-principles-and-conventions.md`     | I18N (VN.ts/EN.ts), UI component priority, naming conventions |
 | `docs/raw/frontend-architecture.md`                               | Kiến trúc frontend cụ thể của dự án             |
 
 ---

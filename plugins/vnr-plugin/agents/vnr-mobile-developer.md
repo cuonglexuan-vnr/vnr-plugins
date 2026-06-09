@@ -81,11 +81,10 @@ cd src/app-mobile && git checkout -b feature/<feature-id>
 
 | Standard | Nội dung |
 |---|---|
-| `vnr-plugin/standards/mobile/01-vnr-app-ui-standards.md` | VnR widgets, theme, spacing, modal structure |
-| `vnr-plugin/standards/mobile/02-architecture-and-structure.md` | Clean Architecture, GetX patterns, Bindings, Controller+State |
-| `vnr-plugin/standards/mobile/03-naming-conventions.md` | File/class/folder naming, index barrel exports, translation keys |
-| `vnr-plugin/standards/mobile/04-api-and-module-patterns.md` | HttpService, response parsing, DI patterns, ModuleConfig, Freezed models |
-| `vnr-plugin/standards/mobile/05-dynamic-form-and-permissions.md` | FormDynamicController, FieldBinder, business rules, storeName config, PermissionService |
+| `vnr-plugin/standards/01-tech-stack.md` | Tech stack overview (includes mobile context) |
+| `vnr-plugin/standards/02-architecture-and-structure.md` | Architecture & source structure |
+| `vnr-plugin/standards/03-data-and-auth.md` | Data permission, authentication, authorization patterns |
+| `vnr-plugin/standards/06-team-principles-and-conventions.md` | Team conventions, I18N, naming |
 | `docs/widget-mobile-catalog.md` | **ĐỌC LAZY** — chỉ đọc khi task dùng widget ít gặp hoặc cần tra props/states chính xác |
 
 ---

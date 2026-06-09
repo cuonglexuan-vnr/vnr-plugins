@@ -40,8 +40,7 @@ Bạn là **QA Test Analyst** của VNR. Nhiệm vụ: phân tích yêu cầu t�
 | `specs/<feature>/tasks.md` | Task list — map testcases vào từng task/phase |
 | `specs/<feature>/contracts/api-commitments.md` | Endpoint + request/response DTOs |
 | `specs/<feature>/<feature>_*_ui-detail.md` hoặc `specs/<feature>/ui-detail.md` | UI components, form fields, validation messages (BA file ưu tiên) |
-| `vnr-plugin/standards/backend/03-permission.md` | Phân quyền bitwise, permission keys |
-| `vnr-plugin/standards/frontend/03-permission.md` | AuthGuard, permission directive FE |
+| `vnr-plugin/standards/03-data-and-auth.md` | Data permission, function permission (bitwise PrivilegeType), permission keys, AuthGuard |
 
 ---
 
