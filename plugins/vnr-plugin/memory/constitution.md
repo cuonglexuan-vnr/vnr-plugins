@@ -369,8 +369,7 @@ hrm-core/
 
 ## 📞 Reference Documents
 
-**Đầy đủ:** [`/CONSTITUTION.md`](../../CONSTITUTION.md)  
-**Standards:** `vnr-plugin/standards/[platform].md`  
+**Standards:** `vnr-plugin/standards/` (01-tech-stack, 02-architecture, 03-data-and-auth, 04-be-framework, 05-fe-framework, 06-conventions)  
 **Templates:** `vnr-plugin/templates/`  
 **Wiki:** `docs/wiki/`  
 **Architecture:** `docs/raw/architecture/`

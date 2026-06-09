@@ -143,7 +143,9 @@ The plugin ships a team of specialized agents. Each agent has a defined role, I/
 
 **Constraints:** Do not add features beyond tasks. Follows Clean Architecture + GetX + VnR widget conventions. Does not touch `src/backend/` or `src/frontend/`.
 
---- — QC Engineer (Shift-Left)
+---
+
+### `vnr-qc-generator` — QC Engineer (Shift-Left)
 
 > Generates test scenarios and Playwright stubs before implementation.
 

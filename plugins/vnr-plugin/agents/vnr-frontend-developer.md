@@ -94,7 +94,7 @@ specs/<feature>/contracts/api-commitments.md
   - Permission key lấy từ `contracts/api-commitments.md`.
 - Không dùng `nz-sider`; icons register trong `icons-provider.ts`.
 - Interceptor order: base URL → auth → unauthorized.
-- **vnr-module components**: ưu tiên dùng vnr-module equivalents thay vì nz-* trực tiếp (xem `05-vnr-module-components.md`).
+- **vnr-module components**: ưu tiên dùng vnr-module equivalents thay vì nz-* trực tiếp (xem `vnr-plugin/standards/05-internal-fe-framework-and-flow.md`).
 
 ---
 

@@ -80,10 +80,10 @@ Khi viết task cho **Frontend Angular**, KHÔNG BAO GIỜ đề cập `nz-*` co
 | `nz-page-header` + tự build actions | `vnr-toolbar` hoặc `vnr-toolbar-v2` |
 | Form error div tự build | VNR validation components |
 
-**Ngoại lệ được phép** (xem đầy đủ trong `05-vnr-module-components.md`):  
+**Ngoại lệ được phép** (xem đầy đủ trong `vnr-plugin/standards/05-internal-fe-framework-and-flow.md`):  
 `nz-switch`, `nz-tag`, `nz-divider`, `nz-alert`, `nz-result`, `nz-tooltip`, `nz-checkbox`, `nz-radio`, `nz-icon`, `nz-spin`, `nz-skeleton`, `cdkDragDrop` — OK **khi không có vnr-module equivalent**.
 
-**Self-check trước khi output tasks.md**: Chạy bảng kiểm tra trong `05-vnr-module-components.md#Checklist-cho-agents`.
+**Self-check trước khi output tasks.md**: Chạy bảng kiểm tra trong `vnr-plugin/standards/05-internal-fe-framework-and-flow.md`.
 
 #### Quy tắc riêng cho Mobile tasks
 

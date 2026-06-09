@@ -24,7 +24,7 @@ Developers can either:
 plugins/vnr-plugin/
 ├── skills/          # Workflow orchestration (one skill per phase)
 ├── agents/          # Specialized AI agents (planner, developer, reviewer, etc.)
-├── standards/       # Architecture rules (backend/, frontend/, mobile/)
+├── standards/       # Architecture rules (01–06 numbered flat files)
 ├── templates/       # Canonical output templates
 ├── memory/          # constitution.md — project governance rules
 └── hooks/           # Pre-flight checks, security scan patterns
@@ -53,8 +53,8 @@ plugins/vnr-plugin/
 | `vnr-planner` | Software Architect | Plan + data model + API contracts |
 | `vnr-plan-reviewer` | Plan Quality Reviewer | 18-check review → PASS/WARN/FAIL |
 | `vnr-task-breaker` | Tech Lead | Ordered, file-path-specific task breakdown |
-| `vnr-backend-developer` | Backend Dev | ASP.NET Core, Clean Arch + CQRS (`src/backend/`) |
-| `vnr-frontend-developer` | Frontend Dev | Angular 19, Micro-frontend (`src/frontend/`) |
+| `vnr-backend-developer` | Backend Dev | .NET Framework 4.6.2, Database-First, EF6, SP (`src/backend/`) |
+| `vnr-frontend-developer` | Frontend Dev | Angular 15, Micro-frontend, vnr-module (`src/frontend/`) |
 | `vnr-mobile-developer` | Mobile Dev | Flutter, GetX (`src/app-mobile/`) |
 | `vnr-testcase-writer` | QA Analyst | Manual testcases from spec/plan |
 | `vnr-qc-generator` | QC Engineer | Gherkin scenarios + Playwright stubs |
