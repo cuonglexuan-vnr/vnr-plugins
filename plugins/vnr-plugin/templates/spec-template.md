@@ -1,156 +1,255 @@
-# Feature Specification: [FEATURE NAME]
+# spec.md
 
-> **⚠️ DEPRECATED** — this feature-level template is kept only for legacy features that still have a `spec.md`. New work uses **per-User-Story** deliveries from the BA team. See `templates/userstory-template.md` and the BA source at `plugins/vnr-ba-plugin/skills/vnr-ba-write-us/templates/us-template.md`.
+## I. Thông tin chung
 
-**Feature Branch**: `[###-feature-name]`  
-**Created**: [DATE]  
-**Status**: Draft (legacy)  
-**Input**: User description: "$ARGUMENTS"
-
-## User Scenarios & Testing *(mandatory)*
-
-<!--
-  IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
-  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
-  you should still have a viable MVP (Minimum Viable Product) that delivers value.
-  
-  Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
-  Think of each story as a standalone slice of functionality that can be:
-  - Developed independently
-  - Tested independently
-  - Deployed independently
-  - Demonstrated to users independently
--->
-
-### User Story 1 - [Brief Title] (Priority: P1)
-
-[Describe this user journey in plain language]
-
-**Why this priority**: [Explain the value and why it has this priority level]
-
-**Independent Test**: [Describe how this can be tested independently - e.g., "Can be fully tested by [specific action] and delivers [specific value]"]
-
-**Acceptance Scenarios**:
-
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-2. **Given** [initial state], **When** [action], **Then** [expected outcome]
+| Mục                | Nội dung                   |
+| ------------------ | -------------------------- |
+| Tên yêu cầu        | Viết lại yêu cầu gốc       |
+| Loại yêu cầu       | New Feature / Modify / Bug |
+| Mục tiêu nghiệp vụ |                            |
+| Tài liệu đầu vào   | requirement-review.md      |
+| Người phân tích    |                            |
+| Ngày cập nhật      |                            |
 
 ---
 
-### User Story 2 - [Brief Title] (Priority: P2)
+# II. Hiện trạng hệ thống
 
-[Describe this user journey in plain language]
+> Bắt buộc đối với yêu cầu Modify/Bug. Bỏ qua nếu là New Feature thuần túy.
 
-**Why this priority**: [Explain the value and why it has this priority level]
+## 1. Màn hình liên quan
 
-**Independent Test**: [Describe how this can be tested independently]
+| Màn hình | Đường dẫn |
+| -------- | --------- |
+|          |           |
 
-**Acceptance Scenarios**:
+### File tham khảo
 
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-
----
-
-### User Story 3 - [Brief Title] (Priority: P3)
-
-[Describe this user journey in plain language]
-
-**Why this priority**: [Explain the value and why it has this priority level]
-
-**Independent Test**: [Describe how this can be tested independently]
-
-**Acceptance Scenarios**:
-
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
+```text
+link/file.md
+```
 
 ---
 
-[Add more user stories as needed, each with an assigned priority]
+## 2. Luồng thao tác hiện tại
 
-### Edge Cases
+### Các bước thực hiện
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right edge cases.
--->
+1.
+2.
+3.
 
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
+### Kết quả hiện tại
 
-## Requirements *(mandatory)*
+```text
+Mô tả kết quả thực tế của hệ thống.
+Ghi rõ điểm còn thiếu / chưa đúng / chưa enforce nếu có.
+```
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right functional requirements.
--->
+---
 
-### Functional Requirements
+## 3. Cấu hình liên quan (nếu có)
 
-- **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
-- **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
-- **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
+| Cấu hình | Giá trị hiện tại |
+| -------- | ---------------- |
+|          |                  |
 
-*Example of marking unclear requirements:*
+---
 
-- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
-- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
+# III. Giải pháp đề xuất
 
-### Key Entities *(include if feature involves data)*
+## 1. Tóm tắt giải pháp
 
-- **[Entity 1]**: [What it represents, key attributes without implementation]
-- **[Entity 2]**: [What it represents, relationships to other entities]
+```text
+Mô tả ngắn gọn giải pháp đề xuất.
+```
 
-## Success Criteria *(mandatory)*
+---
 
-<!--
-  ACTION REQUIRED: Define measurable success criteria.
-  These must be technology-agnostic and measurable.
--->
+## 2. Phạm vi thay đổi
 
-### Measurable Outcomes
+### Chức năng ảnh hưởng
 
-- **SC-001**: [Measurable metric, e.g., "Users can complete account creation in under 2 minutes"]
-- **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
-- **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
-- **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+| Chức năng | Loại thay đổi         |
+| --------- | --------------------- |
+|           | New / Modify / Remove |
 
-## Assumptions
+### Màn hình ảnh hưởng
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right assumptions based on reasonable defaults
-  chosen when the feature description did not specify certain details.
--->
+| Màn hình | Mức độ                  |
+| -------- | ----------------------- |
+|          | Cao / Trung bình / Thấp |
 
-- [Assumption about target users, e.g., "Users have stable internet connectivity"]
-- [Assumption about scope boundaries, e.g., "Mobile support is out of scope for v1"]
-- [Assumption about data/environment, e.g., "Existing authentication system will be reused"]
-- [Dependency on existing system/service, e.g., "Requires access to the existing user profile API"]
+---
 
-## Mobile UI Screens _(include nếu feature có màn hình mobile)_
+## 3. Mô tả thay đổi chi tiết
 
-<!--
-  Liệt kê các màn hình cần triển khai trên mobile app.
-  Planner sẽ dùng section này để sinh ui-detail.md.
-  Tham chiếu widget từ docs/wiki/concepts/widget-mobile-catalog.md
--->
+### [BS-01] <Tên thay đổi>
 
-### [Tên màn hình 1]
+**Loại:** New / Modify / Remove
 
-**Mô tả**: [Màn hình dùng để làm gì]  
-**Layout**: List Page | Detail Page | Form Page | Modal/Bottom Sheet  
-**Actors**: [Ai dùng màn hình này]
+#### Màn hình
 
-**Các thành phần chính**:
+```text
+Tên màn hình và đường dẫn
+```
 
-- [Mô tả vùng/section chính của màn hình]
-- [Input fields, lists, actions cần hiển thị]
+#### Schema thay đổi (nếu có)
 
-**Luồng chính**:
+| Field | Bảng | Kiểu | Mặc định | Ghi chú |
+| ----- | ---- | ---- | -------- | ------- |
+|       |      |      |          |         |
 
-1. [Bước 1]
-2. [Bước 2]
+#### Yêu cầu thay đổi
 
-**States cần xử lý**: loading | empty | error | [custom state]
+##### Thêm mới
+
+* ...
+
+##### Sửa đổi
+
+* ...
+
+##### Giữ nguyên
+
+* ...
+
+##### Loại bỏ
+
+* ...
+
+#### Lưu ý nghiệp vụ (nếu có)
+
+* ...
+
+#### Validate
+
+| Điều kiện | Thông báo |
+| --------- | --------- |
+|           |           |
+
+---
+
+### [BS-02] <Tên thay đổi>
+
+**Loại:** New / Modify / Remove
+
+#### Màn hình
+
+```text
+Tên màn hình và đường dẫn
+```
+
+#### Schema thay đổi (nếu có)
+
+| Field | Bảng | Kiểu | Mặc định | Ghi chú |
+| ----- | ---- | ---- | -------- | ------- |
+|       |      |      |          |         |
+
+#### Yêu cầu thay đổi
+
+##### Thêm mới
+
+* ...
+
+##### Sửa đổi
+
+* ...
+
+##### Giữ nguyên
+
+* ...
+
+##### Loại bỏ
+
+* ...
+
+#### Lưu ý nghiệp vụ (nếu có)
+
+* ...
+
+#### Validate
+
+| Điều kiện | Thông báo |
+| --------- | --------- |
+|           |           |
+
+---
+
+# IV. Giao diện
+
+## Có cần thiết kế UI/Prototype không?
+
+* [ ] Không
+* [ ] Có
+
+### Nếu có
+
+| Màn hình | Link thiết kế |
+| -------- | ------------- |
+|          |               |
+
+### Mockup mô tả
+
+```text
+Mô tả giao diện hoặc đính kèm hình ảnh.
+```
+
+---
+
+# V. Vùng ảnh hưởng
+
+## Chức năng liên quan
+
+| Chức năng | Mức độ ảnh hưởng        |
+| --------- | ----------------------- |
+|           | Cao / Trung bình / Thấp |
+
+---
+
+## Dữ liệu liên quan
+
+| Đối tượng dữ liệu | Tác động |
+| ----------------- | -------- |
+|                   |          |
+
+---
+
+## Quy trình nghiệp vụ liên quan
+
+* ...
+* ...
+
+---
+
+# VIII. Checklist hoàn thành
+
+## Hiện trạng
+
+* [ ] Đã xác định màn hình hiện tại
+* [ ] Đã mô tả luồng thao tác hiện tại
+* [ ] Đã xác định cấu hình liên quan
+
+## Giải pháp
+
+* [ ] Đã mô tả đầy đủ thay đổi nghiệp vụ
+* [ ] Đã xác định màn hình ảnh hưởng
+* [ ] Đã liệt kê validate
+* [ ] Đã điền schema thay đổi cho mọi [BS-xx] có thay đổi DB
+
+## Chất lượng
+
+* [ ] Đã đánh giá vùng ảnh hưởng
+* [ ] Đã có tiêu chí nghiệm thu
+* [ ] Không còn blocker nghiệp vụ
+* [ ] Sẵn sàng chuyển sang Phase 3
+
+---
+
+# Technical Considerations For Phase 3
+
+> Ghi nhận kỹ thuật — KHÔNG phải thiết kế kỹ thuật.
+> Mục đích: BA ghi nhận những gì cần verify/tham khảo khi implement — SP hiện tại, pattern tương tự, edge case đặc biệt.
+
+* ...
+* ...
