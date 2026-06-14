@@ -2,38 +2,7 @@ installed: []
 settings:
   auto_execute_hooks: true
 hooks:
-  before_constitution:
-  - extension: git
-    command: vnr-plugin.git.initialize
-    enabled: true
-    optional: false
-    prompt: Execute vnr-plugin.git.initialize?
-    description: Initialize Git repository before constitution setup
-    condition: null
-  before_specify:
-  - extension: git
-    command: vnr-plugin.git.feature
-    enabled: true
-    optional: false
-    prompt: Execute vnr-plugin.git.feature?
-    description: Create feature branch before specification
-    condition: null
-  before_clarify:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit outstanding changes before clarification?
-    description: Auto-commit before spec clarification
-    condition: null
   before_plan:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit outstanding changes before planning?
-    description: Auto-commit before implementation planning
-    condition: null
   - extension: vnr-wiki
     command: vnr-wiki
     enabled: true
@@ -44,22 +13,8 @@ hooks:
       the implementation plan in domain knowledge. Falls back to docs/raw/
       if wiki is not yet populated.
     condition: null
-  before_tasks:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit outstanding changes before task generation?
-    description: Auto-commit before task generation
-    condition: null
+
   before_implement:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit outstanding changes before implementation?
-    description: Auto-commit before implementation
-    condition: null
   - extension: vnr-wiki
     command: vnr-wiki
     enabled: true
@@ -69,78 +24,8 @@ hooks:
       Load docs/wiki/ context before implementation: entities → Domain model,
       concepts → Handler logic. Falls back to docs/raw/ if wiki not populated.
     condition: null
-  before_checklist:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit outstanding changes before checklist?
-    description: Auto-commit before checklist generation
-    condition: null
-  before_analyze:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit outstanding changes before analysis?
-    description: Auto-commit before analysis
-    condition: null
-  before_taskstoissues:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit outstanding changes before issue sync?
-    description: Auto-commit before tasks-to-issues conversion
-    condition: null
-  after_constitution:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit constitution changes?
-    description: Auto-commit after constitution update
-    condition: null
-  after_specify:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit specification changes?
-    description: Auto-commit after specification
-    condition: null
-  after_clarify:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit clarification changes?
-    description: Auto-commit after spec clarification
-    condition: null
-  after_plan:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit plan changes?
-    description: Auto-commit after implementation planning
-    condition: null
-  after_tasks:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit task changes?
-    description: Auto-commit after task generation
-    condition: null
+
   after_implement:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit implementation changes?
-    description: Auto-commit after implementation
-    condition: null
   - extension: vnr-wiki-sync
     command: vnr-wiki-sync
     enabled: true
@@ -148,29 +33,5 @@ hooks:
     prompt: Sync wiki from updated raw docs after implementation?
     description: >-
       Synchronize docs/wiki/ from docs/raw/ to capture any new domain
-      knowledge documented during this PBI/feature implementation.
-    condition: null
-  after_checklist:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit checklist changes?
-    description: Auto-commit after checklist generation
-    condition: null
-  after_analyze:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit analysis results?
-    description: Auto-commit after analysis
-    condition: null
-  after_taskstoissues:
-  - extension: git
-    command: vnr-plugin.git.commit
-    enabled: true
-    optional: true
-    prompt: Commit after syncing issues?
-    description: Auto-commit after tasks-to-issues conversion
+      knowledge documented during this feature implementation.
     condition: null

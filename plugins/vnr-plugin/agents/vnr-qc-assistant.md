@@ -37,20 +37,23 @@ specs/<feature>/testcases.md    ← Bắt buộc — đây là file chính để
 
 | Tài liệu | Mục đích |
 |----------|---------|
-| `specs/<feature>/<feature>_*.md` | **User Story file** — Sections 3 (BR), 4 (AC), 7 (VM), 10 (traceability matrices) for cross-check |
+| `specs/<feature>/spec.md` | **Spec gốc** — Business Rules, ACs, Validation Messages for cross-check |
 | `specs/<feature>/plan.md` | API routes, data model, phân quyền, phases |
 | `specs/<feature>/tasks.md` | Task list — đối chiếu coverage |
 | `specs/<feature>/contracts/api-commitments.md` | Endpoint + request/response DTOs (nếu có) |
-| `specs/<feature>/<feature>_*_ui-detail.md` hoặc `specs/<feature>/ui-detail.md` | UI components, form fields, validation messages (nếu có) |
+| `specs/<feature>/ui-detail.md` | UI components, form fields, validation messages (nếu có) |
 
-### 3. Wiki (đọc khi ở mode Reviewer và cần hiểu business context)
+### 3. Wiki + Constitution (đọc khi ở mode Reviewer)
 
 ```
 1. Đọc docs/wiki/index.md → xác định entities và concepts liên quan
-2. Đọc docs/wiki/concepts/<feature>.md → AC, business rules, workflow
-3. Đọc docs/wiki/entities/<entity>.md → validation rules, field constraints
+2. Đọc entries tagged `entity` / `workflow` → validation rules, business rules, field constraints
 → Tuân theo chiến lược điều hướng trong vnr-plugin/skills/vnr-wiki/SKILL.md
 ```
+
+- `$PLUGIN_DIR/memory/constitution.md` — governance rules (quality gates, process principles)
+
+> **Fallback**: nếu wiki thiếu → đọc `docs/raw/` trực tiếp cho domain knowledge.
 
 ---
 
@@ -109,14 +112,14 @@ Review file `testcases.md` để đảm bảo chất lượng, kiểm tra covera
 ### Input
 
 - File `testcases.md` hiện tại
-- Tài liệu đặc tả: User Story file `<US-ID>_*.md` (bắt buộc), `plan.md`, `tasks.md` (và contracts, BA `<US-ID>_*_ui-detail.md` hoặc SWE `ui-detail.md` nếu có)
+- Tài liệu đặc tả: `specs/<feature>/spec.md` (bắt buộc), `plan.md`, `tasks.md` (và contracts, `ui-detail.md` nếu có)
 
 ### Quy trình
 
 ```
 Bước 1 → Đọc testcases.md và tất cả tài liệu đặc tả
        - Parse testcases hiện có
-       - Parse User Story file: Section 3 (BR), 4 (AC), 7 (VM), 10 (matrices)
+       - Parse `specs/<feature>/spec.md`: Business Rules, ACs, Validation Messages
        - Parse plan.md: API routes, data model, phân quyền
        - Parse tasks.md: task list, phases
 

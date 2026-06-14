@@ -34,6 +34,20 @@ Optional: `/specs/<US-ID>/<US-ID>_*_ui-detail.md` (BA-provided) or `/specs/<US-I
 
 [Gates determined based on constitution file]
 
+## Stack & Constraints
+
+<!--
+  Filled by /vnr-plan via the Wiki Loading Contract resolver:
+    node "$PLUGIN_DIR/scripts/resolve-context.mjs" --phase plan --paths "<repos/globs this feature touches>"
+  This makes mis-routing reviewable BEFORE code is generated (plan-reviewer checks it).
+  If the resolver reports manifest:"absent", note "No manifest — fell back to index.md navigation".
+-->
+
+**Resolved UI stack(s)**: [e.g., `ng-modern-ngzorro` for FE `projects/**`, `mvc-kendo-cshtml` for legacy views — or "none / N/A"]
+**Mandatory wiki pages loaded** (id list): [from resolver `mandatory` + `cards`]
+**Component commitments**: [the specific custom components/controls this plan will use, per the resolved catalog — e.g. `<vnr-grid>`, `<vnr-combobox>`, `VnrInputFactory.builderTextBox()`. NEVER native `<input>/<select>/<table>`.]
+**Convention commitments**: [naming, i18n key format, migration/versioning, layer rules pulled from the loaded pages]
+
 ## Project Structure
 
 ### Documentation (this feature)

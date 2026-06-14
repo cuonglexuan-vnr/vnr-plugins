@@ -563,7 +563,7 @@
                 <div class="arch-layer">
                     <div class="arch-layer-label">User</div>
                     <div class="arch-layer-content">
-                        <div class="arch-box user">/vnr-auto-pipeline &lt;feature&gt; [--from=N]</div>
+                        <div class="arch-box user">/vnr-auto-pipeline &lt;feature&gt; [--from=&lt;phase-id&gt;]</div>
                     </div>
                 </div>
                 <div class="arrow-down">&darr;</div>
@@ -588,14 +588,15 @@
                     <div class="arch-layer-label">Agents</div>
                     <div class="arch-layer-content">
                         <div class="arch-box agent-box">vnr-planner</div>
-                        <div class="arch-box agent-new">vnr-plan-reviewer ✦ NEW</div>
+                        <div class="arch-box agent-box">vnr-plan-reviewer</div>
                         <div class="arch-box agent-box">vnr-task-breaker</div>
                         <div class="arch-box agent-box">vnr-testcase-writer</div>
-                        <div class="arch-box agent-new">vnr-backend-developer</div>
-                        <div class="arch-box agent-new">vnr-frontend-developer</div>
+                        <div class="arch-box agent-box">vnr-backend-developer</div>
+                        <div class="arch-box agent-box">vnr-frontend-developer</div>
                         <div class="arch-box agent-box">vnr-mobile-developer</div>
                         <div class="arch-box agent-box">vnr-arch-reviewer</div>
                         <div class="arch-box agent-box">vnr-sec-reviewer</div>
+                        <div class="arch-box agent-new">vnr-code-reviewer ✦ NEW</div>
                         <div class="arch-box agent-box">vnr-tech-writer</div>
                     </div>
                 </div>
@@ -656,25 +657,30 @@
                 <span class="step-name">Implement</span>
             </div>
             <span class="flow-arrow">&rarr;</span>
+            <div class="flow-step" style="border-color: var(--cyan);">
+                <span class="step-num" style="color: var(--cyan);">Step 4</span>
+                <span class="step-name">Code Review</span>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
             <div class="flow-parallel">
                 <div class="flow-step">
-                    <span class="step-num">Step 4</span>
+                    <span class="step-num">Step 5</span>
                     <span class="step-name">Arch Review</span>
                 </div>
                 <div class="flow-step">
-                    <span class="step-num">Step 5</span>
+                    <span class="step-num">Step 6</span>
                     <span class="step-name">Sec Review</span>
                 </div>
             </div>
             <span class="flow-arrow">&rarr;</span>
             <div class="flow-step" style="border-color: var(--yellow);">
-                <span class="step-num">Step 6</span>
+                <span class="step-num">Step 7</span>
                 <span class="step-name">E2E Stubs</span>
                 <span class="stub-badge">STUB</span>
             </div>
             <span class="flow-arrow">&rarr;</span>
             <div class="flow-step">
-                <span class="step-num">Step 7</span>
+                <span class="step-num">Step 8</span>
                 <span class="step-name">Report</span>
             </div>
         </div>
@@ -734,29 +740,36 @@
                     <td>Skill: <code>vnr-implement</code></td>
                     <td><span class="badge badge-skill">Skill</span></td>
                 </tr>
+                <tr style="background: rgba(57, 197, 207, 0.05);">
+                    <td>4 ✦ NEW</td>
+                    <td>vnr-code-reviewer</td>
+                    <td><code>$PLUGIN_DIR/agents/vnr-code-reviewer.md</code></td>
+                    <td>Agent tool (general-purpose)</td>
+                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-new">NEW</span></td>
+                </tr>
                 <tr>
-                    <td>4</td>
+                    <td>5</td>
                     <td>vnr-arch-reviewer</td>
                     <td><code>$PLUGIN_DIR/agents/vnr-arch-reviewer.md</code></td>
                     <td>Agent tool (general-purpose)</td>
                     <td><span class="badge badge-agent">Agent</span> <span class="badge badge-parallel">Parallel</span></td>
                 </tr>
                 <tr>
-                    <td>5</td>
+                    <td>6</td>
                     <td>vnr-sec-reviewer</td>
                     <td><code>$PLUGIN_DIR/agents/vnr-sec-reviewer.md</code></td>
                     <td>Agent tool (general-purpose)</td>
                     <td><span class="badge badge-agent">Agent</span> <span class="badge badge-parallel">Parallel</span></td>
                 </tr>
                 <tr>
-                    <td>6</td>
+                    <td>7</td>
                     <td>&mdash;</td>
                     <td>&mdash;</td>
                     <td>CLI: stub file check / create</td>
                     <td><span class="badge badge-cli">Stub</span></td>
                 </tr>
                 <tr>
-                    <td>7</td>
+                    <td>8</td>
                     <td>vnr-tech-writer</td>
                     <td><code>$PLUGIN_DIR/agents/vnr-tech-writer.md</code></td>
                     <td>Agent tool (general-purpose)</td>
@@ -791,7 +804,7 @@
                     <div class="info-block">
                         <div class="info-block-title">Skip condition</div>
                         <div class="info-block-content">
-                            If <code>--from=N</code> is passed, skips validation and jumps to Step N directly.
+                            If <code>--from=&lt;phase-id&gt;</code> is passed, skips validation and jumps to that phase directly.
                         </div>
                     </div>
                 </div>
@@ -860,7 +873,7 @@
                     </div>
                 </div>
                 <div class="gate-info hitl">
-                    <strong>HITL Checkpoint:</strong> Human reviews findings + decides: [approve] / [modify] / [reject &rarr; --from=1a]
+                    <strong>HITL Checkpoint:</strong> Human reviews findings + decides: [approve] / [modify] / [reject &rarr; --from=plan]
                 </div>
             </div>
 
@@ -958,14 +971,51 @@
                     </div>
                 </div>
                 <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
-                    <strong style="color: var(--green);">Auto</strong> &mdash; Build success &rarr; Step 4+5 starts immediately. <strong style="color: var(--red);">Auto-stop</strong> if build fails &mdash; user must fix then <code>--from=3</code>.
+                    <strong style="color: var(--green);">Auto</strong> &mdash; Build success &rarr; Step 4 starts immediately. <strong style="color: var(--red);">Auto-stop</strong> if build fails &mdash; user must fix then <code>--from=implement</code>.
                 </div>
             </div>
 
-            <!-- Step 4+5 -->
+            <!-- Step 4 NEW -->
+            <div class="step-card new-step">
+                <div class="step-card-header">
+                    <span class="step-card-num">Step 4 ✦ NEW</span>
+                    <span class="step-card-title">Code Review</span>
+                    <span class="badge badge-agent">Agent: vnr-code-reviewer</span>
+                </div>
+                <div class="step-card-body">
+                    <div class="info-block">
+                        <div class="info-block-title">What it checks</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li><strong>AC/BR Completeness</strong> — every AC in spec.md has code</li>
+                                <li><strong>Task Completeness</strong> — every task in tasks.md implemented</li>
+                                <li><strong>Code Quality</strong> — naming, DRY, dead code, error handling, null safety</li>
+                                <li><strong>Logic Correctness</strong> — branches, off-by-one, async/await</li>
+                                <li><strong>Hardcode / Magic Numbers</strong> — no literals that should be config</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="info-block">
+                        <div class="info-block-title">Verdict logic</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li>🔴 Critical &ge; 1 <em>or missing AC</em> &rarr; FAIL ⛔</li>
+                                <li>🟡 Warning &ge; 1, Critical = 0 &rarr; WARN ⚠️</li>
+                                <li>Both = 0 &rarr; PASS ✅</li>
+                            </ul>
+                            Reads: <code>spec.md</code>, <code>tasks.md</code>, wiki conventions, constitution
+                        </div>
+                    </div>
+                </div>
+                <div class="gate-info">
+                    <strong>Auto-stop</strong> if FAIL &mdash; fix logic/AC violations then <code>--from=code-review</code>. PASS/WARN &rarr; Step 5+6 starts immediately.
+                </div>
+            </div>
+
+            <!-- Step 5+6 -->
             <div class="step-card parallel">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 4 + 5</span>
+                    <span class="step-card-num">Step 5 + 6</span>
                     <span class="step-card-title">Architecture Review + Security Review (PARALLEL)</span>
                     <span class="badge badge-agent">Agent</span>
                     <span class="badge badge-parallel">Parallel</span>
@@ -995,14 +1045,14 @@
                     </div>
                 </div>
                 <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
-                    <strong style="color: var(--green);">Auto</strong> &mdash; PASS/WARN &rarr; Step 6 starts immediately. <strong style="color: var(--red);">Auto-stop</strong> if FAIL &mdash; user must fix then <code>--from=4</code>.
+                    <strong style="color: var(--green);">Auto</strong> &mdash; PASS/WARN &rarr; Step 7 starts immediately. <strong style="color: var(--red);">Auto-stop</strong> if FAIL &mdash; user must fix then <code>--from=arch-sec-review</code>.
                 </div>
             </div>
 
-            <!-- Step 6 -->
+            <!-- Step 7 -->
             <div class="step-card cli">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 6</span>
+                    <span class="step-card-num">Step 7</span>
                     <span class="step-card-title">E2E Stubs (Placeholder)</span>
                     <span class="badge badge-cli">Stub</span>
                 </div>
@@ -1026,14 +1076,14 @@
                     </div>
                 </div>
                 <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
-                    <strong style="color: var(--green);">No checkpoint</strong> &mdash; automatically proceeds to Step 7. Always ⏭ STUB.
+                    <strong style="color: var(--green);">No checkpoint</strong> &mdash; automatically proceeds to Step 8. Always ⏭ STUB.
                 </div>
             </div>
 
-            <!-- Step 7 -->
+            <!-- Step 8 -->
             <div class="step-card agent">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 7</span>
+                    <span class="step-card-num">Step 8</span>
                     <span class="step-card-title">Report</span>
                     <span class="badge badge-agent">Agent: vnr-tech-writer</span>
                 </div>
@@ -1096,31 +1146,38 @@
                 <span class="flow-direction">&rarr;</span>
                 <div class="flow-artifact">testcases.md</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">Step 3 (auto), Step 6 (stub ref), Step 7</div>
+                <div class="flow-to">Step 3 (auto), Step 7 (stub ref), Step 8</div>
             </div>
             <div class="flow-row">
                 <div class="flow-from">Step 3 (Implement)</div>
                 <span class="flow-direction">&rarr;</span>
                 <div class="flow-artifact">src/backend/**/*.cs, src/frontend/**/*.ts</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">Step 4, 5</div>
+                <div class="flow-to">Step 4 (Code Review)</div>
             </div>
             <div class="flow-row">
-                <div class="flow-from">Step 4+5 (Reviews)</div>
+                <div class="flow-from">Step 4 (Code Review)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-artifact">Code Review verdict + findings (AC coverage, quality)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-to">Step 5+6 (Arch+Sec Review)</div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-from">Step 5+6 (Reviews)</div>
                 <span class="flow-direction">&rarr;</span>
                 <div class="flow-artifact">Arch verdict + Sec verdict + findings</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">Step 7 (Report)</div>
+                <div class="flow-to">Step 8 (Report)</div>
             </div>
             <div class="flow-row">
-                <div class="flow-from">Step 6 (E2E Stubs)</div>
+                <div class="flow-from">Step 7 (E2E Stubs)</div>
                 <span class="flow-direction">&rarr;</span>
                 <div class="flow-artifact">e2e/&lt;feature&gt;.e2e.spec.ts (stub)</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">Step 7 (Report reference)</div>
+                <div class="flow-to">Step 8 (Report reference)</div>
             </div>
             <div class="flow-row">
-                <div class="flow-from">Step 7 (Report)</div>
+                <div class="flow-from">Step 8 (Report)</div>
                 <span class="flow-direction">&rarr;</span>
                 <div class="flow-artifact">final-report.md + user-guide.md</div>
                 <span class="flow-direction">&rarr;</span>
@@ -1147,7 +1204,7 @@
                 <tr style="background: rgba(57, 197, 207, 0.05);">
                     <td>Step 1b &rarr; 1c</td>
                     <td>plan.md approved by user (after reviewing plan-reviewer findings)</td>
-                    <td>Reject &rarr; fix plan &rarr; <code>--from=1a</code></td>
+                    <td>Reject &rarr; fix plan &rarr; <code>--from=plan</code></td>
                 </tr>
                 <tr>
                     <td>Step 1c &rarr; 2</td>
@@ -1160,22 +1217,27 @@
                     <td>&mdash;</td>
                 </tr>
                 <tr>
-                    <td>Step 3 &rarr; 4+5</td>
+                    <td>Step 3 &rarr; 4</td>
                     <td>Automatic if build success (0 errors) &mdash; both BE and FE</td>
-                    <td>Auto-stop, fix then <code>--from=3</code></td>
+                    <td>Auto-stop, fix then <code>--from=implement</code></td>
+                </tr>
+                <tr style="background: rgba(57, 197, 207, 0.05);">
+                    <td>Step 4 &rarr; 5+6</td>
+                    <td>Automatic if Code Review PASS/WARN</td>
+                    <td>Auto-stop if FAIL, fix then <code>--from=code-review</code></td>
                 </tr>
                 <tr>
-                    <td>Step 4+5 &rarr; 6</td>
+                    <td>Step 5+6 &rarr; 7</td>
                     <td>Automatic if Arch PASS/WARN + Security PASS/WARN</td>
-                    <td>Auto-stop if FAIL, fix then <code>--from=4</code></td>
+                    <td>Auto-stop if FAIL, fix then <code>--from=arch-sec-review</code></td>
                 </tr>
                 <tr>
-                    <td>Step 6 &rarr; 7</td>
+                    <td>Step 7 &rarr; 8</td>
                     <td>Automatic &mdash; stub always passes</td>
                     <td>&mdash;</td>
                 </tr>
                 <tr>
-                    <td>Step 7 &rarr; Done</td>
+                    <td>Step 8 &rarr; Done</td>
                     <td>Automatic &mdash; pipeline complete, artifacts ready for PR</td>
                     <td>&mdash;</td>
                 </tr>
@@ -1185,17 +1247,18 @@
         <!-- Recovery -->
         <h2 class="section-title" id="recovery">7. Recovery &amp; Resume</h2>
         <div class="source-struct">
-            <span class="comment"># Resume from specific step (reuses existing artifacts)</span><br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=1a</span>   &larr; re-run Plan (planner)<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=1b</span>   &larr; re-run Plan Review only<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=1c</span>   &larr; from Tasks (plan approved)<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=2</span>    &larr; from Testcase Writer<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=3</span>    &larr; from Implement<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=4</span>    &larr; from Arch+Sec Review<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=6</span>    &larr; from E2E Stubs check<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=7</span>    &larr; Report only<br>
+            <span class="comment"># Resume from specific phase (reuses existing artifacts)</span><br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=plan</span>              &larr; re-run Plan (planner)<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=plan-review</span>       &larr; re-run Plan Review only<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=tasks</span>             &larr; from Tasks (plan approved)<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=testcases</span>         &larr; from Testcase Writer<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=implement</span>         &larr; from Implement (build fixed)<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=code-review</span>       &larr; from Code Review (logic/AC fixed) ✦ NEW<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=arch-sec-review</span>   &larr; from Arch+Sec Review (arch/sec fixed)<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=e2e-stubs</span>         &larr; from E2E Stubs check<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=report</span>            &larr; Report only<br>
             <br>
-            <span class="comment"># When --from=N: skips validation of prior steps,</span><br>
+            <span class="comment"># When --from=&lt;phase-id&gt;: skips validation of prior steps,</span><br>
             <span class="comment"># reuses existing artifacts (plan.md, tasks.md, etc.)</span>
         </div>
 
@@ -1225,7 +1288,7 @@
 
         <!-- Footer -->
         <div style="text-align: center; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.82rem;">
-            VNR Auto-Pipeline Workflow Documentation &bull; Updated 2026-06-09
+            VNR Auto-Pipeline Workflow Documentation &bull; Updated 2026-06-10
         </div>
     </div>
 </body>

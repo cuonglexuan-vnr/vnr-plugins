@@ -1,0 +1,123 @@
+
+    Directory: D:\WorkSpace
+
+
+Mode                 LastWriteTime         Length Name                                                                                                                                                              
+----                 -------------         ------ ----                                                                                                                                                              
+d-----          6/9/2026   2:57 PM                .claude                                                                                                                                                           
+d-----         5/27/2026  12:19 AM                .obsidian                                                                                                                                                         
+d-----          6/9/2026   2:51 PM                .pipeline-runs                                                                                                                                                    
+d-----         6/10/2026   2:25 PM                .specify                                                                                                                                                          
+d-----          6/7/2026  11:09 AM                .vnr-plan                                                                                                                                                         
+d-----         4/23/2026   2:49 PM                .vs                                                                                                                                                               
+d-----          6/6/2026   4:47 PM                auto pipeline                                                                                                                                                     
+d-----         5/29/2026  11:42 PM                dist                                                                                                                                                              
+d-----          6/9/2026   2:15 PM                docs                                                                                                                                                              
+d-----          6/7/2026  10:48 AM                logs                                                                                                                                                              
+d-----          6/1/2026  12:05 PM                performance                                                                                                                                                       
+d-----         6/10/2026   3:11 PM                specs                                                                                                                                                             
+d-----          6/4/2026   7:00 PM                src                                                                                                                                                               
+d-----         5/26/2026  11:15 AM                tools                                                                                                                                                             
+d-----          6/9/2026   2:21 PM                vnr-plugin                                                                                                                                                        
+-a----         6/10/2026   8:50 AM        4922456 .claude.rar                                                                                                                                                       
+-a----         5/26/2026  11:15 AM           8489 .gitignore                                                                                                                                                        
+-a----          6/3/2026   7:34 PM             10 20                                                                                                                                                                
+-a----         6/10/2026   3:11 AM         153370 2026-06-10-031122-local-command-caveatcaveat-the-messages-below.txt                                                                                               
+-a----         6/10/2026   2:35 PM              3 9_box.json                                                                                                                                                        
+-a----         5/26/2026  11:15 AM           5582 AGENTS.md                                                                                                                                                         
+-a----         6/10/2026   1:11 PM           1624 CLAUDE.md                                                                                                                                                         
+-a----          6/9/2026   5:01 PM          18509 tong-hop-misa-ba-viet-giai-phap-chi-tiet.md                                                                                                                       
+-a----         5/26/2026  11:15 AM          20158 WORKSPACE-INVENTORY.md                                                                                                                                            
+
+
+cd src\
+ls
+
+
+    Directory: D:\WorkSpace\src
+
+
+Mode                 LastWriteTime         Length Name                                                                                                                                                              
+----                 -------------         ------ ----                                                                                                                                                              
+d-----          6/4/2026   7:00 PM                FrameWork                                                                                                                                                         
+d-----         6/10/2026   1:32 PM                HRM9                                                                                                                                                              
+d-----         5/26/2026  10:23 PM                Vnr.Dev.HrmPortal                                                                                                                                                 
+-a----          6/4/2026   7:00 PM       72275410 FRAMEWORK.zip                                                                                                                                                     
+
+
+cd HRM9\
+ls
+
+
+    Directory: D:\WorkSpace\src\HRM9
+
+
+Mode                 LastWriteTime         Length Name                                                                                                                                                              
+----                 -------------         ------ ----                                                                                                                                                              
+d-----         5/29/2026   9:14 PM                .claude                                                                                                                                                           
+d-----         5/25/2026  12:41 AM                .gitnexus                                                                                                                                                         
+d-----         4/13/2026   1:20 PM                .specify                                                                                                                                                          
+d-----         5/17/2026   7:13 PM                Main                                                                                                                                                              
+d-----         6/10/2026   1:32 PM                Updates                                                                                                                                                           
+d-----         4/13/2026  10:47 AM                vnr-speckit                                                                                                                                                       
+-a----          6/9/2026   2:04 PM          10227 .gitignore                                                                                                                                                        
+-a----         5/24/2026   4:52 PM           1891 .gitnexusignore                                                                                                                                                   
+-a----         5/25/2026  12:41 AM           2586 AGENTS.md                                                                                                                                                         
+-a----         5/25/2026  12:41 AM           2586 CLAUDE.md                                                                                                                                                         
+-a----          6/6/2026   1:53 PM           1498 README.md                                                                                                                                                         
+
+
+cd ../
+cd Vnr.Dev.HrmPortal\
+ls
+
+
+    Directory: D:\WorkSpace\src\Vnr.Dev.HrmPortal
+
+
+Mode                 LastWriteTime         Length Name                                                                                                                                                              
+----                 -------------         ------ ----                                                                                                                                                              
+d-----         5/18/2026   4:16 PM                .ai                                                                                                                                                               
+d-----          5/5/2026   8:32 AM                .angular                                                                                                                                                          
+d-----          5/4/2026   2:25 PM                .claude                                                                                                                                                           
+d-----        12/16/2025   4:00 PM                .cloudflare                                                                                                                                                       
+d-----         5/18/2026   4:16 PM                .cursor                                                                                                                                                           
+d-----         5/23/2026  11:21 PM                .gitnexus                                                                                                                                                         
+d-----         4/13/2026  11:17 AM                .specify                                                                                                                                                          
+d-----        11/27/2025   9:08 PM                .vscode                                                                                                                                                           
+d-----          5/4/2026   9:45 PM                dist                                                                                                                                                              
+d-----         6/10/2026   9:56 AM                e2e                                                                                                                                                               
+d-----        12/16/2025   4:04 PM                libs                                                                                                                                                              
+d-----         5/18/2026   4:16 PM                memory-bank                                                                                                                                                       
+d-----         5/18/2026   4:16 PM                memory_bank                                                                                                                                                       
+d-----         5/18/2026  10:34 PM                node_modules                                                                                                                                                      
+d-----         5/14/2026   9:58 AM                projects                                                                                                                                                          
+d-----         5/18/2026   4:16 PM                src                                                                                                                                                               
+d-----         4/13/2026  11:17 AM                vnr-speckit                                                                                                                                                       
+d-----         5/18/2026   4:16 PM                xnotes                                                                                                                                                            
+-a----         5/18/2026   4:16 PM            706 .cursorignore                                                                                                                                                     
+-a----         5/18/2026   4:16 PM            274 .cursorindexingignore                                                                                                                                             
+-a----         5/18/2026   4:16 PM           1382 .cursorrules                                                                                                                                                      
+-a----        12/16/2025   4:00 PM            259 .editorconfig                                                                                                                                                     
+-a----        12/16/2025   4:00 PM           2291 .eslintrc.json                                                                                                                                                    
+-a----        12/16/2025   4:00 PM             67 .gitattributes                                                                                                                                                    
+-a----         5/18/2026   4:21 PM           4948 .gitignore                                                                                                                                                        
+-a----         5/23/2026  11:00 PM            382 .gitnexusignore                                                                                                                                                   
+-a----        12/16/2025   4:00 PM            147 .prettierignore                                                                                                                                                   
+-a----        12/16/2025   4:00 PM            248 .prettierrc                                                                                                                                                       
+-a----        12/16/2025   4:00 PM            108 .stylelintignore                                                                                                                                                  
+-a----        12/16/2025   4:00 PM            443 .stylelintrc.json                                                                                                                                                 
+-a----         5/23/2026  11:21 PM           2650 AGENTS.md                                                                                                                                                         
+-a----         5/14/2026   9:58 AM          68540 angular.json                                                                                                                                                      
+-a----         5/23/2026  11:21 PM           2650 CLAUDE.md                                                                                                                                                         
+-a----        12/16/2025   4:00 PM            424 clean-branch.sh                                                                                                                                                   
+-a----         5/23/2026  10:34 PM            564 gn.log                                                                                                                                                            
+-a----         5/18/2026   4:21 PM           1030 kendo-ui-license.txt                                                                                                                                              
+-a----        12/16/2025   4:04 PM              0 mypackage.npmrc                                                                                                                                                   
+-a----         5/18/2026   4:21 PM          13067 package.json                                                                                                                                                      
+-a----         5/18/2026   4:16 PM           7031 README.md                                                                                                                                                         
+-a----        12/16/2025   4:08 PM           1714 tsconfig.json                                                                                                                                                     
+-a----         5/14/2026   9:58 AM           5382 webpack.config.js                                                                                                                                                 
+-a----         5/14/2026   9:58 AM           4912 webpack.prod.config.js                                                                                                                                            
+-a----         5/14/2026   9:58 AM           4997 webpack.prodv2.config.js                                                                                                                                          
+-a----         5/18/2026   4:49 PM         736669 yarn.lock   

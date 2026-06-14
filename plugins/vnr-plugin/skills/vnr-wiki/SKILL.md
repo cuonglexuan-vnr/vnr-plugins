@@ -43,7 +43,30 @@ docs/wiki/
 
 ---
 
-## Bước 1 — LUÔN bắt đầu bằng `docs/wiki/index.md`
+## Bước 0 — Deterministic load qua Resolver (Wiki Loading Contract) ⭐
+
+> Đây là cách **bắt buộc** và **deterministic** để load context. Không "đọc index rồi tự chọn page" — mà **hỏi resolver chính xác phải đọc file nào**, rồi đọc **tất cả**.
+
+```
+1. Xác định scope: phase hiện tại (plan | implement | review) + các file/glob bạn SẼ chạm.
+2. Chạy resolver (script agnostic, ship cùng plugin):
+   node "<PLUGIN_DIR>/scripts/resolve-context.mjs" --phase <phase> --paths "<file1,file2,...>"
+3. Resolver đọc docs/wiki/manifest.json → match glob → trả JSON:
+   { stacks:[...], mandatory:[paths], cards:[paths], on_demand:[paths] }
+4. ĐỌC ĐẦY ĐỦ mọi file trong `mandatory` + `cards` — KHÔNG lướt, KHÔNG tự quyết bỏ qua.
+5. Đọc thêm `on_demand` khi task thực sự chạm tới component/workflow đó.
+```
+
+**Quy tắc:**
+- `mandatory`/`cards` là **bắt buộc** — đây là conventions + UI component rules của đúng stack cho file bạn sắp viết. Bỏ sót = sinh sai (vd: dùng native `<select>` thay vì `<vnr-combobox>`).
+- Khi đang viết code, nếu thấy system-reminder `[Wiki Loading Contract — <stack>]` (do PreToolUse hook inject) → đó là constraint card **bắt buộc tuân theo**, kể cả sau khi context bị compaction.
+- Resolver là **single source of truth** cho "đọc gì": cả hook (write-time) lẫn agent (phase-entry) đều gọi chung nó.
+
+**Fallback (no manifest):** nếu `manifest: "absent"` (project chưa có `docs/wiki/manifest.json`) → quay lại Bước 1–2 dưới đây (đọc `index.md` + điều hướng theo intent). Các bước dưới vẫn là chỉ dẫn navigation hợp lệ khi chưa có contract.
+
+---
+
+## Bước 1 — Bắt đầu bằng `docs/wiki/index.md` (fallback khi không có manifest)
 
 `index.md` có:
 1. **Quick Lookup by Intent** — bảng "nếu bạn cần X, xem ở Y"

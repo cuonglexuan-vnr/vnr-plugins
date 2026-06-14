@@ -34,6 +34,7 @@ Nếu rỗng → sync toàn bộ `docs/raw/`.
 ```
 docs/wiki/
 ├── index.md            # Derived artifact — auto-generated từ frontmatter
+├── manifest.json       # Derived artifact — Loading Contract routing (Step 3.5)
 ├── glossary.md         # Append-only term lookup table
 ├── log.md              # Append-only sync history
 │
@@ -41,6 +42,7 @@ docs/wiki/
 ├── patterns/           # Technical reference: how the system IS built
 ├── guides/             # How-to recipes: building NEW things
 ├── rules/              # Enforced coding standards
+├── stacks/             # Per-UI-library component catalogs + terse constraint cards
 └── decisions/          # ADRs + architectural rationale
 ```
 
@@ -56,6 +58,8 @@ docs/wiki/
 1c. List files trong docs/raw/ → xác định files cần xử lý:
     - Nếu $ARGUMENTS có tên file → chỉ xử lý file đó
     - Nếu rỗng → xử lý tất cả raw files
+    - BỎ QUA (không compile): docs/raw/_schema/ (templates/spec) và docs/raw/_inbox/
+      (staging của vnr-wiki-add). Mọi folder/file bắt đầu bằng `_` đều bỏ qua.
 ```
 
 ### Step 2 — Process each raw file
@@ -74,11 +78,33 @@ Với mỗi raw file cần xử lý:
 ### Step 3 — Regenerate index.md
 
 ```
-3a. Đọc frontmatter của MỌI page trong tất cả 5 folders
-3b. Group theo folder: domains/, patterns/, guides/, rules/, decisions/
+3a. Đọc frontmatter của MỌI page trong tất cả folders (domains, patterns, guides, rules, stacks, decisions)
+3b. Group theo folder
 3c. Build catalog table: [[id]] | type | summary (từ frontmatter)
 3d. Overwrite docs/wiki/index.md hoàn toàn từ frontmatter data
 ```
+
+### Step 3.5 — Regenerate manifest.json (Wiki Loading Contract routing) ⭐
+
+`docs/wiki/manifest.json` là **derived artifact** — máy đọc bởi `scripts/resolve-context.mjs`. Regenerate từ các routing fields trong frontmatter:
+
+```
+3.5a. Quét frontmatter MỌI page tìm các trường routing: stack, applies_to (globs), card, phase, tier.
+3.5b. Build `stacks[]` — gom theo `stack` id:
+      - page có tier: card        → stack.card  = path của page đó
+      - page có tier: always      → thêm vào stack.always
+      - page khác (on_demand/unset)→ thêm vào stack.on_demand
+      - stack.match = union các `applies_to` globs của các page thuộc stack đó
+3.5c. Build `phases{}` — page CÓ `phase:[...]` nhưng KHÔNG có `stack`:
+      - với mỗi phase trong list, nếu tier=always (default cho phase pages) → thêm path vào phases.<phase>.always
+3.5d. Ghi docs/wiki/manifest.json:
+      { "version":"1", "stacks":[...], "phases":{plan,implement,review:{always:[...]}} }
+      Paths tương đối project root (docs/wiki/<folder>/<file>.md).
+3.5e. Nếu KHÔNG có page nào mang routing fields → ghi manifest tối thiểu { version, stacks:[], phases:{} }
+      (resolver sẽ no-op → pipeline chạy như cũ). KHÔNG xoá manifest hand-authored nếu chưa có gì để thay.
+```
+
+> Defaults theo folder khi page thiếu routing fields (tùy chọn, để bootstrap): `stacks/*-catalog.md` → stack=frontmatter.stack, tier=always; `stacks/*.card.md` → tier=card; `rules/*` → phase:[implement,review]; `patterns/*` (architecture) → phase:[plan]. Chỉ áp khi page chưa khai báo tường minh.
 
 ### Step 4 — Append log.md
 
@@ -100,7 +126,8 @@ Với mỗi raw file cần xử lý:
 5b. Frontmatter check: mọi page phải có đủ 8 fields (id, title, folder, type, tags, related, updated, summary)
 5c. Link check: mọi [[wikilink]] phải trỏ đến id tồn tại trong wiki
 5d. Summary check: mọi summary ≤ 120 chars
-5e. Báo cáo: số pages created/updated/unchanged, warnings nếu có
+5e. Manifest check: mọi path trong manifest.json (stacks[].card/always/on_demand, phases.*.always) phải tồn tại; mỗi stack có `match` không rỗng và một `card`; cảnh báo nếu một file .cshtml/Angular glob không khớp stack nào
+5f. Báo cáo: số pages created/updated/unchanged, manifest regenerated (N stacks, M phase entries), warnings nếu có
 ```
 
 ---
@@ -173,7 +200,20 @@ summary: "..."                     # ≤120 chars — copied verbatim into index
 | `patterns/` | `architecture`, `flow`, `component` |
 | `guides/` | `recipe` |
 | `rules/` | `standard`, `convention`, `constraint` |
+| `stacks/` | `catalog`, `card` |
 | `decisions/` | `adr` |
+
+### Optional routing fields (drive `manifest.json` — Step 3.5)
+
+In addition to the 8 required fields, pages may declare:
+
+```yaml
+stack: <stack-id>                 # UI-library/stack this page belongs to
+applies_to: ["<glob>", ...]       # file globs that select this stack
+card: docs/wiki/stacks/<stack>.card.md   # (catalog pages) terse card for the stack
+phase: [plan, implement, review]  # phases where a non-stack page is mandatory
+tier: always | on_demand | card   # always=load at phase entry; card=hook-injected
+```
 
 ---
 

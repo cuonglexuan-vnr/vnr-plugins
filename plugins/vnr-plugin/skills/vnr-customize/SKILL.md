@@ -265,7 +265,7 @@ mkdir -p {PROJECT_AGENTS_DIR}          # for agents
    ## Rules
 
    - Follow the constitution: `$PLUGIN_DIR/memory/constitution.md`
-   - Follow project standards: `$PLUGIN_DIR/standards/`
+   - Discover tech patterns from wiki: read `docs/wiki/index.md` → tagged `standard`, `convention`, `recipe`
    ```
 
 3. Ask the user:
@@ -301,7 +301,7 @@ mkdir -p {PROJECT_AGENTS_DIR}          # for agents
 
    <!-- List files the agent must read before executing -->
    - `$PLUGIN_DIR/memory/constitution.md`
-   - `$PLUGIN_DIR/standards/` (relevant files: 01-tech-stack, 02-architecture, 03-data-and-auth, 04-be-framework, 05-fe-framework, 06-conventions)
+   - `docs/wiki/index.md` → entries tagged `standard`, `convention`, `recipe` for tech-specific patterns
 
    ## Quy trinh thuc hien
 
@@ -505,9 +505,9 @@ If a customized skill produces output artifacts (e.g., `plan.md`, `tasks.md`, `t
 - Required sections/fields must still be present (additional sections are fine)
 - Markdown structure (headings, lists, tables) must remain parseable by scripts
 
-### Rule 3: Standards reference
+### Rule 3: Tech context reference
 
-All customized skills/agents **SHOULD** still reference `$PLUGIN_DIR/standards/` for tech stack and architecture guidelines. Custom standards can be added, but base standards should not be contradicted.
+All customized skills/agents **SHOULD** discover tech-specific patterns from `docs/wiki/` (via `docs/wiki/index.md`) and governance rules from `$PLUGIN_DIR/memory/constitution.md`. Do not hardcode tech stack details — let wiki drive them.
 
 ### Rule 4: Wiki integration
 

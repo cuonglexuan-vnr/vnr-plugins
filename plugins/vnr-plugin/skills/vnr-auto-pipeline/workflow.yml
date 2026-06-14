@@ -1,0 +1,96 @@
+version: "1"
+# Pipeline phase definitions — read by vnr-auto-pipeline/SKILL.md (orchestrator).
+# Each phase type: skill | agent | parallel | cli
+# Orchestrator passes only: FEATURE, PLUGIN_DIR. Agents read their own .md for full context.
+#
+# GATE-FATIGUE BUDGET (hard rule): <=2 interactive AskUserQuestion gates on the happy path —
+#   (1) plan-review (always), (2) stack-confirm (ONLY when the resolver reports >1 UI stack).
+# Every gate MUST auto-skip when not needed: no manifest / single unambiguous stack / PASS verdict.
+
+phases:
+  - id: plan
+    name: "Plan"
+    type: skill
+    skill: vnr-plan
+
+  - id: plan-review
+    name: "Plan Review"
+    type: agent
+    agent: vnr-plan-reviewer
+    hitl: true
+    hitl_question: "Plan Review complete. Review the verdict and plan, then decide."
+    hitl_preview_file: "specs/{feature}/plan.md"
+    hitl_options:
+      - label: "approve"
+        description: "Plan looks good — continue to Tasks"
+      - label: "modify"
+        description: "I will edit plan.md manually, then approve"
+      - label: "reject"
+        description: "Discard this plan and restart from scratch"
+    on_reject:
+      action: stop
+      recovery: "--from=plan"
+
+  - id: tasks
+    name: "Tasks"
+    type: skill
+    skill: vnr-tasks
+
+  - id: testcases
+    name: "Testcases"
+    type: agent
+    agent: vnr-testcase-writer
+
+  - id: implement
+    name: "Implement"
+    type: skill
+    skill: vnr-implement
+    gate: build
+    on_fail:
+      action: stop
+      recovery: "--from=implement"
+
+  - id: code-review
+    name: "Code Review"
+    type: agent
+    agent: vnr-code-reviewer
+    gate: review
+    on_fail:
+      action: stop
+      recovery: "--from=code-review"
+
+  - id: arch-sec-review
+    name: "Arch + Security Review"
+    type: parallel
+    sub_agents:
+      - agent: vnr-arch-reviewer
+      - agent: vnr-sec-reviewer
+    gate: review
+    on_fail:
+      action: stop
+      recovery: "--from=arch-sec-review"
+
+  - id: e2e-stubs
+    name: "E2E Stubs"
+    type: agent
+    agent: e2e-stubs-inline
+    always_pass: true
+    # Inline agent prompt (orchestrator uses this instead of reading a .md file):
+    inline_prompt: |
+      Read docs/wiki/index.md → find entry tagged `recipe` for E2E setup → discover E2E test file path.
+      If wiki has no E2E recipe → use path: specs/{feature}/testcases.md to infer, or default to src/frontend/e2e/{feature}.e2e.spec.ts.
+
+      Check if E2E stub file exists:
+      - EXISTS → report "✅ E2E stub exists: <path>"
+      - MISSING → create minimal stub:
+        import {{ test }} from '@playwright/test';
+        // AUTO-STUB — implement body from specs/{feature}/testcases.md (P0+P1)
+        test.describe('{feature}', () => {{ test.todo('P0 happy path'); }});
+        → report "✅ E2E stub created: <path>"
+
+      This phase always passes regardless of outcome.
+
+  - id: report
+    name: "Report"
+    type: agent
+    agent: vnr-tech-writer

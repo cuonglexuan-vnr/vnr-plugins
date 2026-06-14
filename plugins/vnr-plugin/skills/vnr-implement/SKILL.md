@@ -18,15 +18,17 @@ $ARGUMENTS
 
 You **MUST** consider the user input before proceeding (if not empty).
 
-## Scope Detection
+## Repo Root Discovery
 
-Trước khi thực hiện, agent sẽ tự động phát hiện scope từ `tasks.md` và adopt persona phù hợp:
+**Trước khi thực hiện**, agent phải discover đường dẫn thực tế của từng repo từ wiki:
 
-| Scope | Điều kiện phát hiện | Agent persona |
-|-------|---------------------|---------------|
-| Backend | Task có `File` path bắt đầu bằng `src/backend/` | Đọc `$PLUGIN_DIR/agents/vnr-backend-developer.md` |
-| Frontend | Task có `File` path bắt đầu bằng `src/frontend/` (trừ `src/frontend/e2e/`) | Đọc `$PLUGIN_DIR/agents/vnr-frontend-developer.md` |
-| Mobile | Task có `File` path bắt đầu bằng `src/app-mobile/` | Đọc `$PLUGIN_DIR/agents/vnr-mobile-developer.md` |
+1. Đọc `docs/wiki/index.md` → tìm entries tagged `architecture` hoặc `recipe`.
+2. Từ các entries đó, xác định:
+   - `BE_ROOT`: thư mục chứa backend repo (e.g. `src/HRM9`, `src/backend`, v.v.)
+   - `FE_ROOT`: thư mục chứa frontend repo (e.g. `src/Vnr.Dev.HrmPortal`, `src/frontend`, v.v.)
+   - `MOBILE_ROOT`: thư mục chứa mobile repo (e.g. `src/app-mobile`, v.v.)
+3. Nếu wiki không có entry rõ ràng → fallback: đọc `docs/raw/solution-layout.md` hoặc scan thư mục `src/` để detect.
+4. Ghi nhớ các giá trị này — mọi bước filter và cd sau đây đều dùng giá trị đã discover, **không dùng literal path hardcoded**.
 
 Dispatch là **tuần tự**: Backend → Frontend → Mobile. Nếu BE build fail → dừng, không chuyển sang FE.
 
@@ -66,7 +68,7 @@ Dispatch là **tuần tự**: Backend → Frontend → Mobile. Nếu BE build fa
 
 ## Outline
 
-1. Run `vnr-plugin/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks` from repo root and parse PLUGIN_DIR, FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+1. **Setup** (optional): If `vnr-plugin/scripts/powershell/check-prerequisites.ps1` exists, run it with `-Json -RequireTasks -IncludeTasks` from repo root and parse PLUGIN_DIR, FEATURE_DIR and AVAILABLE_DOCS list. If the script is absent, resolve PLUGIN_DIR by scanning parent directories for `vnr-plugin/`, and FEATURE_DIR as `specs/<feature>/`.
 
 2. **Check checklists status** (if FEATURE_DIR/checklists/ exists):
    - Scan all checklist files in the checklists/ directory
@@ -102,8 +104,8 @@ Dispatch là **tuần tự**: Backend → Frontend → Mobile. Nếu BE build fa
 3. Load and analyze the implementation context:
    - **REQUIRED**: Read tasks.md for the complete task list and execution plan
    - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
-   - **REQUIRED**: Read the User Story file (`<US-ID>_*.md`, shape: `templates/userstory-template.md`) — Section 3 (BR), Section 4 (AC), Section 6 (Data Dictionary), Section 7 (VM) drive implementation correctness; Section 10 matrices give the traceability baseline.
-   - **IF EXISTS**: Read `<US-ID>_*_ui-detail.md` (BA) or `ui-detail.md` (SWE fallback) for screen layout and component details
+   - **REQUIRED**: Read `specs/<feature>/spec.md` (BA output) — Business Rules, ACs, Data Dictionary, Validation Messages drive implementation correctness
+   - **IF EXISTS**: Read `ui-detail.md` for screen layout and component details
    - **IF EXISTS**: Read data-model.md for entities and relationships
    - **IF EXISTS**: Read contracts/ for API specifications and test requirements
    - **IF EXISTS**: Read research.md for technical decisions and constraints
@@ -159,55 +161,65 @@ Dispatch là **tuần tự**: Backend → Frontend → Mobile. Nếu BE build fa
    - **Task details**: ID, description, file paths, parallel markers [P]
    - **Execution flow**: Order and dependency requirements
 
-5.5 **Detect task scope** — scan tasks.md content for path prefixes:
-   - `HAS_BE` = có task nào có `File` path chứa `src/backend/`
-   - `HAS_FE` = có task nào có `File` path chứa `src/frontend/` và KHÔNG chứa `src/frontend/e2e/`
-   - `HAS_MOBILE` = có task nào có `File` path chứa `src/app-mobile/`
+5.5 **Display scope summary** — dùng `BE_ROOT`, `FE_ROOT`, `MOBILE_ROOT` đã discover để hiển thị:
+   ```
+   Repo roots discovered:
+     Backend  : {BE_ROOT}     (e.g. src/HRM9)
+     Frontend : {FE_ROOT}     (e.g. src/Vnr.Dev.HrmPortal)
+     Mobile   : {MOBILE_ROOT} (e.g. src/app-mobile)
+   Dispatch: BE → FE → Mobile (each agent self-filters; reports "No tasks — skipped" if nothing matches)
+   ```
 
-   Hiển thị scope summary:
+5.6 **Resolve the Wiki Loading Contract per scope (L3 prompt-injection)** — for each scope, gather the file paths from `tasks.md` (the `File` entries under that root) and run:
    ```
-   Scope detected:
-     Backend  [src/backend/]    : ✅ YES / ⬜ NO
-     Frontend [src/frontend/]   : ✅ YES / ⬜ NO
-     Mobile   [src/app-mobile/] : ✅ YES / ⬜ NO
-   Dispatch order: [danh sách scope theo thứ tự BE → FE → Mobile]
+   node "$PLUGIN_DIR/scripts/resolve-context.mjs" --phase implement --paths "<paths under {BE_ROOT} | {FE_ROOT} | {MOBILE_ROOT}>"
    ```
+   Capture the JSON output (`mandatory`, `cards`, `on_demand`). You will inject these into each developer subagent's dispatch prompt so the contract reaches the agent that actually writes code — independent of context compaction. If the resolver reports `manifest: "absent"`, skip this (agents fall back to `index.md`).
 
 6. **Execute implementation — Sequential per-scope dispatch**:
 
-   ### 6a — Backend Phase (nếu HAS_BE = true)
+   > **Quan trọng**: Mỗi phase luôn được spawn như một subagent chuyên biệt. Không dùng boolean để skip — agent tự filter tasks của mình và báo "0 tasks — skip" nếu không có task thuộc scope đó.
+   >
+   > **L3 — luôn truyền context đã resolve vào prompt dispatch** của mỗi developer subagent (cùng với FEATURE/PLUGIN_DIR/<ROOT>):
+   > `WIKI_PAGES=[<mandatory + on_demand cho scope đó>]` và `CARD_REF=[<cards cho scope đó>]`.
+   > Đây là kênh giao context chính (prompt luôn tới được subagent); PreToolUse hook là lớp gia cố write-time.
 
-   <agent_to_use>Adopt vnr-backend-developer persona — đọc `$PLUGIN_DIR/agents/vnr-backend-developer.md` để nắm đầy đủ quy tắc Clean Architecture, CQRS, naming và git convention cho BE.</agent_to_use>
+   ### 6a — Backend Phase
 
-   - Filter tasks: chỉ execute tasks có `File` path `src/backend/`
-   - Phase-by-phase: Domain → Application → Infrastructure → API → Tests
+   <agent_to_use>Spawn vnr-backend-developer subagent — đọc `$PLUGIN_DIR/agents/vnr-backend-developer.md`. Truyền: FEATURE, PLUGIN_DIR, BE_ROOT (repo root thực tế đã discover), và `WIKI_PAGES`/`CARD_REF` đã resolve cho scope BE ở bước 5.6.</agent_to_use>
+
+   - Agent filter tasks: chỉ execute tasks có `File` path bắt đầu bằng `{BE_ROOT}/`
+   - Nếu không có task nào khớp → agent báo "No BE tasks — phase skipped" và kết thúc ngay
+   - Phase-by-phase theo thứ tự trong tasks.md
    - Parallel tasks `[P]` trong cùng phase: thực hiện song song
-   - Sau khi hoàn thành tất cả BE tasks: **chạy `cd src/backend && dotnet build`**
+   - Sau khi hoàn thành tất cả BE tasks: **chạy build** (command từ `docs/wiki/index.md` → `recipe` entry hoặc từ `plan.md` Technical Context → Commands)
    - **Nếu build FAIL → dừng toàn bộ, báo lỗi, KHÔNG chuyển sang 6b**
    - Đánh dấu `[x]` từng task BE vào tasks.md ngay sau khi hoàn thành
 
-   ### 6b — Frontend Phase (nếu HAS_FE = true)
+   ### 6b — Frontend Phase
 
-   > Chỉ bắt đầu sau khi 6a hoàn thành (BE build PASS hoặc HAS_BE = false).
+   > Chỉ bắt đầu sau khi 6a kết thúc (BE build PASS hoặc "No BE tasks — phase skipped").
 
-   <agent_to_use>Adopt vnr-frontend-developer persona — đọc `$PLUGIN_DIR/agents/vnr-frontend-developer.md` để nắm đầy đủ quy tắc Angular 19, Micro-frontend, permission và git convention cho FE.</agent_to_use>
+   <agent_to_use>Spawn vnr-frontend-developer subagent — đọc `$PLUGIN_DIR/agents/vnr-frontend-developer.md`. Truyền: FEATURE, PLUGIN_DIR, FE_ROOT (repo root thực tế đã discover), và `WIKI_PAGES`/`CARD_REF` đã resolve cho scope FE ở bước 5.6 (chứa UI component catalog đúng stack).</agent_to_use>
 
    - **Đọc `specs/<feature>/contracts/api-commitments.md` trước khi implement bất kỳ API service call nào**
-   - Filter tasks: chỉ execute tasks có `File` path `src/frontend/` (trừ `src/frontend/e2e/`)
-   - Phase-by-phase theo plan.md
+   - Agent filter tasks: chỉ execute tasks có `File` path bắt đầu bằng `{FE_ROOT}/` và không phải E2E test path
+   - Nếu không có task nào khớp → agent báo "No FE tasks — phase skipped" và kết thúc ngay
+   - Phase-by-phase theo thứ tự trong tasks.md
    - Parallel tasks `[P]` trong cùng phase: thực hiện song song
-   - Sau khi hoàn thành tất cả FE tasks: **chạy `cd src/frontend && npm run build-libs && npm run build-apps:prod`**
+   - Sau khi hoàn thành tất cả FE tasks: **chạy build** (command từ `docs/wiki/index.md` → `recipe` entry hoặc từ `plan.md` Technical Context → Commands)
    - **Nếu build FAIL → dừng, báo lỗi, KHÔNG chuyển sang 6c**
    - Đánh dấu `[x]` từng task FE vào tasks.md ngay sau khi hoàn thành
 
-   ### 6c — Mobile Phase (nếu HAS_MOBILE = true)
+   ### 6c — Mobile Phase
 
-   > Chỉ bắt đầu sau khi các phase trước hoàn thành.
+   > Chỉ bắt đầu sau khi các phase trước kết thúc.
 
-   <agent_to_use>Adopt vnr-mobile-developer persona — đọc `$PLUGIN_DIR/agents/vnr-mobile-developer.md` để nắm đầy đủ quy tắc Flutter/GetX, VnR widgets và git convention cho Mobile.</agent_to_use>
+   <agent_to_use>Spawn vnr-mobile-developer subagent — đọc `$PLUGIN_DIR/agents/vnr-mobile-developer.md`. Truyền: FEATURE, PLUGIN_DIR, MOBILE_ROOT (repo root thực tế đã discover).</agent_to_use>
 
-   - Filter tasks: chỉ execute tasks có `File` path `src/app-mobile/`
-   - Phase-by-phase theo plan.md
+   - Agent filter tasks: chỉ execute tasks có `File` path bắt đầu bằng `{MOBILE_ROOT}/`
+   - Nếu không có task nào khớp → agent báo "No Mobile tasks — phase skipped" và kết thúc ngay
+   - Phase-by-phase theo thứ tự trong tasks.md
    - Parallel tasks `[P]` trong cùng phase: thực hiện song song
    - Đánh dấu `[x]` từng task Mobile vào tasks.md ngay sau khi hoàn thành
 
@@ -236,9 +248,9 @@ Dispatch là **tuần tự**: Backend → Frontend → Mobile. Nếu BE build fa
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      Implementation Complete
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Backend  : X/N tasks ✅ | Build: ✅ PASS / ⛔ FAIL
-     Frontend : X/N tasks ✅ | Build: ✅ PASS / ⛔ FAIL
-     Mobile   : X/N tasks ✅
+     Backend  [{BE_ROOT}]     : X/N tasks ✅ | Build: ✅ PASS / ⛔ FAIL / ⬜ SKIPPED
+     Frontend [{FE_ROOT}]     : X/N tasks ✅ | Build: ✅ PASS / ⛔ FAIL / ⬜ SKIPPED
+     Mobile   [{MOBILE_ROOT}] : X/N tasks ✅ | ⬜ SKIPPED
      Files: N created, N modified
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      ```

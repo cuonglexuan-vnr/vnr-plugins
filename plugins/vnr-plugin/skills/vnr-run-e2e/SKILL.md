@@ -15,27 +15,20 @@ $ARGUMENTS
 ```
 
 Parse `$ARGUMENTS` → lấy:
-- `<feature>` (bắt buộc) — tên feature, tương ứng với file `src/frontend/e2e/<feature>.e2e.spec.ts`
+- `<feature>` (bắt buộc) — tên feature
 - `--headed` (tuỳ chọn) — chạy browser có UI (mặc định: headless)
-- `--grep=<pattern>` (tuỳ chọn) — chỉ chạy test matching pattern (ví dụ: `--grep="TC-01"`)
+- `--grep=<pattern>` (tuỳ chọn) — chỉ chạy test matching pattern
 - `--update-snapshots` (tuỳ chọn) — cập nhật snapshot baseline
+
+Đọc `docs/wiki/index.md` → tìm entry tagged `recipe` cho E2E setup → lấy:
+- E2E test file path (`<e2e-path>/<feature>.e2e.spec.ts`)
+- Frontend source path, Playwright config path, test-results paths
 
 ---
 
 ## Cấu trúc source code
 
-```
-src/
-├── backend/        # ASP.NET Core — GIT REPO RIÊNG (cần running cho E2E)
-└── frontend/       # Angular 19 — GIT REPO RIÊNG
-    ├── e2e/
-    │   ├── <feature>.e2e.spec.ts    ← Test file
-    │   ├── .auth/                    ← Storage state files
-    │   └── screenshots/              ← Custom screenshots (nếu có)
-    ├── playwright.config.ts
-    ├── test-results/                 ← Playwright output (screenshots on failure)
-    └── playwright-report/            ← HTML report
-```
+E2E paths discover từ wiki `recipe` entry. Nếu không có wiki → suy luận từ `plan.md` hoặc repo layout.
 
 ---
 
@@ -44,8 +37,8 @@ src/
 ### Bước 1 — Validate prerequisites
 
 ```bash
-# Kiểm tra e2e test file tồn tại
-ls src/frontend/e2e/<feature>.e2e.spec.ts
+# Kiểm tra e2e test file tồn tại (path từ wiki)
+ls <e2e-path>/<feature>.e2e.spec.ts
 ```
 
 Nếu file không tồn tại → **dừng**: "Chưa có e2e spec. Chạy `/vnr-qc-generator` trước để tạo stubs."
@@ -59,17 +52,17 @@ Nếu chưa cài → gợi ý: `cd src/frontend && npx playwright install`
 
 ### Bước 2 — Health check
 
-```bash
-# Kiểm tra Backend API
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/health 2>/dev/null || echo "000")
-echo "Backend API: HTTP $HTTP_CODE"
+Đọc `docs/wiki/index.md` → tìm entry tagged `recipe` cho E2E setup → lấy service URLs và startup commands.
 
-# Kiểm tra Frontend dev server
-FE_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4200 2>/dev/null || echo "000")
-echo "Frontend: HTTP $FE_CODE"
+Nếu wiki không có → đọc `plan.md` Technical Context → Commands section.
+
+```bash
+# Kiểm tra services (URLs từ wiki hoặc plan.md)
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" <backend-url-from-wiki>/health 2>/dev/null || echo "000")
+FE_CODE=$(curl -s -o /dev/null -w "%{http_code}" <frontend-url-from-wiki> 2>/dev/null || echo "000")
 ```
 
-Hiển thị kết quả health check:
+Hiển thị kết quả:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -77,24 +70,21 @@ Hiển thị kết quả health check:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Pre-flight checks:
-  E2E spec:     ✅ src/frontend/e2e/<feature>.e2e.spec.ts
-  Backend API:  ✅ http://localhost:5001 (200) / ⛔ DOWN
-  Frontend:     ✅ http://localhost:4200 (200) / ⛔ DOWN
+  E2E spec:     ✅ <e2e-path>/<feature>.e2e.spec.ts
+  Backend API:  ✅ <backend-url> (200) / ⛔ DOWN
+  Frontend:     ✅ <frontend-url> (200) / ⛔ DOWN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**Nếu Backend hoặc Frontend DOWN**:
+**Nếu services DOWN** — hiển thị startup commands từ wiki `recipe` entry:
 
 ```
 ⚠️ Services chưa sẵn sàng.
-
-Để start:
-  Backend:  cd src/backend && dotnet run --project <ApiProject>
-  Frontend: cd src/frontend && npm start
+Để start: <commands từ wiki>
 
 Bạn muốn:
-  [1] Chạy test anyway (có thể fail do API/UI unavailable)
-  [2] Đợi (user tự start services, rồi gõ 'ready')
+  [1] Chạy test anyway
+  [2] Đợi (user tự start, rồi gõ 'ready')
   [3] Hủy
 ```
 
@@ -122,8 +112,12 @@ fi
 # Luôn thêm reporter
 PLAYWRIGHT_CMD="$PLAYWRIGHT_CMD --reporter=list,html"
 
-# Chạy
-rtk $PLAYWRIGHT_CMD
+# Chạy (dùng rtk nếu có, fallback npx trực tiếp)
+if command -v rtk &>/dev/null; then
+  rtk $PLAYWRIGHT_CMD
+else
+  $PLAYWRIGHT_CMD
+fi
 ```
 
 ### Bước 4 — Thu thập kết quả
@@ -187,7 +181,8 @@ Bạn muốn:
 #### Option 2 — Chạy lại failed
 
 ```bash
-cd src/frontend && rtk npx playwright test e2e/<feature>.e2e.spec.ts --last-failed --reporter=list,html
+# dùng rtk nếu có, fallback npx
+cd <frontend-path> && npx playwright test <e2e-path>/<feature>.e2e.spec.ts --last-failed --reporter=list,html
 ```
 
 #### Option 4 — Mở HTML report

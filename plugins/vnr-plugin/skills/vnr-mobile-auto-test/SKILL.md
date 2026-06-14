@@ -90,10 +90,11 @@ src/app-mobile/
 
 ```
 Level 0 — COMPLIANCE CHECK (bắt buộc nếu có widget mới)
-  Static scan: kiểm tra widget/view/modal mới có tuân thủ 01-vnr-app-ui-standards.md
+  Static scan: kiểm tra widget/view/modal mới có tuân thủ standards từ wiki
   Không cần build, không cần device — đọc source code
   Output: PASS / VIOLATION (block) / WARNING (non-block)
   Thời gian: ~2-5s
+  Rules: đọc docs/wiki/index.md → entries tagged `standard`+`mobile` trước khi scan
 
 Level 1 — UNIT (bắt buộc)
   Logic thuần: validation, state machine, data mapping
@@ -119,16 +120,17 @@ Level 3 — INTEGRATION (tùy chọn — cần device + cần Key trên widget)
 
 ## Bước 1: Đọc Context
 
-1. Đọc `specs/<US-ID>/<US-ID>_*.md` (User Story file, shape: `templates/userstory-template.md`) → Section 1 (User Story Statement), Section 4 (Acceptance Criteria), Section 8 (UI/UX Mô tả)
-2. Đọc `specs/<US-ID>/tasks.md` → task list, có widget mới không?
-3. Đọc `specs/<US-ID>/testcases.md` → manual test cases (nếu có)
-4. Đọc `specs/<US-ID>/<US-ID>_*_ui-detail.md` hoặc `specs/<US-ID>/ui-detail.md` (nếu có) → chi tiết components/states
-5. Scan source code:
+1. Đọc `docs/wiki/index.md` → tìm entries tagged `standard`+`mobile` (compliance rules), `recipe` (test patterns)
+2. Đọc `specs/<feature>/spec.md` → ACs (Section), UI states, Validation Messages
+3. Đọc `specs/<feature>/tasks.md` → task list, có widget mới không?
+4. Đọc `specs/<feature>/testcases.md` → manual test cases (nếu có)
+5. Đọc `specs/<feature>/ui-detail.md` (nếu có) → chi tiết components/states
+6. Scan source code:
    - Controller: `src/app-mobile/lib/modules/**/controller/*controller.dart`
    - Widgets mới: `src/app-mobile/lib/modules/**/widgets/**/*.dart`
    - Use cases: `src/app-mobile/lib/modules/**/domain/usecases/*.dart`
    - Repository: `src/app-mobile/lib/modules/**/data/repositories/*impl.dart`
-6. Kiểm tra test hiện có: `src/app-mobile/test/`, `src/app-mobile/integration_test/`
+7. Kiểm tra test hiện có: `src/app-mobile/test/`, `src/app-mobile/integration_test/`
 
 **Quyết định level cần generate:**
 
@@ -235,7 +237,7 @@ void main() {
 
 ## Bước 2.5: VNR Standards Compliance Check (bắt buộc nếu có widget mới)
 
-**Chạy trước Widget Test.** Scan toàn bộ file widget/view/modal mới được tạo trong feature, kiểm tra vi phạm chuẩn `01-vnr-app-ui-standards.md`. Đây là **static analysis** — đọc source code, không cần build app.
+**Chạy trước Widget Test.** Scan toàn bộ file widget/view/modal mới được tạo trong feature. Đây là **static analysis** — đọc source code, không cần build app.
 
 ### 2.5.1 Xác định files cần scan
 
@@ -246,149 +248,50 @@ Từ `tasks.md`, lấy tất cả file paths thuộc layer View/Widget/Modal:
 
 Đọc từng file đã tạo trong feature. **Không scan** domain/, data/, usecases/.
 
-### 2.5.2 Checklist vi phạm cần kiểm tra
+### 2.5.2 Load compliance rules từ wiki
 
-Với mỗi file, scan theo 8 nhóm sau:
+Đọc `docs/wiki/index.md` → tìm tất cả entries tagged `standard`+`mobile` hoặc `constraint`+`mobile`.
+Đọc từng entry đó → build checklist động. Các nhóm rules phổ biến:
 
-#### ❌ GROUP 1 — Banned Widgets (dùng Flutter standard thay VNR)
+- **Banned widgets**: component/widget nào bị cấm và thay bằng gì
+- **Colors**: hardcoded colors, deprecated color methods
+- **Spacing/Radius**: hardcoded dimension values
+- **Typography**: hardcoded font styles
+- **Bottom sheet structure**: required wrapper/pattern
+- **VNR widget required**: per screen type (form, list)
+- **Design tokens**: context theme extensions
+- **i18n**: string literals cần `.tr`
 
-| Pattern tìm kiếm | Vi phạm | Thay bằng |
-|---|---|---|
-| `AlertDialog(` | ❌ Banned | `VnRConfirmDialog` hoặc `Get.bottomSheet + VnRTopModal` |
-| `showDialog(` | ❌ Banned | `Get.dialog(VnRConfirmDialog(...))` |
-| `ElevatedButton(` | ❌ Banned | `VnRButton(type: ButtonType.primary, ...)` |
-| `TextButton(` | ❌ Banned | `VnRButton(type: ButtonType.text, ...)` |
-| `OutlinedButton(` | ❌ Banned | `VnRButton(type: ButtonType.outline, ...)` |
-| `TextField(` | ❌ Banned | `VnRInputText(controller: ...)` |
-| `TextFormField(` | ❌ Banned | `VnRInputText(controller: ...)` |
-| `SnackBar(` | ❌ Banned | `VnRSnackbar.show*()` |
-| `ScaffoldMessenger` | ❌ Banned | `VnRSnackbar.show*()` |
-| `showModalBottomSheet(` | ❌ Banned | `Get.bottomSheet(VnRTopModal(...))` |
-| `showBottomSheet(` | ❌ Banned | `Get.bottomSheet(VnRTopModal(...))` |
-| `FloatingActionButton(` | ❌ Banned | `VnRFloatingButton(...)` |
-| `Checkbox(` | ❌ Banned | `VnRCheckbox(...)` |
-| `Switch(` | ❌ Banned | `VnRSwitch(...)` |
-| `Radio(` | ❌ Banned | `VnRRadio(...)` |
-
-#### ❌ GROUP 2 — Banned Colors
-
-| Pattern tìm kiếm | Vi phạm | Thay bằng |
-|---|---|---|
-| `Colors\.grey` | ❌ Hardcoded | `context.borderColor` / `context.textSecondary` |
-| `Colors\.white` (trong widget content) | ❌ Hardcoded | `context.white` |
-| `Colors\.black` | ❌ Hardcoded | `context.black` |
-| `Colors\.red` | ❌ Hardcoded | `context.red` |
-| `Colors\.blue` | ❌ Hardcoded | `context.blue` |
-| `Colors\.green` | ❌ Hardcoded | `context.green` |
-| `Color(0x` | ❌ Hex hardcode | `AppColor.*` hoặc `context.*` |
-| `Color(0xFF` | ❌ Hex hardcode | `AppColor.*` hoặc `context.*` |
-| `\.withOpacity(` | ❌ Deprecated | `.withValues(alpha: ...)` |
-
-> **Exception được phép**: `Colors.white` CHỈ trong `backgroundColor:` của `Get.bottomSheet(...)` hoặc `Get.dialog(...)` — không phải trong widget content.
-
-#### ❌ GROUP 3 — Banned Spacing/Radius
-
-| Pattern tìm kiếm | Vi phạm | Thay bằng |
-|---|---|---|
-| `EdgeInsets\.all\([0-9]` | ❌ Hardcoded | `EdgeInsets.all(AppSpacing.*)` |
-| `EdgeInsets\.symmetric\(.*[0-9]` | ❌ Hardcoded | `EdgeInsets.symmetric(AppSpacing.*)` |
-| `SizedBox\(height: [0-9]` | ❌ Hardcoded | `SizedBox(height: AppSpacing.*)` |
-| `SizedBox\(width: [0-9]` | ❌ Hardcoded | `SizedBox(width: AppSpacing.*)` |
-| `BorderRadius\.circular\([0-9]` | ❌ Hardcoded | `BorderRadius.circular(AppRadius.*)` |
-| `Padding\(.*EdgeInsets.*[0-9]` | ❌ Hardcoded | Dùng `AppSpacing.*` |
-
-#### ❌ GROUP 4 — Banned Typography
-
-| Pattern tìm kiếm | Vi phạm | Thay bằng |
-|---|---|---|
-| `TextStyle\(fontSize:` | ❌ Hardcoded | `context.body14Regular` / `context.h1` / ... |
-| `TextStyle\(color: Colors` | ❌ Hardcoded | `context.textColor` |
-| `fontWeight: FontWeight\.` (trực tiếp trong widget) | ❌ Hardcoded | Dùng `context.*` text styles |
-
-#### ❌ GROUP 5 — Banned Bottom Sheet Structure
-
-Khi file có `Get.bottomSheet(`, kiểm tra **bắt buộc** phải có:
-- `VnRTopModal` — nếu không có → **VIOLATION**
-- `isScrollControlled: true` — nếu không có → **WARNING**
-
-#### ✅ GROUP 6 — VNR Widget Required (kiểm tra theo loại màn hình)
-
-Nếu file là form page (có `Form(` hoặc nhiều input):
-- Phải có ít nhất 1 `VnRInputText` / `VnRInputNumber` / `VnRTextArea` / `VnRDropdown` / `VnRDatePicker`
-- Nếu chỉ thấy `TextField`/`TextFormField` → flag violation
-
-Nếu file là list page (tên chứa `_list_`, `_view_all`, `vnr_list`):
-- Phải có `VnRListView` / `VnRApiListView` — nếu dùng `ListView.builder` trực tiếp → **WARNING**
-
-#### ✅ GROUP 7 — Context Theme Extensions (kiểm tra positive)
-
-Kiểm tra file CÓ dùng ít nhất 1 trong:
-- `context.white`, `context.black`, `context.textColor`, `context.bgLevel1`, v.v.
-- `AppSpacing.*`, `AppRadius.*`
-
-Nếu không có bất kỳ context extension nào → **WARNING: có thể đang dùng hardcoded values**
-
-#### ✅ GROUP 8 — Translation Keys
-
-Các string literal dài (>3 ký tự, chứa chữ) không kết thúc bằng `.tr` → **WARNING: có thể thiếu i18n**
-
-Ví dụ:
-```dart
-Text('Lưu lại')          // ❌ → Text('eva.save'.tr)
-Text('save'.tr)          // ✅ OK
-Text('S')                // ✅ OK — quá ngắn
-const Key('btn_save')    // ✅ OK — Key không cần .tr
-```
+> Nếu wiki không có mobile standard entries → skip compliance check, note "wiki chưa có mobile standards".
 
 ### 2.5.3 Output: Compliance Report
 
-Sau khi scan xong, xuất báo cáo:
-
 ```
-╔══════════════════════════════════════════════════════════════════════╗
-║       VNR STANDARDS COMPLIANCE CHECK                                 ║
-║       Feature: <feature-id>                                          ║
-╠══════════════════════════════════════════════════════════════════════╣
-║  Files scanned: N                                                    ║
-╠═══════════════╦══════════════╦═════════════════════════════════════╣
-║  Severity     ║  Count       ║  Status                              ║
-╠═══════════════╬══════════════╬══════════════════════════════════════╣
-║  ❌ VIOLATION ║  X           ║  FAIL — phải fix trước khi merge    ║
-║  ⚠️  WARNING  ║  Y           ║  WARN — nên fix, không block merge   ║
-║  ✅ PASS      ║  Z files     ║  Clean                               ║
-╚═══════════════╩══════════════╩══════════════════════════════════════╝
+╔══════════════════════════════════════════════════════╗
+║  VNR STANDARDS COMPLIANCE CHECK                      ║
+║  Feature: <feature-id>                               ║
+╠══════════════════════════════════════════════════════╣
+║  Files scanned: N                                    ║
+╠═══════════════╦══════════╦════════════════════════════╣
+║  Severity     ║  Count   ║  Status                    ║
+╠═══════════════╬══════════╬════════════════════════════╣
+║  ❌ VIOLATION ║  X       ║  FAIL — fix trước merge    ║
+║  ⚠️  WARNING  ║  Y       ║  WARN — không block merge  ║
+║  ✅ PASS      ║  Z files ║  Clean                     ║
+╚═══════════════╩══════════╩════════════════════════════╝
 
 ❌ VIOLATIONS (phải fix):
-
-  [V001] lib/modules/eva/pages/.../view/some_form.dart:42
-    ElevatedButton( → dùng VnRButton(type: ButtonType.primary, ...)
-
-  [V002] lib/modules/eva/pages/.../widgets/some_modal.dart:18
-    Get.bottomSheet( không có VnRTopModal → bắt buộc dùng VnRTopModal làm header
-
-  [V003] lib/modules/eva/pages/.../view/some_view.dart:67
-    Color(0xFF333333) → dùng context.textColor hoặc AppColor.*
-
-⚠️  WARNINGS (nên fix):
-
-  [W001] lib/modules/eva/pages/.../view/some_list.dart:33
-    Text('Danh sách') không có .tr → kiểm tra có cần i18n không
-
-  [W002] lib/modules/eva/pages/.../view/some_form.dart:88
-    isScrollControlled: true thiếu trong Get.bottomSheet
-
-╔══════════════════════════════════════════════════════════════════════╗
-║  Kết quả: ❌ FAIL — X violations cần fix trước khi chạy Widget Test  ║
-╚══════════════════════════════════════════════════════════════════════╝
+  [V001] <file>:<line>
+    <pattern tìm thấy> → <fix theo wiki>
 ```
 
 ### 2.5.4 Xử lý kết quả
 
-- **Có VIOLATION**: **DỪNG** — không chuyển sang Widget Test. Liệt kê từng violation với line number + cách sửa. Hỏi user: `"Fix tự động? (yes / no / show diff)"`.
+- **Có VIOLATION**: **DỪNG** — không chuyển sang Widget Test. Hỏi user: `"Fix tự động? (yes / no)"`.
   - Nếu `yes`: tự edit file, fix từng violation, chạy lại scan, tiếp tục.
   - Nếu `no`: dừng, báo user phải fix thủ công rồi chạy lại.
 - **Chỉ có WARNING**: tiếp tục sang Widget Test, liệt kê warnings cuối report.
-- **PASS hoàn toàn**: tiếp tục sang Widget Test, hiển thị `✅ All files comply with VNR standards`.
+- **PASS hoàn toàn**: tiếp tục sang Widget Test.
 
 ---
 

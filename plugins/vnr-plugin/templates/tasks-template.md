@@ -1,60 +1,30 @@
 ---
 
-description: "Task list template for implementing one User Story"
+description: "Task list template for implementing one feature"
 ---
 
-# Tasks: [US-ID — Title]
+# Tasks: [Feature ID — Title]
 
-**Input**: Design documents in `/specs/<US-ID>/` — User Story file (`<US-ID>_*.md`, shape: `templates/userstory-template.md`), `plan.md`, and optionally `data-model.md`, `contracts/`, `research.md`, `<US-ID>_*_ui-detail.md` (BA) or `ui-detail.md` (SWE fallback).
-**Prerequisites**: `plan.md` (required), User Story file (required — ACs drive phases), `research.md`, `data-model.md`, `contracts/`.
+**Input**: Design documents in `specs/<feature>/` — `spec.md` (BA output), `plan.md`, and optionally `data-model.md`, `contracts/`, `research.md`, `ui-detail.md`.
+**Prerequisites**: `plan.md` (required), `spec.md` (required — ACs drive phases), `research.md`, `data-model.md`, `contracts/`.
 
-**Tests**: OPTIONAL — only include test tasks if explicitly requested in the User Story or user direction.
+**Tests**: OPTIONAL — only include test tasks if explicitly requested.
 
-**Organization**: All tasks belong to one User Story. Phase 3+ is grouped by **AC group** (Happy-Path / Validation / Edge) or by **UI screen** (when the US spans multiple screens). Pick whichever yields cleaner, independently shippable increments for this US.
+**Path Conventions**: Discover from `docs/wiki/index.md` → entries tagged `convention` or `architecture`. The actual repo root paths for BE/FE/Mobile live in the wiki — agents must read them before writing any file path. The `src/backend/` / `src/frontend/` / `src/app-mobile/` examples below are **illustrative placeholders only**; replace with actual paths from wiki (e.g. `src/HRM9`, `src/Vnr.Dev.HrmPortal`).
+
+**Organization**: All tasks belong to one feature. Phase 3+ is grouped by **AC group** (Happy-Path / Validation / Edge) or by **UI screen**. Pick whichever yields cleaner, independently shippable increments.
 
 ## Format: `[ID] [P?] [AC/Screen] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
-- **[AC]**: Traces the task to an AC from US Section 4 (e.g., `[AC-001]`, `[VAL-02]`) or a screen from US Section 8 (e.g., `[S1]`, `[S2]`)
-- Include exact file paths in descriptions
-
-## Path Conventions (VNR Standard)
-
-> **QUAN TRỌNG**: `src/backend/` và `src/frontend/` là **2 git repository riêng biệt**.
-> Mọi file path phải dùng prefix `src/backend/` hoặc `src/frontend/`.
-
-- **Backend**: `src/backend/Src/Services/<ServiceName>/...` (ASP.NET Core)
-- **Backend tests**: `src/backend/Tests/...`
-- **Frontend**: `src/frontend/apps/<remote-app>/...` (Angular 19)
-- **Frontend libs**: `src/frontend/libs/...`
-- **E2E tests**: `src/frontend/e2e/`
-- Git branch tạo riêng trong mỗi repo
-
-<!--
-  ============================================================================
-  IMPORTANT: The tasks below are SAMPLE TASKS for illustration only.
-
-  The /vnr-tasks command MUST replace these with actual tasks derived from:
-  - Acceptance Criteria (Section 4 of the User Story file)
-  - Business Rules (Section 3) — each BR maps to validation tasks
-  - Data Dictionary (Section 6) — each field maps to model/DTO tasks
-  - Validation Messages (Section 7) — each VM maps to message/i18n tasks
-  - UI/UX screens (Section 8) — each screen maps to View + Controller tasks
-  - contracts/ (from plan.md Phase 1)
-
-  Pick ONE phase-organization shape for Phase 3+:
-    Shape A — per AC group (Happy-Path → Validation → Edge)
-    Shape B — per UI screen (S1 → S2 → S3)
-
-  DO NOT keep these sample tasks in the generated tasks.md file.
-  ============================================================================
--->
+- **[AC]**: Traces the task to an AC (e.g., `[AC-001]`, `[VAL-02]`) or a screen (e.g., `[S1]`, `[S2]`)
+- Include exact file paths in descriptions (from wiki path convention or plan.md)
 
 ## Phase 1: Setup
 
 **Purpose**: Branches, scaffolds, dependencies specific to this US.
 
-- [ ] T001 Create feature branches in `src/backend/` and `src/frontend/`
+- [ ] T001 Create feature branches in `{BE_ROOT}/` and `{FE_ROOT}/`  *(replace with wiki-discovered paths)*
 - [ ] T002 [P] Add/verify project dependencies per plan.md Technical Context
 - [ ] T003 [P] Configure linting/formatting if new tooling needed
 
@@ -67,7 +37,7 @@ description: "Task list template for implementing one User Story"
 **⚠️ CRITICAL**: No AC work can begin until this phase is complete.
 
 - [ ] T004 Create/update DB schema + migrations from US Section 6 (Data Dictionary)
-- [ ] T005 [P] Create base entities/DTOs (US Section 6 → `src/backend/Src/Services/<Svc>/Domain/`)
+- [ ] T005 [P] Create base entities/DTOs (US Section 6 → `{BE_ROOT}/Src/Services/<Svc>/Domain/`)  *(replace {BE_ROOT} with wiki path)*
 - [ ] T006 [P] Register DI/routing hooks if the US introduces new endpoints
 - [ ] T007 Seed/fixture data required for all ACs (if any)
 
@@ -83,14 +53,14 @@ description: "Task list template for implementing one User Story"
 
 ### Tests for Happy-Path ACs (OPTIONAL) ⚠️
 
-- [ ] T010 [P] [AC-001] Integration test for AC-001 in `src/backend/Tests/.../AC001Tests.cs`
-- [ ] T011 [P] [AC-001] E2E test in `src/frontend/e2e/<us-id>-happy.spec.ts`
+- [ ] T010 [P] [AC-001] Integration test for AC-001 in `{BE_ROOT}/Tests/.../AC001Tests.cs`  *(replace {BE_ROOT})*
+- [ ] T011 [P] [AC-001] E2E test in `{FE_ROOT}/e2e/<us-id>-happy.spec.ts`  *(replace {FE_ROOT})*
 
 ### Implementation
 
-- [ ] T012 [P] [AC-001] Backend command/query handler in `src/backend/Src/Services/<Svc>/Application/...`
-- [ ] T013 [P] [AC-001] Frontend service + UI wiring in `src/frontend/apps/<app>/.../<feature>.service.ts`
-- [ ] T014 [AC-001] Wire up primary screen (S1) from US Section 8 in `src/frontend/apps/<app>/.../<feature>.component.ts`
+- [ ] T012 [P] [AC-001] Backend command/query handler in `{BE_ROOT}/Src/Services/<Svc>/Application/...`  *(replace {BE_ROOT})*
+- [ ] T013 [P] [AC-001] Frontend service + UI wiring in `{FE_ROOT}/apps/<app>/.../<feature>.service.ts`  *(replace {FE_ROOT})*
+- [ ] T014 [AC-001] Wire up primary screen (S1) from US Section 8 in `{FE_ROOT}/apps/<app>/.../<feature>.component.ts`  *(replace {FE_ROOT})*
 - [ ] T015 [AC-001] Emit audit event from US Section 9 (e.g., `{Entity}Created`)
 
 **Checkpoint**: Happy-Path ACs are demo-ready.
@@ -140,11 +110,11 @@ description: "Task list template for implementing one User Story"
 
 ## Phase N: Polish & Cross-Cutting
 
-- [ ] TXXX [P] Analytics events from US Section 9 wired in `src/frontend/...`
+- [ ] TXXX [P] Analytics events from US Section 9 wired in `{FE_ROOT}/...`  *(replace {FE_ROOT})*
 - [ ] TXXX Traceability check — every AC in US Section 4 has ≥1 task and ≥1 test reference
 - [ ] TXXX Documentation updates in `docs/`
 - [ ] TXXX Run `/vnr-analyze` and resolve findings
-- [ ] TXXX [P] Additional unit tests (if requested) in `src/backend/Tests/unit/`, `src/frontend/...`
+- [ ] TXXX [P] Additional unit tests (if requested) in `{BE_ROOT}/Tests/unit/`, `{FE_ROOT}/...`  *(replace with wiki-discovered paths)*
 
 ---
 

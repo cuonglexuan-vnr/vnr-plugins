@@ -58,9 +58,9 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-1. **Setup**: Run `vnr-plugin/scripts/powershell/setup-plan.ps1 -Json` from repo root and parse JSON for PLUGIN_DIR, USER_STORY (primary input — the BA User Story file `<US-ID>_*.md`, shape: `templates/userstory-template.md`), UI_DETAIL (optional — BA `<US-ID>_*_ui-detail.md` or SWE fallback `ui-detail.md`), IMPL_PLAN, SPECS_DIR, BRANCH. `FEATURE_SPEC` is retained as an alias of USER_STORY for backwards compatibility. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+1. **Setup** (optional): If `vnr-plugin/scripts/powershell/setup-plan.ps1` exists, run it with `-Json` from repo root and parse JSON for PLUGIN_DIR, SPECS_DIR, BRANCH. If the script is absent, resolve PLUGIN_DIR by scanning parent directories for `vnr-plugin/`, and SPECS_DIR as `specs/<feature>/` where `<feature>` is from `$ARGUMENTS`.
 
-2. **Load context**: Read USER_STORY (and UI_DETAIL if present) plus `$PLUGIN_DIR/memory/constitution.md`. Load IMPL_PLAN template (already copied).
+2. **Load context**: Read `specs/<feature>/spec.md` (BA output) and `ui-detail.md` (if present) plus `$PLUGIN_DIR/memory/constitution.md`. Load IMPL_PLAN template (already copied).
 
 3. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
    - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")

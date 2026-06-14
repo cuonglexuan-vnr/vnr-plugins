@@ -58,18 +58,17 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-1. **Setup**: Run `vnr-plugin/scripts/powershell/check-prerequisites.ps1 -Json` from repo root and parse PLUGIN_DIR, FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+1. **Setup** (optional): If `vnr-plugin/scripts/powershell/check-prerequisites.ps1` exists, run it with `-Json` from repo root and parse PLUGIN_DIR, FEATURE_DIR and AVAILABLE_DOCS list. If the script is absent, resolve PLUGIN_DIR by scanning parent directories for `vnr-plugin/`, and FEATURE_DIR as `specs/<feature>/`.
 
 2. **Load design documents**: Read from FEATURE_DIR:
-   - **Required**: plan.md (tech stack, libraries, structure), the User Story file `<US-ID>_*.md` (shape: `templates/userstory-template.md`) — Sections 3 (BR), 4 (AC), 6 (Data Dictionary), 7 (VM), 8 (UI/UX), 10 (Traceability).
-   - **Optional**: `<US-ID>_*_ui-detail.md` or `ui-detail.md` (UI breakdown), data-model.md (entities), contracts/ (interface contracts), research.md (decisions), quickstart.md (test scenarios).
-   - Note: Not all projects have all documents. Generate tasks based on what's available.
+   - **Required**: plan.md (tech stack, libraries, structure), `specs/<feature>/spec.md` (BA output) — Business Rules, ACs, Data Dictionary, Validation Messages, UI/UX sections.
+   - **Optional**: `ui-detail.md` (UI breakdown), data-model.md (entities), contracts/ (interface contracts), research.md (decisions).
 
 3. **Execute task generation workflow**:
    - Load plan.md and extract tech stack, libraries, project structure.
-   - Load the User Story file; the whole tasks.md is scoped to this one US.
-   - Extract AC IDs from Section 4 and screen names from Section 8 — these drive Phase 3+ grouping.
-   - Extract BR-Uxxx from Section 3 and VM codes from Section 7 — these drive validation and feedback tasks.
+   - Load `specs/<feature>/spec.md`; the whole tasks.md is scoped to this one feature.
+   - Extract AC IDs and screen names — these drive Phase 3+ grouping.
+   - Extract Business Rules and Validation Messages — these drive validation and feedback tasks.
    - If data-model.md exists: Map entities back to fields in US Section 6.
    - If contracts/ exists: Map each contract to the AC(s) it serves.
    - Pick phase shape: **Shape A — per AC group** (Happy-Path / Validation / Edge) or **Shape B — per UI screen** (when Section 8 has multiple screens). Choose whichever produces cleaner, independently shippable increments.
@@ -85,7 +84,7 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Each phase includes: phase goal, independent test criteria, tests (if requested), implementation tasks.
    - Final Phase: Polish & cross-cutting concerns (analytics events from Section 9, docs).
    - All tasks must follow the strict checklist format (see Task Generation Rules below).
-   - Clear file paths for each task (respecting the `src/backend/` / `src/frontend/` dual-repo layout).
+   - Clear file paths for each task. **Repo root paths (BE/FE/Mobile) must be discovered from `docs/wiki/index.md`** (tagged `architecture`/`convention`) — do NOT assume `src/backend/` or `src/frontend/`; those are example placeholders only. The actual roots depend on the project (e.g. `src/HRM9`, `src/Vnr.Dev.HrmPortal`).
    - Dependencies section showing phase completion order.
    - Parallel execution examples per phase.
    - Implementation strategy section (MVP = Happy-Path AC group or primary screen).
@@ -157,15 +156,15 @@ Every task MUST strictly follow this format:
    - Foundational phase: NO label
    - Phase 3+ (AC or Screen phases): MUST have label
    - Polish phase: NO label (unless it directly traces back to an AC, e.g., analytics event for AC-001)
-5. **Description**: Clear action with exact file path (prefixed with `src/backend/` or `src/frontend/` per the dual-repo convention)
+5. **Description**: Clear action with exact file path. Prefix each path with the actual repo root discovered from wiki (e.g. `src/HRM9/` for BE, `src/Vnr.Dev.HrmPortal/` for FE). Do NOT hardcode `src/backend/` or `src/frontend/` — use what the wiki declares.
 
-**Examples**:
+**Examples** (repo roots are illustrative — discover from wiki):
 
-- ✅ CORRECT: `- [ ] T001 Create branches in src/backend/ and src/frontend/`
-- ✅ CORRECT: `- [ ] T005 [P] Add migration for <Entity> in src/backend/Src/Services/<Svc>/Infrastructure/Migrations/`
-- ✅ CORRECT: `- [ ] T012 [P] [AC-001] Create <Entity> DTO in src/backend/Src/Services/<Svc>/Application/Dtos/<Entity>Dto.cs`
-- ✅ CORRECT: `- [ ] T014 [AC-001] Wire <feature>.service.ts in src/frontend/apps/<app>/src/.../<feature>.service.ts`
-- ✅ CORRECT: `- [ ] T020 [S1] Implement list view in src/frontend/apps/<app>/src/.../<feature>-list.component.ts`
+- ✅ CORRECT: `- [ ] T001 Create branches in {BE_ROOT}/ and {FE_ROOT}/`
+- ✅ CORRECT: `- [ ] T005 [P] Add migration for <Entity> in {BE_ROOT}/Src/Services/<Svc>/Infrastructure/Migrations/`
+- ✅ CORRECT: `- [ ] T012 [P] [AC-001] Create <Entity> DTO in {BE_ROOT}/Src/Services/<Svc>/Application/Dtos/<Entity>Dto.cs`
+- ✅ CORRECT: `- [ ] T014 [AC-001] Wire <feature>.service.ts in {FE_ROOT}/apps/<app>/src/.../<feature>.service.ts`
+- ✅ CORRECT: `- [ ] T020 [S1] Implement list view in {FE_ROOT}/apps/<app>/src/.../<feature>-list.component.ts`
 - ❌ WRONG: `- [ ] T001 [US1] Create model` (legacy [US1] label — use `[AC-xxx]` or `[Sn]`)
 - ❌ WRONG: `- [ ] [AC-001] Create model` (missing Task ID)
 - ❌ WRONG: `- [ ] T001 [AC-001] Create model` (missing file path)
