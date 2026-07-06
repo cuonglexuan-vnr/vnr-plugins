@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tổng Quan Quy Trình VNR Auto-Pipeline</title>
+    <style>
+        :root {
+            --bg: #0f1419;
+            --surface: #1a2332;
+            --surface-2: #243447;
+            --border: #2d4a5e;
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+            --accent: #58a6ff;
+            --green: #3fb950;
+            --yellow: #d29922;
+            --red: #f85149;
+            --purple: #bc8cff;
+            --orange: #f0883e;
+            --cyan: #39c5cf;
+            --pink: #f778ba;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            font-size: 1rem;
+        }
+
+        /* Section Headers */
+        .section-title {
+            font-size: 1.4rem;
+            margin: 2.5rem 0 1.2rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+            color: var(--accent);
+        }
+
+        /* Pipeline Flow Diagram */
+        .pipeline-flow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: center;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .flow-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            min-width: 110px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .flow-step:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
+        }
+
+        .flow-step .step-num {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .flow-step .step-name {
+            font-size: 0.8rem;
+            margin-top: 0.2rem;
+            color: var(--text);
+        }
+
+        .flow-arrow {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+
+        .flow-parallel {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            position: relative;
+        }
+
+        .flow-parallel::before {
+            content: "song song";
+            position: absolute;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.6rem;
+            color: var(--yellow);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .checkpoint-badge {
+            display: inline-block;
+            font-size: 0.55rem;
+            background: var(--red);
+            color: white;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-top: 3px;
+            font-weight: 600;
+        }
+
+        .stub-badge {
+            display: inline-block;
+            font-size: 0.55rem;
+            background: var(--yellow);
+            color: #000;
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-top: 3px;
+            font-weight: 600;
+        }
+
+        /* Agent Registry Table */
+        .registry-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        .registry-table th {
+            background: var(--surface-2);
+            padding: 0.8rem 1rem;
+            text-align: left;
+            border-bottom: 2px solid var(--accent);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .registry-table td {
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .registry-table tr:hover {
+            background: var(--surface);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-skill { background: rgba(63, 185, 80, 0.15); color: var(--green); border: 1px solid rgba(63, 185, 80, 0.3); }
+        .badge-agent { background: rgba(188, 140, 255, 0.15); color: var(--purple); border: 1px solid rgba(188, 140, 255, 0.3); }
+        .badge-cli { background: rgba(240, 136, 62, 0.15); color: var(--orange); border: 1px solid rgba(240, 136, 62, 0.3); }
+        .badge-parallel { background: rgba(210, 153, 34, 0.15); color: var(--yellow); border: 1px solid rgba(210, 153, 34, 0.3); }
+        .badge-new { background: rgba(57, 197, 207, 0.15); color: var(--cyan); border: 1px solid rgba(57, 197, 207, 0.3); }
+
+        /* Step Detail Cards */
+        .step-cards {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .step-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .step-card.skill::before { background: var(--green); }
+        .step-card.agent::before { background: var(--purple); }
+        .step-card.cli::before { background: var(--orange); }
+        .step-card.parallel::before { background: var(--yellow); }
+        .step-card.new-step::before { background: var(--cyan); }
+
+        .step-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .step-card-num {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.3rem 0.7rem;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--accent);
+        }
+
+        .step-card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .step-card-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .step-card-body { grid-template-columns: 1fr; }
+        }
+
+        .info-block {
+            background: var(--surface-2);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+        }
+
+        .info-block-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+        }
+
+        .info-block-content {
+            font-size: 0.85rem;
+        }
+
+        .info-block-content code {
+            background: rgba(88, 166, 255, 0.1);
+            color: var(--cyan);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+
+        .info-block-content ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .info-block-content li {
+            padding: 2px 0;
+            padding-left: 1rem;
+            position: relative;
+        }
+
+        .info-block-content li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* Gate/Checkpoint info */
+        .gate-info {
+            margin-top: 0.8rem;
+            padding: 0.6rem 1rem;
+            background: rgba(248, 81, 73, 0.08);
+            border: 1px solid rgba(248, 81, 73, 0.3);
+            border-radius: 6px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        .gate-info strong {
+            color: var(--red);
+        }
+
+        .gate-info.hitl {
+            background: rgba(57, 197, 207, 0.08);
+            border-color: rgba(57, 197, 207, 0.3);
+        }
+
+        .gate-info.hitl strong {
+            color: var(--cyan);
+        }
+
+        /* Architecture diagram */
+        .arch-diagram {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+
+        .arch-layers {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .arch-layer {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .arch-layer-label {
+            min-width: 120px;
+            text-align: right;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .arch-layer-content {
+            flex: 1;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .arch-box {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .arch-box.user { background: rgba(88, 166, 255, 0.15); border: 1px solid rgba(88, 166, 255, 0.4); color: var(--accent); }
+        .arch-box.orchestrator { background: rgba(240, 136, 62, 0.15); border: 1px solid rgba(240, 136, 62, 0.4); color: var(--orange); }
+        .arch-box.skill-box { background: rgba(63, 185, 80, 0.15); border: 1px solid rgba(63, 185, 80, 0.4); color: var(--green); }
+        .arch-box.agent-box { background: rgba(188, 140, 255, 0.15); border: 1px solid rgba(188, 140, 255, 0.4); color: var(--purple); }
+        .arch-box.agent-new { background: rgba(57, 197, 207, 0.15); border: 1px solid rgba(57, 197, 207, 0.4); color: var(--cyan); }
+        .arch-box.cli-box { background: rgba(57, 197, 207, 0.15); border: 1px solid rgba(57, 197, 207, 0.4); color: var(--cyan); }
+        .arch-box.output { background: rgba(210, 153, 34, 0.15); border: 1px solid rgba(210, 153, 34, 0.4); color: var(--yellow); }
+
+        .arrow-down {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            padding: 0.3rem 0;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.82rem;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-dot.green { background: var(--green); }
+        .legend-dot.purple { background: var(--purple); }
+        .legend-dot.orange { background: var(--orange); }
+        .legend-dot.yellow { background: var(--yellow); }
+        .legend-dot.red { background: var(--red); }
+        .legend-dot.cyan { background: var(--cyan); }
+
+        /* Source structure */
+        .source-struct {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.2rem 1.5rem;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 1rem 0;
+        }
+
+        .source-struct .highlight { color: var(--accent); }
+        .source-struct .comment { color: var(--green); }
+
+        /* TOC */
+        .toc {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            margin: 1.5rem 0;
+        }
+
+        .toc-title {
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            color: var(--accent);
+        }
+
+        .toc-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.3rem 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .toc-list { grid-template-columns: 1fr; }
+        }
+
+        .toc-list a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.88rem;
+            padding: 0.2rem 0;
+            display: block;
+            transition: color 0.2s;
+        }
+
+        .toc-list a:hover { color: var(--accent); }
+
+        /* Data flow */
+        .data-flow {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .flow-row {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .flow-row:last-child { border-bottom: none; }
+
+        .flow-from, .flow-to {
+            font-size: 0.82rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+        }
+
+        .flow-from { background: var(--surface-2); min-width: 160px; }
+        .flow-to { background: var(--surface-2); min-width: 200px; }
+
+        .flow-artifact {
+            flex: 1;
+            font-size: 0.78rem;
+            color: var(--cyan);
+            font-family: monospace;
+        }
+
+        .flow-direction {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            h1 { font-size: 1.6rem; }
+            .pipeline-flow { flex-direction: column; }
+            .flow-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Quy Trình VNR Auto-Pipeline</h1>
+        <p class="subtitle">Pipeline tự động từ spec &rarr; report &mdash; <strong style="color: var(--cyan);">tối đa 2 điểm dừng HITL</strong>: Duyệt Plan (luôn có) + Xác nhận Stack (chỉ khi phát hiện &gt;1 UI stack). Mọi bước còn lại chạy tự động.</p>
+
+        <!-- TOC -->
+        <div class="toc">
+            <div class="toc-title">Mục Lục</div>
+            <ul class="toc-list">
+                <li><a href="#architecture">1. Tổng Quan Kiến Trúc</a></li>
+                <li><a href="#flow">2. Sơ Đồ Luồng Pipeline</a></li>
+                <li><a href="#registry">3. Danh Mục Agent &amp; Skill</a></li>
+                <li><a href="#steps">4. Chi Tiết Từng Bước</a></li>
+                <li><a href="#data-flow">5. Luồng Dữ Liệu (Artifacts)</a></li>
+                <li><a href="#gates">6. Điều Kiện Cổng (Gate)</a></li>
+                <li><a href="#recovery">7. Khôi Phục &amp; Tiếp Tục</a></li>
+                <li><a href="#source">8. Cấu Trúc Mã Nguồn</a></li>
+            </ul>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item"><div class="legend-dot green"></div>Skill Tool (vnr-plan, vnr-tasks, vnr-implement)</div>
+            <div class="legend-item"><div class="legend-dot purple"></div>Agent Tool (subagent general-purpose)</div>
+            <div class="legend-item"><div class="legend-dot cyan"></div>Agent chuyên biệt (vnr-backend-developer, vnr-frontend-developer)</div>
+            <div class="legend-item"><div class="legend-dot orange"></div>CLI / Kiểm tra Stub</div>
+            <div class="legend-item"><div class="legend-dot yellow"></div>Thực thi song song</div>
+            <div class="legend-item"><div class="legend-dot red"></div>HITL (Duyệt Plan luôn có + Xác nhận Stack tùy điều kiện) &mdash; Tự dừng khi build lỗi / review FAIL</div>
+        </div>
+
+        <!-- Architecture -->
+        <h2 class="section-title" id="architecture">1. Tổng Quan Kiến Trúc</h2>
+        <div class="arch-diagram">
+            <div class="arch-layers">
+                <div class="arch-layer">
+                    <div class="arch-layer-label">Người dùng</div>
+                    <div class="arch-layer-content">
+                        <div class="arch-box user">/vnr-auto-pipeline &lt;feature&gt; [--from=&lt;phase-id&gt;]</div>
+                    </div>
+                </div>
+                <div class="arrow-down">&darr;</div>
+                <div class="arch-layer">
+                    <div class="arch-layer-label">Orchestrator</div>
+                    <div class="arch-layer-content">
+                        <div class="arch-box orchestrator">SKILL.md (vnr-auto-pipeline)</div>
+                    </div>
+                </div>
+                <div class="arrow-down">&darr; điều phối qua Skill tool hoặc Agent tool</div>
+                <div class="arch-layer">
+                    <div class="arch-layer-label">Skills</div>
+                    <div class="arch-layer-content">
+                        <div class="arch-box skill-box">vnr-plan</div>
+                        <div class="arch-box skill-box">vnr-tasks</div>
+                        <div class="arch-box skill-box">vnr-implement</div>
+                        <div class="arch-box skill-box">vnr-wiki</div>
+                    </div>
+                </div>
+                <div class="arrow-down">&darr; skills đọc nội bộ các file .md của agent</div>
+                <div class="arch-layer">
+                    <div class="arch-layer-label">Agents</div>
+                    <div class="arch-layer-content">
+                        <div class="arch-box agent-box">vnr-planner</div>
+                        <div class="arch-box agent-box">vnr-plan-reviewer</div>
+                        <div class="arch-box agent-box">vnr-task-breaker</div>
+                        <div class="arch-box agent-box">vnr-testcase-writer</div>
+                        <div class="arch-box agent-box">vnr-backend-developer</div>
+                        <div class="arch-box agent-box">vnr-frontend-developer</div>
+                        <div class="arch-box agent-box">vnr-mobile-developer</div>
+                        <div class="arch-box agent-box">vnr-arch-reviewer</div>
+                        <div class="arch-box agent-box">vnr-sec-reviewer</div>
+                        <div class="arch-box agent-new">vnr-code-reviewer ✦ MỚI</div>
+                        <div class="arch-box agent-box">vnr-tech-writer</div>
+                    </div>
+                </div>
+                <div class="arrow-down">&darr;</div>
+                <div class="arch-layer">
+                    <div class="arch-layer-label">CLI / Stub</div>
+                    <div class="arch-layer-content">
+                        <div class="arch-box cli-box">kiểm tra/tạo stub (e2e)</div>
+                        <div class="arch-box cli-box">git (branch/commit/push)</div>
+                    </div>
+                </div>
+                <div class="arrow-down">&darr;</div>
+                <div class="arch-layer">
+                    <div class="arch-layer-label">Đầu ra</div>
+                    <div class="arch-layer-content">
+                        <div class="arch-box output">plan.md</div>
+                        <div class="arch-box output">tasks.md</div>
+                        <div class="arch-box output">testcases.md</div>
+                        <div class="arch-box output">file e2e stub</div>
+                        <div class="arch-box output">final-report.md</div>
+                        <div class="arch-box output">user-guide.md</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pipeline Flow -->
+        <h2 class="section-title" id="flow">2. Sơ Đồ Luồng Pipeline</h2>
+        <div class="pipeline-flow">
+            <div class="flow-step">
+                <span class="step-num">Bước 0</span>
+                <span class="step-name">Kiểm tra</span>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-step">
+                <span class="step-num">Bước 1a</span>
+                <span class="step-name">Plan</span>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-step" style="border-color: var(--cyan);">
+                <span class="step-num" style="color: var(--cyan);">Bước 1b</span>
+                <span class="step-name">Duyệt Plan ✦</span>
+                <span class="checkpoint-badge">HITL</span>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-step">
+                <span class="step-num">Bước 1c</span>
+                <span class="step-name">Tasks</span>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-step">
+                <span class="step-num">Bước 2</span>
+                <span class="step-name">Testcases</span>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-step">
+                <span class="step-num">Bước 3</span>
+                <span class="step-name">Triển khai</span>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-step" style="border-color: var(--cyan);">
+                <span class="step-num" style="color: var(--cyan);">Bước 4</span>
+                <span class="step-name">Review Code</span>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-parallel">
+                <div class="flow-step">
+                    <span class="step-num">Bước 5</span>
+                    <span class="step-name">Review Kiến trúc</span>
+                </div>
+                <div class="flow-step">
+                    <span class="step-num">Bước 6</span>
+                    <span class="step-name">Review Bảo mật</span>
+                </div>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-step" style="border-color: var(--yellow);">
+                <span class="step-num">Bước 7</span>
+                <span class="step-name">E2E Stubs</span>
+                <span class="stub-badge">STUB</span>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-step">
+                <span class="step-num">Bước 8</span>
+                <span class="step-name">Báo cáo</span>
+            </div>
+        </div>
+
+        <!-- Agent Registry -->
+        <h2 class="section-title" id="registry">3. Danh Mục Agent &amp; Skill</h2>
+        <table class="registry-table">
+            <thead>
+                <tr>
+                    <th>Bước</th>
+                    <th>Tên Agent</th>
+                    <th>File Agent</th>
+                    <th>Cách gọi</th>
+                    <th>Loại</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1a</td>
+                    <td>vnr-planner</td>
+                    <td><code>$PLUGIN_DIR/agents/vnr-planner.md</code></td>
+                    <td>Skill: <code>vnr-plan</code></td>
+                    <td><span class="badge badge-skill">Skill</span></td>
+                </tr>
+                <tr style="background: rgba(57, 197, 207, 0.05);">
+                    <td>1b ✦</td>
+                    <td>vnr-plan-reviewer</td>
+                    <td><code>$PLUGIN_DIR/agents/vnr-plan-reviewer.md</code></td>
+                    <td>Agent tool (general-purpose)</td>
+                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-new">MỚI</span></td>
+                </tr>
+                <tr>
+                    <td>1c</td>
+                    <td>vnr-task-breaker</td>
+                    <td><code>$PLUGIN_DIR/agents/vnr-task-breaker.md</code></td>
+                    <td>Skill: <code>vnr-tasks</code></td>
+                    <td><span class="badge badge-skill">Skill</span></td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>vnr-testcase-writer</td>
+                    <td><code>$PLUGIN_DIR/agents/vnr-testcase-writer.md</code></td>
+                    <td>Agent tool (general-purpose)</td>
+                    <td><span class="badge badge-agent">Agent</span></td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>vnr-backend-developer / vnr-frontend-developer / vnr-mobile-developer</td>
+                    <td><code>tự động nhận diện theo scope từ tasks.md</code></td>
+                    <td>Skill: <code>vnr-implement</code></td>
+                    <td><span class="badge badge-skill">Skill</span></td>
+                </tr>
+                <tr style="background: rgba(57, 197, 207, 0.05);">
+                    <td>4 ✦ MỚI</td>
+                    <td>vnr-code-reviewer</td>
+                    <td><code>$PLUGIN_DIR/agents/vnr-code-reviewer.md</code></td>
+                    <td>Agent tool (general-purpose)</td>
+                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-new">MỚI</span></td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>vnr-arch-reviewer</td>
+                    <td><code>$PLUGIN_DIR/agents/vnr-arch-reviewer.md</code></td>
+                    <td>Agent tool (general-purpose)</td>
+                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-parallel">Song song</span></td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>vnr-sec-reviewer</td>
+                    <td><code>$PLUGIN_DIR/agents/vnr-sec-reviewer.md</code></td>
+                    <td>Agent tool (general-purpose)</td>
+                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-parallel">Song song</span></td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>&mdash;</td>
+                    <td>&mdash;</td>
+                    <td>CLI: kiểm tra / tạo file stub</td>
+                    <td><span class="badge badge-cli">Stub</span></td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td>vnr-tech-writer</td>
+                    <td><code>$PLUGIN_DIR/agents/vnr-tech-writer.md</code></td>
+                    <td>Agent tool (general-purpose)</td>
+                    <td><span class="badge badge-agent">Agent</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Step-by-Step Details -->
+        <h2 class="section-title" id="steps">4. Chi Tiết Từng Bước</h2>
+        <div class="step-cards">
+
+            <!-- Step 0 -->
+            <div class="step-card cli">
+                <div class="step-card-header">
+                    <span class="step-card-num">Bước 0</span>
+                    <span class="step-card-title">Kiểm tra &amp; Khởi tạo</span>
+                    <span class="badge badge-cli">CLI</span>
+                </div>
+                <div class="step-card-body">
+                    <div class="info-block">
+                        <div class="info-block-title">Chức năng</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li>Kiểm tra <code>specs/&lt;feature&gt;/spec.md</code> tồn tại (dừng ngay nếu thiếu)</li>
+                                <li>Phát hiện cấu trúc repo từ <code>docs/wiki/index.md</code> (tag: <code>architecture</code> / <code>recipe</code>); dự phòng: quét <code>src/</code> tìm dấu hiệu dự án (<code>.sln</code>, <code>angular.json</code>, <code>pubspec.yaml</code>)</li>
+                                <li>Tạo branch <code>feature/&lt;feature&gt;</code> trong mỗi repo phát hiện được nếu chưa có</li>
+                                <li>Kiểm tra ledger bền vững (<code>TaskList</code>) tìm các lần chạy bị gián đoạn → <code>AskUserQuestion</code> để tiếp tục từ phase phát hiện được</li>
+                                <li>Tạo panel <code>TaskCreate</code> cho TẤT CẢ các phase (cùng lúc) với <code>[$FEATURE] &lt;phase.name&gt;</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="info-block">
+                        <div class="info-block-title">Điều kiện bỏ qua</div>
+                        <div class="info-block-content">
+                            Nếu truyền <code>--from=&lt;phase-id&gt;</code>, bỏ qua hoàn toàn bước kiểm tra. Mọi phase trước đó được đánh dấu <code>completed</code> và orchestrator nhảy thẳng tới phase được chỉ định.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 1a -->
+            <div class="step-card skill">
+                <div class="step-card-header">
+                    <span class="step-card-num">Bước 1a</span>
+                    <span class="step-card-title">Plan (Lập kế hoạch)</span>
+                    <span class="badge badge-skill">Skill: vnr-plan</span>
+                </div>
+                <div class="step-card-body">
+                    <div class="info-block">
+                        <div class="info-block-title">Cách gọi</div>
+                        <div class="info-block-content">
+                            <code>Skill tool: vnr-plan</code><br>
+                            Đọc nội bộ: <code>agents/vnr-planner.md</code>
+                        </div>
+                    </div>
+                    <div class="info-block">
+                        <div class="info-block-title">Đầu ra</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li><code>specs/&lt;feature&gt;/plan.md</code></li>
+                                <li><code>specs/&lt;feature&gt;/data-model.md</code></li>
+                                <li><code>specs/&lt;feature&gt;/contracts/</code></li>
+                                <li><code>specs/&lt;feature&gt;/research.md</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
+                    <strong style="color: var(--green);">Tự động</strong> &mdash; Duyệt Plan (Bước 1b) chạy ngay sau đó.
+                </div>
+            </div>
+
+            <!-- Step 1b (NEW) -->
+            <div class="step-card new-step">
+                <div class="step-card-header">
+                    <span class="step-card-num">Bước 1b ✦ MỚI</span>
+                    <span class="step-card-title">Duyệt Plan</span>
+                    <span class="badge badge-agent">Agent: vnr-plan-reviewer</span>
+                </div>
+                <div class="step-card-body">
+                    <div class="info-block">
+                        <div class="info-block-title">Nội dung kiểm tra (18 mục)</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li>P-01..P-05: Độ phủ Spec (AC, BR, VM, Data Dict, NEEDS CLARIFICATION)</li>
+                                <li>P-06..P-09: API &amp; Contracts (endpoint, permission key, wrapper)</li>
+                                <li>P-10..P-14: Tuân thủ kiến trúc (Clean Arch, CQRS, các tầng)</li>
+                                <li>P-15..P-18: Khả thi &amp; Đầy đủ (thứ tự phase, nhất quán FK)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="info-block">
+                        <div class="info-block-title">Logic kết luận</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li>🔴 Critical &ge; 1 &rarr; FAIL ⛔</li>
+                                <li>🟡 Warning &ge; 1, Critical = 0 &rarr; WARN ⚠️</li>
+                                <li>Cả hai = 0 &rarr; PASS ✅</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="gate-info hitl">
+                    <strong>Luồng HITL (sau khi plan-reviewer hoàn tất):</strong><br>
+                    1. <em>Tùy điều kiện (tự bỏ qua nếu chỉ 1 stack):</em> Nếu plan phân giải &gt;1 UI stack → Xác nhận Stack qua <code>AskUserQuestion</code>; stack đã xác nhận được ghi lại vào mục <code>## Stack &amp; Constraints</code> của plan.<br>
+                    2. <em>Luôn có:</em> Duyệt chính → Con người quyết định: [approve &rarr; tiếp tục] / [modify &rarr; sửa <code>plan.md</code> thủ công rồi duyệt lại] / [reject &rarr; <code>--from=plan</code>]
+                </div>
+            </div>
+
+            <!-- Step 1c -->
+            <div class="step-card skill">
+                <div class="step-card-header">
+                    <span class="step-card-num">Bước 1c</span>
+                    <span class="step-card-title">Tasks (Chia task)</span>
+                    <span class="badge badge-skill">Skill: vnr-tasks</span>
+                </div>
+                <div class="step-card-body">
+                    <div class="info-block">
+                        <div class="info-block-title">Cách gọi</div>
+                        <div class="info-block-content">
+                            <code>Skill tool: vnr-tasks</code><br>
+                            Đọc nội bộ: <code>agents/vnr-task-breaker.md</code>
+                        </div>
+                    </div>
+                    <div class="info-block">
+                        <div class="info-block-title">Đầu ra</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li><code>specs/&lt;feature&gt;/tasks.md</code></li>
+                            </ul>
+                            Chứa N task được tổ chức theo các nhóm song song.
+                        </div>
+                    </div>
+                </div>
+                <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
+                    <strong style="color: var(--green);">Tự động</strong> &mdash; Tasks xong &rarr; Testcase Writer (Bước 2) chạy ngay. Không cần xác nhận từ người dùng.
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-card agent">
+                <div class="step-card-header">
+                    <span class="step-card-num">Bước 2</span>
+                    <span class="step-card-title">Testcase Writer</span>
+                    <span class="badge badge-agent">Agent: vnr-testcase-writer</span>
+                </div>
+                <div class="step-card-body">
+                    <div class="info-block">
+                        <div class="info-block-title">Chức năng</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li>Đọc wiki, spec, plan, tasks, contracts, chi tiết UI</li>
+                                <li>Đầu ra: <code>testcases.md</code></li>
+                                <li>Phân loại: API, UI, Authorization, Integration</li>
+                                <li>Độ ưu tiên: P0 (Nghiêm trọng) / P1 (Cao) / P2 (Trung bình) / P3 (Thấp)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="info-block">
+                        <div class="info-block-title">Đầu ra</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li><code>specs/&lt;feature&gt;/testcases.md</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
+                    <strong style="color: var(--green);">Tự động</strong> &mdash; Testcases xong &rarr; Triển khai (Bước 3) chạy ngay. Không cần xác nhận từ người dùng.
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-card skill">
+                <div class="step-card-header">
+                    <span class="step-card-num">Bước 3</span>
+                    <span class="step-card-title">Triển khai (Implement)</span>
+                    <span class="badge badge-skill">Skill: vnr-implement</span>
+                </div>
+                <div class="step-card-body">
+                    <div class="info-block">
+                        <div class="info-block-title">Cách gọi</div>
+                        <div class="info-block-content">
+                            <code>Skill tool: vnr-implement</code><br>
+                            Tự động nhận diện scope từ tiền tố đường dẫn trong <code>tasks.md</code> &mdash; điều phối tuần tự:<br>
+                            <code>src/backend/</code> &rarr; vnr-backend-developer<br>
+                            <code>src/frontend/</code> &rarr; vnr-frontend-developer<br>
+                            <code>src/app-mobile/</code> &rarr; vnr-mobile-developer
+                        </div>
+                    </div>
+                    <div class="info-block">
+                        <div class="info-block-title">Chức năng</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li>Nạp tasks.md + plan.md + contracts + data-model</li>
+                                <li>Thực thi task theo từng phase, đánh dấu [x] khi xong</li>
+                                <li>Dừng nếu một task không song song bị lỗi</li>
+                                <li>Build phải pass (0 lỗi)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
+                    <strong style="color: var(--green);">Tự động</strong> &mdash; Build thành công &rarr; Bước 4 chạy ngay. <strong style="color: var(--red);">Tự dừng</strong> nếu build lỗi &mdash; người dùng sửa rồi <code>--from=implement</code>.
+                </div>
+            </div>
+
+            <!-- Step 4 NEW -->
+            <div class="step-card new-step">
+                <div class="step-card-header">
+                    <span class="step-card-num">Bước 4 ✦ MỚI</span>
+                    <span class="step-card-title">Review Code</span>
+                    <span class="badge badge-agent">Agent: vnr-code-reviewer</span>
+                </div>
+                <div class="step-card-body">
+                    <div class="info-block">
+                        <div class="info-block-title">Nội dung kiểm tra</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li><strong>Đầy đủ AC/BR</strong> — mọi AC trong spec.md đều có code</li>
+                                <li><strong>Đầy đủ Task</strong> — mọi task trong tasks.md đều được hiện thực</li>
+                                <li><strong>Chất lượng code</strong> — đặt tên, DRY, code chết, xử lý lỗi, an toàn null</li>
+                                <li><strong>Đúng logic</strong> — nhánh điều kiện, off-by-one, async/await</li>
+                                <li><strong>Hardcode / Magic Number</strong> — không có giá trị cứng đáng lẽ phải là config</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="info-block">
+                        <div class="info-block-title">Logic kết luận</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li>🔴 Critical &ge; 1 <em>hoặc thiếu AC</em> &rarr; FAIL ⛔</li>
+                                <li>🟡 Warning &ge; 1, Critical = 0 &rarr; WARN ⚠️</li>
+                                <li>Cả hai = 0 &rarr; PASS ✅</li>
+                            </ul>
+                            Đọc: <code>spec.md</code>, <code>tasks.md</code>, quy ước wiki, constitution
+                        </div>
+                    </div>
+                </div>
+                <div class="gate-info">
+                    <strong>Tự dừng</strong> nếu FAIL &mdash; sửa lỗi logic/AC rồi <code>--from=code-review</code>. PASS/WARN &rarr; Bước 5+6 chạy ngay.
+                </div>
+            </div>
+
+            <!-- Step 5+6 -->
+            <div class="step-card parallel">
+                <div class="step-card-header">
+                    <span class="step-card-num">Bước 5 + 6</span>
+                    <span class="step-card-title">Review Kiến trúc + Review Bảo mật (SONG SONG)</span>
+                    <span class="badge badge-agent">Agent</span>
+                    <span class="badge badge-parallel">Song song</span>
+                </div>
+                <div class="step-card-body">
+                    <div class="info-block">
+                        <div class="info-block-title">Review Kiến trúc (Bước 5)</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li>Agent: <code>vnr-arch-reviewer</code></li>
+                                <li>Đọc: chuẩn kiến trúc, contracts, constitution</li>
+                                <li>Chạy: 14 mục BE + 10 mục FE</li>
+                                <li>Kết luận: PASS / WARN / FAIL</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="info-block">
+                        <div class="info-block-title">Review Bảo mật (Bước 6)</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li>Agent: <code>vnr-sec-reviewer</code></li>
+                                <li>Đọc: chuẩn permission, security-hooks, constitution</li>
+                                <li>Chạy: checklist OWASP (14 BE + 7 FE)</li>
+                                <li>Kết luận: PASS / WARN / FAIL</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
+                    <strong style="color: var(--green);">Tự động</strong> &mdash; PASS/WARN &rarr; Bước 7 chạy ngay. <strong style="color: var(--red);">Tự dừng</strong> nếu FAIL &mdash; người dùng sửa rồi <code>--from=arch-sec-review</code>.
+                </div>
+            </div>
+
+            <!-- Step 7 -->
+            <div class="step-card agent">
+                <div class="step-card-header">
+                    <span class="step-card-num">Bước 7</span>
+                    <span class="step-card-title">E2E Stubs (Khung mẫu)</span>
+                    <span class="badge badge-agent">Agent (inline)</span>
+                    <span class="stub-badge">LUÔN PASS</span>
+                </div>
+                <div class="step-card-body">
+                    <div class="info-block">
+                        <div class="info-block-title">Chức năng</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li>Kiểm tra <code>src/frontend/e2e/&lt;feature&gt;.e2e.spec.ts</code> có tồn tại không</li>
+                                <li>Nếu chưa: tạo stub tối thiểu với <code>test.todo()</code> cho các testcase P0+P1</li>
+                                <li>KHÔNG chạy bất kỳ test nào</li>
+                                <li>Luôn pass &mdash; trạng thái: ⏭ STUB</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="info-block">
+                        <div class="info-block-title">Điều phối</div>
+                        <div class="info-block-content">
+                            <code>type: agent</code> với <code>inline_prompt</code> trong workflow.yml — không có file agent riêng.<br>
+                            Đọc <code>docs/wiki/index.md</code> để tìm đường dẫn recipe E2E; dự phòng dùng <code>src/frontend/e2e/{feature}.e2e.spec.ts</code>.<br>
+                            Stub tham chiếu <code>testcases.md</code> (P0+P1). Đội automation hiện thực phần thân riêng.
+                        </div>
+                    </div>
+                </div>
+                <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
+                    <strong style="color: var(--green);">Không có điểm dừng</strong> &mdash; tự động chuyển sang Bước 8. Luôn ⏭ STUB.
+                </div>
+            </div>
+
+            <!-- Step 8 -->
+            <div class="step-card agent">
+                <div class="step-card-header">
+                    <span class="step-card-num">Bước 8</span>
+                    <span class="step-card-title">Báo cáo (Report)</span>
+                    <span class="badge badge-agent">Agent: vnr-tech-writer</span>
+                </div>
+                <div class="step-card-body">
+                    <div class="info-block">
+                        <div class="info-block-title">Cách gọi</div>
+                        <div class="info-block-content">
+                            <code>Agent tool</code> (general-purpose)<br>
+                            Đọc: <code>agents/vnr-tech-writer.md</code>
+                        </div>
+                    </div>
+                    <div class="info-block">
+                        <div class="info-block-title">Đầu ra</div>
+                        <div class="info-block-content">
+                            <ul>
+                                <li><code>specs/&lt;feature&gt;/result/final-report.md</code></li>
+                                <li><code>specs/&lt;feature&gt;/result/user-guide.md</code></li>
+                            </ul>
+                            Bao gồm: bảng tổng hợp (Kiến trúc, Bảo mật, E2E Stubs), phát hiện, file thay đổi, checklist sign-off, hướng dẫn sử dụng bằng tiếng Việt.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Data Flow -->
+        <h2 class="section-title" id="data-flow">5. Luồng Dữ Liệu (Artifacts giữa các bước)</h2>
+        <div class="data-flow">
+            <div class="flow-row">
+                <div class="flow-from">Bước 0 (Đầu vào)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-artifact">specs/&lt;feature&gt;/&lt;feature&gt;_*.md</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-to">Bước 1a (Plan)</div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-from">Bước 1a (Plan)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-artifact">plan.md, data-model.md, contracts/, research.md</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-to">Bước 1b (Duyệt Plan)</div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-from">Bước 1b (Duyệt Plan)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-artifact">Kết luận review + phát hiện (trong ngữ cảnh)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-to">HITL &rarr; Bước 1c (Tasks)</div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-from">Bước 1c (Tasks)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-artifact">tasks.md</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-to">Bước 2 (tự động), Bước 3</div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-from">Bước 2 (Testcase)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-artifact">testcases.md</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-to">Bước 3 (tự động), Bước 7 (tham chiếu stub), Bước 8</div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-from">Bước 3 (Triển khai)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-artifact">src/backend/**/*.cs, src/frontend/**/*.ts</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-to">Bước 4 (Review Code)</div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-from">Bước 4 (Review Code)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-artifact">Kết luận Review Code + phát hiện (độ phủ AC, chất lượng)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-to">Bước 5+6 (Review Kiến trúc + Bảo mật)</div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-from">Bước 5+6 (Review)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-artifact">Kết luận Kiến trúc + Kết luận Bảo mật + phát hiện</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-to">Bước 8 (Báo cáo)</div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-from">Bước 7 (E2E Stubs)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-artifact">e2e/&lt;feature&gt;.e2e.spec.ts (stub)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-to">Bước 8 (tham chiếu trong Báo cáo)</div>
+            </div>
+            <div class="flow-row">
+                <div class="flow-from">Bước 8 (Báo cáo)</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-artifact">final-report.md + user-guide.md</div>
+                <span class="flow-direction">&rarr;</span>
+                <div class="flow-to">Tạo PR (thủ công)</div>
+            </div>
+        </div>
+
+        <!-- Gates -->
+        <h2 class="section-title" id="gates">6. Điều Kiện Cổng (theo Constitution)</h2>
+        <table class="registry-table">
+            <thead>
+                <tr>
+                    <th>Chuyển tiếp</th>
+                    <th>Điều kiện cổng</th>
+                    <th>Khi thất bại</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Bước 1a &rarr; 1b</td>
+                    <td>Tự động &mdash; Duyệt Plan chạy ngay</td>
+                    <td>&mdash;</td>
+                </tr>
+                <tr style="background: rgba(57, 197, 207, 0.05);">
+                    <td>Bước 1b &rarr; 1c</td>
+                    <td>plan.md được người dùng duyệt (sau khi xem phát hiện của plan-reviewer)</td>
+                    <td>Từ chối &rarr; sửa plan &rarr; <code>--from=plan</code></td>
+                </tr>
+                <tr>
+                    <td>Bước 1c &rarr; 2</td>
+                    <td>Tự động &mdash; Tasks xong &rarr; Testcase Writer chạy ngay</td>
+                    <td>&mdash;</td>
+                </tr>
+                <tr>
+                    <td>Bước 2 &rarr; 3</td>
+                    <td>Tự động &mdash; Testcases xong &rarr; Triển khai chạy ngay</td>
+                    <td>&mdash;</td>
+                </tr>
+                <tr>
+                    <td>Bước 3 &rarr; 4</td>
+                    <td>Tự động nếu build thành công (0 lỗi) &mdash; cả BE và FE</td>
+                    <td>Tự dừng, sửa rồi <code>--from=implement</code></td>
+                </tr>
+                <tr style="background: rgba(57, 197, 207, 0.05);">
+                    <td>Bước 4 &rarr; 5+6</td>
+                    <td>Tự động nếu Review Code PASS/WARN</td>
+                    <td>Tự dừng nếu FAIL, sửa rồi <code>--from=code-review</code></td>
+                </tr>
+                <tr>
+                    <td>Bước 5+6 &rarr; 7</td>
+                    <td>Tự động nếu Kiến trúc PASS/WARN + Bảo mật PASS/WARN</td>
+                    <td>Tự dừng nếu FAIL, sửa rồi <code>--from=arch-sec-review</code></td>
+                </tr>
+                <tr>
+                    <td>Bước 7 &rarr; 8</td>
+                    <td>Tự động &mdash; stub luôn pass</td>
+                    <td>&mdash;</td>
+                </tr>
+                <tr>
+                    <td>Bước 8 &rarr; Hoàn tất</td>
+                    <td>Tự động &mdash; pipeline hoàn tất, artifacts sẵn sàng cho PR</td>
+                    <td>&mdash;</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Recovery -->
+        <h2 class="section-title" id="recovery">7. Khôi Phục &amp; Tiếp Tục</h2>
+        <div class="source-struct">
+            <span class="comment"># Tiếp tục từ một phase cụ thể (tái sử dụng artifacts hiện có)</span><br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=plan</span>              &larr; chạy lại Plan (planner)<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=plan-review</span>       &larr; chạy lại riêng Duyệt Plan<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=tasks</span>             &larr; từ Tasks (plan đã duyệt)<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=testcases</span>         &larr; từ Testcase Writer<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=implement</span>         &larr; từ Triển khai (đã sửa build)<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=code-review</span>       &larr; từ Review Code (đã sửa logic/AC) ✦ MỚI<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=arch-sec-review</span>   &larr; từ Review Kiến trúc+Bảo mật (đã sửa arch/sec)<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=e2e-stubs</span>         &larr; từ bước kiểm tra E2E Stubs<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=report</span>            &larr; chỉ Báo cáo<br>
+            <br>
+            <span class="comment"># Khi dùng --from=&lt;phase-id&gt;: bỏ qua kiểm tra các bước trước,</span><br>
+            <span class="comment"># tái sử dụng artifacts hiện có (plan.md, tasks.md, v.v.)</span>
+        </div>
+
+        <!-- Source Structure -->
+        <h2 class="section-title" id="source">8. Cấu Trúc Mã Nguồn</h2>
+        <div class="source-struct">
+            src/<br>
+            &boxv;&boxh;&boxh; <span class="highlight">backend/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># ASP.NET Core &mdash; GIT REPO RIÊNG</span><br>
+            &boxv;&nbsp;&nbsp; &boxur;&boxh;&boxh; ...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Handlers, Validators, v.v.</span><br>
+            &boxur;&boxh;&boxh; <span class="highlight">frontend/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Angular 19 &mdash; GIT REPO RIÊNG</span><br>
+            &nbsp;&nbsp;&nbsp; &boxv;&boxh;&boxh; apps/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Remote apps</span><br>
+            &nbsp;&nbsp;&nbsp; &boxv;&boxh;&boxh; <span class="highlight">e2e/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Playwright E2E stubs (đầu ra Bước 7 — đội automation hiện thực)</span><br>
+            &nbsp;&nbsp;&nbsp; &boxur;&boxh;&boxh; ...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Components, Services, v.v.</span><br>
+            <br>
+            specs/&lt;feature&gt;/<br>
+            &boxv;&boxh;&boxh; <span class="highlight">&lt;feature&gt;_*.md</span>&nbsp;&nbsp;&nbsp;<span class="comment"># User Story (đầu vào BA)</span><br>
+            &boxv;&boxh;&boxh; plan.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># đầu ra Bước 1a</span><br>
+            &boxv;&boxh;&boxh; data-model.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># đầu ra Bước 1a</span><br>
+            &boxv;&boxh;&boxh; tasks.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># đầu ra Bước 1c</span><br>
+            &boxv;&boxh;&boxh; testcases.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># đầu ra Bước 2</span><br>
+            &boxv;&boxh;&boxh; contracts/<br>
+            &boxv;&nbsp;&nbsp; &boxur;&boxh;&boxh; api-commitments.md<br>
+            &boxur;&boxh;&boxh; result/<br>
+            &nbsp;&nbsp;&nbsp; &boxv;&boxh;&boxh; <span class="highlight">final-report.md</span>&nbsp;<span class="comment"># đầu ra Bước 8</span><br>
+            &nbsp;&nbsp;&nbsp; &boxur;&boxh;&boxh; <span class="highlight">user-guide.md</span>&nbsp;&nbsp;&nbsp;<span class="comment"># đầu ra Bước 8</span>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.82rem;">
+            Tài liệu Quy trình VNR Auto-Pipeline &bull; Cập nhật 2026-06-15
+        </div>
+    </div>
+</body>
+</html>

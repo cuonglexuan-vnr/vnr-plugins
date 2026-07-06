@@ -1,4 +1,4 @@
-# vnr-plugin — Spec-Driven Development Framework for Claude Code
+# vnr-swe — Spec-Driven Development Framework for Claude Code
 
 ## What This Is
 
@@ -21,7 +21,7 @@ Developers can either:
 ## Architecture
 
 ```
-plugins/vnr-plugin/
+plugins/vnr-swe/
 ├── skills/          # Workflow orchestration (one skill per phase)
 ├── agents/          # Specialized AI agents (planner, developer, reviewer, etc.)
 ├── standards/       # Architecture rules (01–06 numbered flat files)

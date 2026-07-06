@@ -6,7 +6,7 @@
 
 ## 1. What Is This Plugin?
 
-`vnr-plugin` is a **Spec-Driven Development (SDD) framework** for Claude Code. It enforces a structured delivery pipeline on an internal Vietnamese HR platform (HRM-Core) — from BA User Story to production-ready code.
+`vnr-swe` is a **Spec-Driven Development (SDD) framework** for Claude Code. It enforces a structured delivery pipeline on an internal Vietnamese HR platform (HRM-Core) — from BA User Story to production-ready code.
 
 **The golden rule: no code without an approved spec, no merge without passing gates.**
 
