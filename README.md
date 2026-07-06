@@ -5,7 +5,7 @@
 - Node.js `>= 18.18.0` [[12]]
 - `claude` CLI available in `PATH`
 
-> `vnr-bootstrap` adds the `vnr-plugins` marketplace and installs the `vnr-swe` plugin through Claude Code. It does **not** copy any files into your project — the plugin runs from Claude's plugin store.
+> `vnr-bootstrap` adds the `vnr-ai` marketplace and installs the `vnr-swe` plugin through Claude Code. It does **not** copy any files into your project — the plugin runs from Claude's plugin store.
 
 ## PowerShell
 

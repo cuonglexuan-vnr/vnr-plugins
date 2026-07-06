@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PACKAGE_ROOT = resolve(__dirname, "..");
 
-const MARKETPLACE_NAME = "vnr-plugins";
+const MARKETPLACE_NAME = "vnr-ai";
 const LOCAL_MARKETPLACE_ROOT = PACKAGE_ROOT;
 const DEFAULT_PLUGIN_ID = "vnr-swe";
 
