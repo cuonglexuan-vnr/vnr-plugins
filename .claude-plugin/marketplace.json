@@ -15,6 +15,16 @@
       },
       "source": "./plugins/vnr-swe",
       "category": "development"
+    },
+    {
+      "name": "vnr-sa",
+      "description": "Vnr plugin for Solution Architects",
+      "version": "1.0.0",
+      "author": {
+        "name": "Vnr"
+      },
+      "source": "./plugins/vnr-sa",
+      "category": "development"
     }
   ]
 }
