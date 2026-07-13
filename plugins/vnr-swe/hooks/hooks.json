@@ -1,0 +1,17 @@
+{
+  "description": "Wiki Loading Contract — compaction-proof write-time guard. On every Write/Edit, resolves the project's docs/wiki/manifest.json by the target file path and injects the matched stack's constraint card (UI component rules, must/must-not) into context. Technology-agnostic: no manifest => silent no-op.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/resolve-context.mjs\" --hook",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

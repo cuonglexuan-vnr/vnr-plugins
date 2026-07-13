@@ -1,0 +1,37 @@
+installed: []
+settings:
+  auto_execute_hooks: true
+hooks:
+  before_plan:
+  - extension: vnr-wiki
+    command: vnr-wiki
+    enabled: true
+    optional: false
+    prompt: Load wiki business context before planning?
+    description: >-
+      Load docs/wiki/ context (entities, concepts, workflows) to ground
+      the implementation plan in domain knowledge. Falls back to docs/raw/
+      if wiki is not yet populated.
+    condition: null
+
+  before_implement:
+  - extension: vnr-wiki
+    command: vnr-wiki
+    enabled: true
+    optional: false
+    prompt: Load wiki business context before implementing?
+    description: >-
+      Load docs/wiki/ context before implementation: entities → Domain model,
+      concepts → Handler logic. Falls back to docs/raw/ if wiki not populated.
+    condition: null
+
+  after_implement:
+  - extension: vnr-wiki-sync
+    command: vnr-wiki-sync
+    enabled: true
+    optional: false
+    prompt: Sync wiki from updated raw docs after implementation?
+    description: >-
+      Synchronize docs/wiki/ from docs/raw/ to capture any new domain
+      knowledge documented during this feature implementation.
+    condition: null

@@ -1,0 +1,20 @@
+{
+    "mcpServers": {
+        "tfs": {
+            "type": "sse",
+            "url": "https://sa-hrm.vnrlocal.com:9300/mcp",
+            "headers": {
+            "Authorization": "Bearer your_pat_here",
+            "X-TFS-Org-Url": "http://172.21.100.9:8080/tfs/DefaultCollection",
+            "X-TFS-Default-Project": "VNR.Platform"
+        }
+        },
+        "amis-task": {
+            "type": "sse",
+            "url": "http://172.21.35.7:9301/sse",
+            "env": {
+                "AMIS_USER_ID": "your_user_id_here"
+            }
+        }
+    }
+}

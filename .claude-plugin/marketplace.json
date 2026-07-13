@@ -1,5 +1,5 @@
 {
-  "name": "vnr-plugins",
+  "name": "vnr-ai",
   "version": "1.0.0",
   "description": "Bundled plugins for Vnr",
   "owner": {
@@ -7,23 +7,23 @@
   },
   "plugins": [
     {
-      "name": "vnr-plugin",
+      "name": "vnr-swe",
       "description": "Vnr plugin for SWE",
-      "version": "1.1.0",
-      "author": {
-        "name": "Vnr"
-      },
-      "source": "./plugins/vnr-plugin",
-      "category": "development"
-    },
-	{
-      "name": "vnr-ba-plugin",
-      "description": "Vnr BA plugin for BA",
       "version": "1.0.0",
       "author": {
         "name": "Vnr"
       },
-      "source": "./plugins/vnr-ba-plugin",
+      "source": "./plugins/vnr-swe",
+      "category": "development"
+    },
+    {
+      "name": "vnr-sa",
+      "description": "Vnr plugin for Solution Architects",
+      "version": "1.0.0",
+      "author": {
+        "name": "Vnr"
+      },
+      "source": "./plugins/vnr-sa",
       "category": "development"
     }
   ]
