@@ -168,7 +168,9 @@ def _apply_runs(p, parts):
             r.font.italic = True
         if is_code:
             r.font.name = 'Courier New'
-            r.font.size = Pt(9)
+            r.font.size = Pt(10)
+            r.font.color.rgb = RGBColor.from_string(C_MUTED)
+            _shade_run(r, 'EEF1F4')
     return p
 
 
@@ -196,13 +198,29 @@ def _bullet_rich(doc, parts):
 def _code_block(doc, text):
     p = doc.add_paragraph(style='Normal')
     pf = p.paragraph_format
-    pf.space_before = Pt(4)
-    pf.space_after = Pt(4)
+    pf.space_before = Pt(6)
+    pf.space_after = Pt(6)
+    pf.left_indent = Cm(0.3)
+    # Code box: light gray fill + thin box + brand-blue left accent bar (đẹp, on-brand)
+    pPr = p._p.get_or_add_pPr()
+    pPr.append(parse_xml(f'<w:shd {nsdecls("w")} w:val="clear" w:color="auto" w:fill="F4F6F8"/>'))
+    pPr.append(parse_xml(
+        f'<w:pBdr {nsdecls("w")}>'
+        f'<w:top w:val="single" w:sz="4" w:space="6" w:color="D6DEE8"/>'
+        f'<w:left w:val="single" w:sz="18" w:space="8" w:color="4472C4"/>'
+        f'<w:bottom w:val="single" w:sz="4" w:space="6" w:color="D6DEE8"/>'
+        f'<w:right w:val="single" w:sz="4" w:space="6" w:color="D6DEE8"/>'
+        f'</w:pBdr>'))
     r = p.add_run(text)
     r.font.name = 'Courier New'
-    r.font.size = Pt(9)
-    r.font.color.rgb = RGBColor.from_string(C_TEXT)
+    r.font.size = Pt(10)
+    r.font.color.rgb = RGBColor.from_string(C_MUTED)
     return p
+
+
+def _shade_run(r, fill):
+    """Nền nhẹ sau 1 run (dùng cho inline code)."""
+    r._r.get_or_add_rPr().append(parse_xml(f'<w:shd {nsdecls("w")} w:val="clear" w:color="auto" w:fill="{fill}"/>'))
 
 
 def _set_shading(cell, color):
@@ -213,7 +231,12 @@ def _set_shading(cell, color):
 def _add_table(doc, headers, rows, caption=None):
     if caption:
         p = doc.add_paragraph(style='Caption')
-        p.add_run(caption)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cr = p.add_run(caption)
+        cr.font.italic = True
+        cr.font.bold = False
+        cr.font.size = Pt(10)
+        cr.font.color.rgb = RGBColor.from_string(C_MUTED)
 
     t = doc.add_table(rows=1 + len(rows), cols=len(headers))
     t.alignment = 1
@@ -280,7 +303,7 @@ def _add_table(doc, headers, rows, caption=None):
         r = c.paragraphs[0].add_run(h_clean)
         r.font.bold = True
         r.font.color.rgb = RGBColor.from_string(C_HEADER_TEXT)
-        r.font.size = Pt(10)
+        r.font.size = Pt(11)
         _set_shading(c, C_HEADER_FILL)
         c.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
         c.paragraphs[0].paragraph_format.space_before = Pt(4)
@@ -293,6 +316,8 @@ def _add_table(doc, headers, rows, caption=None):
             c.text = ''
             c.vertical_alignment = 1
             c.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.LEFT
+            if i % 2 == 1:  # zebra: hàng chẵn (1-based) fill Sky #DEEAF1
+                _set_shading(c, 'DEEAF1')
             val = str(row[j] if j < len(row) else '')
             if has_inline_formatting(val):
                 for item in parse_inline(val):
@@ -307,7 +332,9 @@ def _add_table(doc, headers, rows, caption=None):
                         r.font.italic = True
                     if is_code:
                         r.font.name = 'Courier New'
-                        r.font.size = Pt(9)
+                        r.font.size = Pt(10)
+                        r.font.color.rgb = RGBColor.from_string(C_MUTED)
+                        _shade_run(r, 'EEF1F4')
             else:
                 r = c.paragraphs[0].add_run(val)
                 r.font.size = Pt(10)
@@ -315,12 +342,12 @@ def _add_table(doc, headers, rows, caption=None):
 
     borders = (
         '<w:tblBorders {}>'
-        '<w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
-        '<w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
-        '<w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
-        '<w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
-        '<w:insideH w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
-        '<w:insideV w:val="single" w:sz="4" w:space="0" w:color="auto"/>'
+        '<w:top w:val="single" w:sz="4" w:space="0" w:color="4472C4"/>'
+        '<w:left w:val="single" w:sz="4" w:space="0" w:color="4472C4"/>'
+        '<w:bottom w:val="single" w:sz="4" w:space="0" w:color="4472C4"/>'
+        '<w:right w:val="single" w:sz="4" w:space="0" w:color="4472C4"/>'
+        '<w:insideH w:val="single" w:sz="4" w:space="0" w:color="4472C4"/>'
+        '<w:insideV w:val="single" w:sz="4" w:space="0" w:color="4472C4"/>'
         '</w:tblBorders>'
     ).format(nsdecls("w"))
     t._tbl.tblPr.append(parse_xml(borders))
@@ -328,38 +355,45 @@ def _add_table(doc, headers, rows, caption=None):
 
 
 def _set_header_footer(doc, doc_title, doc_code, version="v1.0"):
-    section = doc.sections[-1]
+    # Each H1 chapter inserts its own section break (_h1() -> _section_break()), so the
+    # document ends up with many sections. Word only inherits header/footer FORWARD
+    # through sections left "linked to previous" — and the template's own trailing
+    # section (doc.sections[-1], carried over from the original body's closing
+    # w:sectPr) already ships with its own explicit (stale, placeholder) header/footer
+    # override, so it does NOT inherit from anything. Setting content on just one
+    # section (first or last) always leaves some sections blank or stale — every
+    # section must be set explicitly.
+    for section in doc.sections:
+        header = section.header
+        header.is_linked_to_previous = False
+        if header.paragraphs:
+            hp = header.paragraphs[0]
+            hp.clear()
+            r1 = hp.add_run('VnResource Co., Ltd')
+            r1.font.size = Pt(8)
+            r1.font.color.rgb = RGBColor.from_string(C_MUTED)
+            hp.add_run('\t')
+            r2 = hp.add_run(doc_title.upper()[:50])
+            r2.font.size = Pt(8)
+            r2.font.bold = True
+            r2.font.color.rgb = RGBColor.from_string(C_BRAND)
+            hp.add_run('\t')
+            r3 = hp.add_run('{} / {}'.format(doc_code, version))
+            r3.font.size = Pt(8)
+            r3.font.color.rgb = RGBColor.from_string(C_ACCENT)
 
-    header = section.header
-    header.is_linked_to_previous = False
-    if header.paragraphs:
-        hp = header.paragraphs[0]
-        hp.clear()
-        r1 = hp.add_run('VnResource Co., Ltd')
-        r1.font.size = Pt(8)
-        r1.font.color.rgb = RGBColor.from_string(C_MUTED)
-        hp.add_run('\t')
-        r2 = hp.add_run(doc_title.upper()[:50])
-        r2.font.size = Pt(8)
-        r2.font.bold = True
-        r2.font.color.rgb = RGBColor.from_string(C_BRAND)
-        hp.add_run('\t')
-        r3 = hp.add_run('{} / {}'.format(doc_code, version))
-        r3.font.size = Pt(8)
-        r3.font.color.rgb = RGBColor.from_string(C_ACCENT)
-
-    footer = section.footer
-    footer.is_linked_to_previous = False
-    if footer.paragraphs:
-        fp = footer.paragraphs[0]
-        fp.clear()
-        r1 = fp.add_run('Lưu hành nội bộ | SDC - SA 05/{}'.format(version))
-        r1.font.size = Pt(8)
-        r1.font.color.rgb = RGBColor.from_string(C_MUTED)
-        fp.add_run('\t')
-        r2 = fp.add_run('Trang ')
-        r2.font.size = Pt(8)
-        r2.font.color.rgb = RGBColor.from_string(C_MUTED)
+        footer = section.footer
+        footer.is_linked_to_previous = False
+        if footer.paragraphs:
+            fp = footer.paragraphs[0]
+            fp.clear()
+            r1 = fp.add_run('Lưu hành nội bộ | SDC - SA 05/{}'.format(version))
+            r1.font.size = Pt(8)
+            r1.font.color.rgb = RGBColor.from_string(C_MUTED)
+            fp.add_run('\t')
+            r2 = fp.add_run('Trang ')
+            r2.font.size = Pt(8)
+            r2.font.color.rgb = RGBColor.from_string(C_MUTED)
 
 
 # ──────────────────────────────────────────────
@@ -450,13 +484,16 @@ def parse_md_to_blocks(md_text):
             continue
 
         if line.strip().startswith('```'):
+            lang = line.strip()[3:].strip().lower()
             code_lines = []
             i += 1
             while i < len(lines) and not lines[i].strip().startswith('```'):
                 code_lines.append(lines[i])
                 i += 1
             i += 1
-            blocks.append(('code', '\n'.join(code_lines)))
+            # Mermaid: KHÔNG render thành code text — diagram được nhúng dạng ảnh (post-process embed).
+            if lang != 'mermaid':
+                blocks.append(('code', '\n'.join(code_lines)))
             continue
 
         if line.strip().startswith('|'):
