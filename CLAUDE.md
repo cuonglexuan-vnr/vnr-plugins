@@ -1,3 +1,18 @@
+# CLAUDE.md — vnr.hrm.marketplace
+
+**This repo is the Claude Code plugin marketplace of record** (dir renamed 2026-07-20 from
+`vnr-ai`, matching the production TFS repo `vnr.hrm.marketplace`; the marketplace **name
+identifier stays `"vnr-ai"`** in `.claude-plugin/marketplace.json` — fleet-installed,
+breaking to change). Plugins: `vnr-swe`, `vnr-sa`. Consumed by: vnr-nexus M4 git ingestion
+(catalog of record) → DevHub Extensions store; `devhub.required-env.json` is the
+version-locked contract (`@vnr/marketplace-schema`).
+
+Ecosystem context (centralized, auto-loaded):
+@../vnr-harness/docs/ecosystem/ECOSYSTEM.md
+If that import fails, read `D:\Workspace\Projects\vnr-harness\docs\ecosystem\ECOSYSTEM.md` (+ `contracts.md`, `drift.md`).
+
+---
+
 # vnr-swe — Spec-Driven Development Framework for Claude Code
 
 ## What This Is

@@ -1,0 +1,90 @@
+defaults:
+  projectId: null
+  areaPath: VNR.Platform
+  iterationPath: VNR.Platform\Sprint 12
+  assignedTo: cuong.lexuan
+  activity: Thi công
+  valueArea: Architectural
+  aiUsage: High
+  checkDetailDesign: "Yes"
+  reqDescription: "1. Chưa viết"
+  testcases: "2. Chưa viết"
+  testProgress: "2. Chưa test"
+  testScripts: "1. Không viết"
+  verifications: "Chưa thực hiện"
+
+workItemTypes:
+  pbi: Product Backlog Item
+  task: Task
+
+fields:
+  pbi:
+    description: System.Description
+    acceptanceCriteria: Microsoft.VSTS.Common.AcceptanceCriteria
+    storyboard: Customize.VNR.StoryBoardPBI
+    review: Customize.VNR.ReviewPBI
+    component: Customize.VNR.Component
+    verifications: Customize.VNR.Verifications
+    effort: Microsoft.VSTS.Scheduling.Effort
+    storyPoint: Customize.VNR.StoryPoint
+    valueArea: Microsoft.VSTS.Common.ValueArea
+    aiUsage: Customize.VNR.AIUsage
+    checkDetailDesign: Customize.VNR.CheckDetailDesign
+    reqDescription: Customize.VNR.ReqDescription
+    testcases: Customize.VNR.Testcases
+    testProgress: Customize.VNR.TestProgress
+    testScripts: Customize.VNR.TestScripts
+
+  task:
+    component: Customize.VNR.Component
+    originalEstimate: Microsoft.VSTS.Scheduling.OriginalEstimate
+    remainingWork: Microsoft.VSTS.Scheduling.RemainingWork
+    vnrOriginalEstimate: Customize.VNR.OriginalEstimate
+    activity: Microsoft.VSTS.Common.Activity
+    noOfImplement: Customize.VNR.No.OfImplement
+
+components:
+  - AI
+  - BE
+  - FE
+  - Wiki
+  - QC
+  - DevOps
+
+links:
+  taskToParentPbi: System.LinkTypes.Hierarchy-Reverse
+
+workItemTools:
+  create: mcp__tfs__create_work_item
+  update: mcp__tfs__update_work_item
+  get: mcp__tfs__get_work_item
+  list: mcp__tfs__list_work_items
+  link: mcp__tfs__manage_work_item_link
+
+templates:
+  pbiDescription: templates/pbi-description.html
+  pbiAcceptanceCriteria: templates/pbi-acceptance-criteria.html
+  pbiStoryboard: templates/pbi-storyboard.html
+  pbiReview: templates/pbi-review.html
+  taskDescription: templates/task-description.html
+
+conventions:
+  previewBeforeWrite: true
+  pbiAndTaskOnly: true
+  taskRequiresComponent: true
+  taskRequiresEstimate: true
+  taskOriginalEstimateEqualsRemainingWork: true
+  taskVnrOriginalEstimateEqualsOriginalEstimate: true
+  pbiEffortEqualsStoryPointTimesMultiplier: true
+  storyPointToEffortMultiplier: 7
+  taskEstimateSumEqualsPbiEffort: true
+  autoAssignToDefaultUser: true
+  autoLinkTasksToParent: true
+  inheritIterationFromParentForTasks: true
+  askBeforeMutatingTfs: true
+
+previewSections:
+  - create
+  - update
+  - link
+  - sync
