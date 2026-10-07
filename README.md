@@ -66,3 +66,30 @@ powershell -ExecutionPolicy Bypass -File "\\company-pc\tools\vnr-plugins\install
 ```bat
 \\company-pc\tools\vnr-plugins\install-vnr-swe.cmd "C:\work\my-project" --scope user
 ```
+
+## Publishing to the VNR registry
+
+DevHub distributes this marketplace as one zip on the VNR artifact registry, so teammates without access to
+this TFS repository still get it. Publish after merging changes to plugins or `.claude-plugin/marketplace.json`.
+
+Requirements: Node.js 18 or newer, and a registry API token with `repository:write` on the `vnr-ai` repository.
+
+```powershell
+npm install
+$env:AK_TOKEN = '<registry token>'
+npm run publish:registry
+```
+
+```bash
+npm install
+AK_TOKEN='<registry token>' npm run publish:registry
+```
+
+The script zips only `.claude-plugin/`, `plugins/` and `README.md` (flat, at the zip root) and uploads it to:
+
+```text
+https://registry.vnresource.net/api/v1/repositories/vnr-ai/download/marketplace.zip
+```
+
+DevHub picks the new version up on the next **Sync** in Settings › Marketplaces. Optional overrides:
+`AK_REPO_BASE` (another repository) and `AK_ARTIFACT` (another file name). Run `npm test` to check the zip builder.
