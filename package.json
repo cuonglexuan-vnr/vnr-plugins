@@ -18,7 +18,9 @@
   "scripts": {
     "start": "node ./bin/vnr-bootstrap.mjs",
     "init:vnr-swe": "node ./bin/vnr-bootstrap.mjs init vnr-swe",
-    "help": "node ./bin/vnr-bootstrap.mjs --help"
+    "help": "node ./bin/vnr-bootstrap.mjs --help",
+    "publish:registry": "node ./scripts/publish-to-registry.mjs",
+    "test": "node --test \"scripts/*.test.mjs\""
   },
   "keywords": [
     "claude-code",
@@ -27,5 +29,8 @@
     "bootstrap",
     "vnr"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "adm-zip": "^0.5.18"
+  }
 }
