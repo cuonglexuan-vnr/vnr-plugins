@@ -1,112 +1,69 @@
-# vnr-swe — Spec-Driven Development Framework for Claude Code
+# CLAUDE.md — vnr.hrm.marketplace
 
-## What This Is
+@AGENTS.md
 
-An internal Claude Code plugin that enforces **Spec-Driven Development (SDD)** across our engineering org. Built on [github/speckit](https://github.com/speckit) principles.
+Tệp gốc của repo (không có tệp cha). `AGENTS.md` là bản đồ; tệp này là quy tắc làm việc.
+Khi tệp này, `AGENTS.md` và mã nguồn nói khác nhau: nguồn cụ thể hơn thắng.
 
-**Final purpose:** Standardize and accelerate feature delivery while enforcing quality gates — from BA spec to production-ready code with full traceability (spec <-> code <-> test).
+## Repo này là gì
 
-## Core Concept
+Nguồn của marketplace Claude Code `vnr-ai`, phân phối hai plugin **chỉ gồm nội dung** (markdown + vài script Node/PowerShell/Python,
+không biên dịch):
 
-Every feature follows one truth: **no code without a spec, no merge without passing gates.**
+- `plugins/vnr-swe/` — pipeline Spec-Driven Development cho dev HRM. Một User Story của BA đi qua:
+  `plan → plan review (HITL) → tasks → testcases → implement (gate: build) → code review → arch + sec review (gate: review) → e2e stubs → report`
+  (thứ tự thật nằm ở `plugins/vnr-swe/skills/vnr-auto-pipeline/workflow.yml`). Nguyên tắc: không code khi chưa có spec,
+  không merge khi chưa qua gate; agent làm, người quyết ở checkpoint.
+- `plugins/vnr-sa/` — công cụ cho Solution Architect (`vnr-md2docx`, `vnr-tfs`).
 
-```
-BA User Story → Plan → Plan Review → Tasks → Testcases → Implement → Arch + Sec Review → Report
-```
+Mã HRM (.NET, Angular, Flutter) và quy tắc kiến trúc theo stack **không** nằm ở đây: chúng thuộc dự án cài plugin, đọc qua
+`docs/wiki/manifest.json` của dự án đó bằng `plugins/vnr-swe/scripts/resolve-context.mjs`. Đừng viết quy tắc stack cứng vào plugin.
 
-Developers can either:
-- **Run individual skills** (`/vnr-plan`, `/vnr-implement`, etc.) for a specific phase
-- **Run the full pipeline** (`/vnr-auto-pipeline <US-ID>`) for end-to-end automation with HITL checkpoints
+## Đọc AGENTS.md trước khi sửa
 
-## Architecture
+Trước khi sửa một tệp dưới `plugins/`, `bin/` hoặc `scripts/`, đọc `AGENTS.md` của thư mục đó (và của thư mục cha nếu tệp nằm
+sâu hơn một cấp) để có bản đồ: Key Files, Subdirectories, phụ thuộc chéo. Chỉ bỏ qua với sửa vặt khi đã biết rõ cấu trúc xung quanh.
 
-```
-plugins/vnr-swe/
-├── skills/          # Workflow orchestration (one skill per phase)
-├── agents/          # Specialized AI agents (planner, developer, reviewer, etc.)
-├── standards/       # Architecture rules (01–06 numbered flat files)
-├── templates/       # Canonical output templates
-├── memory/          # constitution.md — project governance rules
-└── hooks/           # Pre-flight checks, security scan patterns
-```
+## Cập nhật AGENTS.md trong cùng một việc
 
-## Skill Registry
+Khi tạo, xoá hoặc đổi vai trò của tệp, cập nhật `AGENTS.md` của thư mục đó ngay trong cùng task, không tách thành việc riêng:
 
-| Skill | Phase | Purpose |
-|-------|-------|---------|
-| `vnr-specify` | Spec | Stub a User Story when BA hasn't delivered one |
-| `vnr-clarify` | Spec | Resolve underspecified areas (up to 5 questions) |
-| `vnr-plan` | Plan | Produce plan.md, data-model.md, contracts/ |
-| `vnr-tasks` | Plan | Break plan into dependency-aware tasks.md |
-| `vnr-implement` | Build | Execute tasks — auto-dispatches to BE/FE/Mobile agents |
-| `vnr-qc-assistant` | QC | Apply QC feedback or audit testcases |
-| `vnr-run-testcases` | QC | Track and update manual testcase statuses |
-| `vnr-run-e2e` | QC | Run Playwright E2E tests |
-| `vnr-auto-pipeline` | All | Full automated pipeline with HITL checkpoints |
-| `vnr-wiki` | Context | Load domain/business context from docs/wiki/ |
-| `vnr-customize` | Meta | Override skills/agents at project scope |
+- Thêm tệp → thêm dòng vào bảng Key Files. Xoá tệp → bỏ dòng.
+- Tạo thư mục con → thêm vào bảng Subdirectories **và** tạo `AGENTS.md` cho nó. Xoá thư mục → bỏ dòng và xoá `AGENTS.md` của nó.
+- Thư mục chưa có `AGENTS.md` → tạo lần đầu khi bạn sửa tệp trong đó (bản đồ lớn dần theo việc thật, không đổ hàng loạt tệp rỗng).
+- Thêm skill/agent/plugin → cũng cập nhật bảng trong `README.md` của plugin đó (và `.claude-plugin/marketplace.json` nếu là plugin mới).
 
-## Agent Team
+Không cập nhật cho sửa lỗi hay refactor không đổi mục đích của tệp.
 
-| Agent | Role | Scope |
-|-------|------|-------|
-| `vnr-planner` | Software Architect | Plan + data model + API contracts |
-| `vnr-plan-reviewer` | Plan Quality Reviewer | 18-check review → PASS/WARN/FAIL |
-| `vnr-task-breaker` | Tech Lead | Ordered, file-path-specific task breakdown |
-| `vnr-backend-developer` | Backend Dev | .NET Framework 4.6.2, Database-First, EF6, SP (`src/backend/`) |
-| `vnr-frontend-developer` | Frontend Dev | Angular 15, Micro-frontend, vnr-module (`src/frontend/`) |
-| `vnr-mobile-developer` | Mobile Dev | Flutter, GetX (`src/app-mobile/`) |
-| `vnr-testcase-writer` | QA Analyst | Manual testcases from spec/plan |
-| `vnr-qc-generator` | QC Engineer | Gherkin scenarios + Playwright stubs |
-| `vnr-test-engineer` | Test Engineer | Unit tests + E2E implementation |
-| `vnr-arch-reviewer` | Arch Reviewer | Clean Arch compliance → PASS/WARN/FAIL |
-| `vnr-sec-reviewer` | Security Reviewer | OWASP checklist → PASS/WARN/FAIL |
-| `vnr-tech-writer` | Tech Writer | final-report.md + user-guide.md |
+## Quy ước ngôn ngữ
 
-## Quality Gates (Mandatory)
+- **Tiếng Anh:** định danh (tên tệp, skill, agent, biến, hàm, khoá frontmatter, tên nhánh), lệnh, chuỗi log/lỗi kỹ thuật,
+  `README.md` gốc (được đóng vào zip cho người dùng cuối).
+- **Tiếng Việt:** phần còn lại — thân skill/agent, comment trong script, `AGENTS.md`, mô tả PR, `README.vi.md`.
+  Nội dung plugin hiện có hỗn hợp Anh/Việt; khi sửa một tệp, giữ ngôn ngữ tệp đó đang dùng.
 
-| Transition | Condition |
-|------------|-----------|
-| Spec → Plan | BA User Story file exists in `specs/<US-ID>/` |
-| Plan → Tasks | plan.md approved by human (after plan-reviewer findings) |
-| Tasks → Implement | tasks.md approved |
-| Implement → Review | Build passes (0 errors) |
-| Review → Merge | Arch PASS + Security PASS + Code review approved |
+## Tự đủ — người đọc chỉ có repo này
 
-## Critical Rules
+Comment trong mã và các tệp ngữ cảnh (`CLAUDE.md`, `AGENTS.md`, `SKILL.md`, agent) được đồng đội đọc mà không có máy của bạn.
+Không nhắc đường dẫn ngoài repo, thư mục làm việc riêng (`.self/`, thư mục change, tên plan hay phiên chat), mã task cục bộ, hay
+"quyết định trong chat" — ghi thẳng sự việc vào tệp. Mã work item dùng chung (PBI trên TFS) chỉ ghi khi cả đội theo dõi ở đó.
 
-1. **Spec-first**: No implementation without a spec file in `specs/<US-ID>/`
-2. **Architecture compliance**: All code must pass arch-review (Clean Arch, CQRS, naming) + sec-review
-3. **Full traceability**: Every task traces back to an AC/BR in the User Story
-4. **Boundary enforcement**: Agents only touch their designated scope (BE/FE/Mobile)
-5. **AI executes, Human decides**: Agents automate tasks; humans approve at HITL checkpoints
+## Quy tắc riêng của repo
 
-## Output Structure
+- Đường dẫn trong nội dung plugin luôn qua `$PLUGIN_DIR/…` (skill/agent) hoặc `${CLAUDE_PLUGIN_ROOT}/…` (hook):
+  plugin chạy từ plugin store của Claude, không nằm trong project người dùng.
+- Đổi nội dung được đóng gói (`.claude-plugin/`, `plugins/`, `README.md`) → tăng `version` trong `.claude-plugin/marketplace.json`;
+  đó là version gửi lên registry.
+- Zip phát hành là phẳng và allow-list (`scripts/build-marketplace-zip.mjs`); tooling, `.git`, `.self/` không bao giờ vào zip.
+- Gate trước khi báo xong, chạy từ gốc repo:
 
-```
-specs/<US-ID>/
-├── <US-ID>_<slug>.md            # BA User Story (source of truth, read-only for SWE)
-├── plan.md                      # Implementation plan
-├── data-model.md                # Entity definitions
-├── tasks.md                     # Ordered task breakdown
-├── testcases.md                 # Manual testcases
-├── contracts/api-commitments.md # API contracts
-└── result/
-    ├── final-report.md          # Pipeline summary + sign-off
-    └── user-guide.md            # End-user documentation (Vietnamese)
-```
+  ```sh
+  npm test                                      # zip builder (node:test)
+  node bin/vnr-bootstrap.mjs --help             # bootstrap còn chạy được
+  ```
 
-## Tech Stack
-
-- **Backend**: .NET Framework 4.6.2 — Database-First, EF6, Stored Procedures, Controller pattern
-- **Frontend**: Angular 15 — Micro-frontend (Module Federation), vnr-module design system, NgRx
-- **Mobile**: Flutter/Dart — Clean Architecture + GetX
-- **Monorepo**: `src/backend/` and `src/frontend/` are separate git repos
-
-## Development Notes
-
-- Plugin is **content-driven** (markdown-based, no compiled code)
-- Each skill follows: `SKILL.md → workflow.md → steps/step-01..N.md`
-- Constitution (`memory/constitution.md`) is the governance root — all agents must comply
-- Standards in `standards/` are **flat numbered files** (01 through 06) covering tech stack, architecture, data/auth, BE framework, FE framework, and team conventions
-- Templates in `templates/` ensure consistent output format across all agents
+  Nội dung skill/agent không có test tự động: kiểm bằng `claude plugin marketplace add <đường dẫn repo>` rồi
+  `claude plugin install <plugin>` và chạy thử skill vừa sửa. Publish (`npm run publish:registry`, cần `AK_TOKEN`) chỉ khi
+  được yêu cầu, sau khi merge.
+- Không commit, không push: người dùng xem và commit một lần bằng tay. Để lại việc đã xong ở trạng thái staged theo đường
+  dẫn cụ thể (`git add -- path/…`), không `git add -A`.
