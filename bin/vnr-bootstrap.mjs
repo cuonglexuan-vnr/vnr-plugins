@@ -10,7 +10,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PACKAGE_ROOT = resolve(__dirname, "..");
 
-const MARKETPLACE_NAME = "vnr-ai";
+const MARKETPLACE_NAME = "vnr-marketplace";
+// Tên marketplace cũ: gỡ trước khi add, nếu không người dùng sẽ có hai marketplace và hai bản vnr-swe.
+const LEGACY_MARKETPLACE_NAMES = ["vnr-ai"];
 const LOCAL_MARKETPLACE_ROOT = PACKAGE_ROOT;
 const DEFAULT_PLUGIN_ID = "vnr-swe";
 
@@ -161,6 +163,15 @@ function refreshMarketplaceCacheIfNeeded(pluginId, forceRefresh) {
   }
 }
 
+function removeLegacyMarketplaces() {
+  // Marketplace nguồn thư mục không có thư mục cache riêng, nên không dò được qua đường dẫn:
+  // cứ thử gỡ; tên chưa đăng ký thì lệnh lỗi im lặng và bỏ qua.
+  for (const legacyName of LEGACY_MARKETPLACE_NAMES) {
+    const result = tryRun("claude", ["plugin", "marketplace", "remove", legacyName]);
+    if (result.ok) info(`Removed legacy marketplace "${legacyName}".`);
+  }
+}
+
 function addMarketplace() {
   info("Adding marketplace...");
   run("claude", ["plugin", "marketplace", "add", LOCAL_MARKETPLACE_ROOT]);
@@ -168,7 +179,7 @@ function addMarketplace() {
 
 function installPlugin(pluginId, scope) {
   info(`Installing plugin "${pluginId}"...`);
-  run("claude", ["plugin", "install", pluginId, "--scope", scope]);
+  run("claude", ["plugin", "install", `${pluginId}@${MARKETPLACE_NAME}`, "--scope", scope]);
 }
 
 function main() {
@@ -204,6 +215,7 @@ function main() {
   ensurePackagedMarketplaceExists(pluginId);
 
   refreshMarketplaceCacheIfNeeded(pluginId, refreshMarketplace);
+  removeLegacyMarketplaces();
   addMarketplace();
   installPlugin(pluginId, scope);
 

@@ -1,5 +1,5 @@
 {
-  "description": "Wiki Loading Contract — compaction-proof write-time guard. On every Write/Edit, resolves the project's docs/wiki/manifest.json by the target file path and injects the matched stack's constraint card (UI component rules, must/must-not) into context. Technology-agnostic: no manifest => silent no-op.",
+  "description": "Hợp đồng nạp wiki — chốt chặn lúc ghi tệp, không mất khi nén context. Mỗi lần Write/Edit, tìm docs/wiki/manifest.json của dự án theo đường dẫn tệp đích và chèn thẻ ràng buộc của stack tương ứng (quy tắc UI component, must/must-not) vào context. Không phụ thuộc công nghệ: không có manifest => bỏ qua im lặng.",
   "hooks": {
     "PreToolUse": [
       {

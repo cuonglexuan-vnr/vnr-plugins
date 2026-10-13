@@ -1,35 +1,35 @@
 #!/usr/bin/env node
 /**
- * resolve-context.mjs — the Wiki Loading Contract resolver.
+ * resolve-context.mjs — bộ phân giải Wiki Loading Contract.
  *
- * TECHNOLOGY-AGNOSTIC. Ships with the vnr-swe plugin. Contains NO project/stack tokens.
- * All routing data lives in the PROJECT wiki's manifest (docs/wiki/manifest.json).
- * No manifest present  =>  emits an empty result / no-op  =>  pipeline behaves as today.
+ * KHÔNG phụ thuộc công nghệ. Đi kèm plugin vnr-swe. KHÔNG chứa token riêng của dự án/stack.
+ * Mọi dữ liệu định tuyến nằm trong manifest của wiki DỰ ÁN (docs/wiki/manifest.json).
+ * Không có manifest  =>  trả kết quả rỗng / no-op  =>  pipeline chạy như trước.
  *
- * Two modes:
+ * Hai chế độ:
  *
- *   1. CLI mode  (called by skills / agents at phase entry):
+ *   1. Chế độ CLI  (skill / agent gọi khi vào phase):
  *        node resolve-context.mjs --phase <plan|implement|review> --paths "a.cshtml,b/c.ts"
- *      Prints JSON:
+ *      In JSON:
  *        { ok, manifest, phase, stacks:[ids], mandatory:[paths], cards:[paths], on_demand:[paths] }
- *      The caller MUST read every file in `mandatory` + `cards` fully before producing output.
+ *      Bên gọi PHẢI đọc đầy đủ mọi tệp trong `mandatory` + `cards` trước khi tạo kết quả.
  *
- *   2. Hook mode  (called by a PreToolUse(Write|Edit) hook, hook JSON on stdin):
+ *   2. Chế độ hook  (hook PreToolUse(Write|Edit) gọi, JSON của hook qua stdin):
  *        node resolve-context.mjs --hook
- *      Reads tool_input.file_path, matches the stack(s), and prints:
+ *      Đọc tool_input.file_path, khớp với stack, rồi in:
  *        { hookSpecificOutput: { hookEventName:"PreToolUse", additionalContext:"<card text>" } }
- *      Injects the terse constraint card(s) into the (sub)agent's context on every write.
- *      No match / no manifest => prints nothing (silent no-op).
+ *      Chèn các thẻ ràng buộc ngắn gọn vào ngữ cảnh của (sub)agent ở mỗi lần ghi.
+ *      Không khớp / không có manifest => không in gì (no-op im lặng).
  *
- * Manifest schema (docs/wiki/manifest.json), all paths relative to the project root:
+ * Schema của manifest (docs/wiki/manifest.json), mọi đường dẫn tính từ gốc dự án:
  *   {
  *     "version": "1",
  *     "stacks": [
  *       { "id": "<stack-id>",
- *         "match": ["<glob>", ...],        // file globs that select this stack
- *         "card":  "<path>",               // terse constraint card (hook-injected, tier-1)
- *         "always":    ["<path>", ...],    // tier-1 pages to load fully at phase entry
- *         "on_demand": ["<path>", ...] }   // tier-2 pages, loaded when component touched
+ *         "match": ["<glob>", ...],        // glob tệp chọn stack này
+ *         "card":  "<path>",               // thẻ ràng buộc ngắn gọn (hook chèn vào, tier-1)
+ *         "always":    ["<path>", ...],    // trang tier-1, nạp đầy đủ khi vào phase
+ *         "on_demand": ["<path>", ...] }   // trang tier-2, nạp khi chạm tới thành phần liên quan
  *     ],
  *     "phases": {
  *       "plan":      { "always": ["<path>", ...] },
@@ -43,18 +43,18 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join, isAbsolute, relative } from 'node:path';
 
 const MANIFEST_REL = 'docs/wiki/manifest.json';
-const CARD_BUDGET = 9000; // keep additionalContext well under the 10k cap
+const CARD_BUDGET = 9000; // giữ additionalContext thấp hơn nhiều so với trần 10k
 
-// ---------- tiny, self-contained glob matcher (zero deps) ----------
-// Supports: ** (any depth), * (within a segment), ? (one char), {a,b} alternation, literal dots.
-// Forgiving: an unanchored glob matches at any depth (implicit leading **/).
+// ---------- bộ khớp glob nhỏ, tự đủ (không phụ thuộc gói ngoài) ----------
+// Hỗ trợ: ** (mọi độ sâu), * (trong một đoạn), ? (một ký tự), {a,b} (lựa chọn), dấu chấm nguyên văn.
+// Dễ dãi: glob không neo khớp ở mọi độ sâu (ngầm hiểu có **/ ở đầu).
 function globToRegExp(glob) {
   let re = '';
   for (let i = 0; i < glob.length; i++) {
     const c = glob[i];
     if (c === '*') {
       if (glob[i + 1] === '*') {
-        // ** (optionally followed by /) => any depth
+        // ** (có thể kèm / theo sau) => mọi độ sâu
         i++;
         if (glob[i + 1] === '/') i++;
         re += '(?:.*/)?';
@@ -75,7 +75,7 @@ function globToRegExp(glob) {
       re += escapeLiteral(c);
     }
   }
-  // Unanchored glob (no leading slash / **) => allow matching at any depth.
+  // Glob không neo (không có / hay ** ở đầu) => cho phép khớp ở mọi độ sâu.
   const anchored = glob.startsWith('/') || glob.startsWith('**');
   const prefix = anchored ? '^' : '^(?:.*/)?';
   return new RegExp(prefix + re + '$');
@@ -86,12 +86,12 @@ function escapeLiteral(s) {
 function normalize(p) {
   return String(p).replace(/\\/g, '/');
 }
-// Strip a leading YAML frontmatter block (--- … ---) so injected cards carry no metadata noise.
+// Bỏ khối YAML frontmatter ở đầu (--- … ---) để thẻ chèn vào không mang theo metadata thừa.
 function stripFrontmatter(text) {
   const m = /^\s*---\r?\n[\s\S]*?\r?\n---\r?\n?/.exec(text);
   return m ? text.slice(m[0].length) : text;
 }
-// Match a (possibly absolute) file path against a glob, tolerant of cwd-relative or absolute input.
+// Khớp đường dẫn tệp (có thể tuyệt đối) với glob, chấp nhận cả đường dẫn tương đối theo cwd lẫn tuyệt đối.
 function pathMatchesGlob(filePath, glob, root) {
   const norm = normalize(filePath);
   const candidates = new Set([norm]);
@@ -106,14 +106,14 @@ function pathMatchesGlob(filePath, glob, root) {
   return false;
 }
 
-// ---------- manifest loading ----------
+// ---------- nạp manifest ----------
 function loadManifest(root) {
   const path = join(root, MANIFEST_REL);
   if (!existsSync(path)) return null;
   try {
     return JSON.parse(readFileSync(path, 'utf8'));
   } catch {
-    return null; // malformed manifest => treat as absent (graceful no-op)
+    return null; // manifest sai định dạng => coi như không có (no-op êm)
   }
 }
 
@@ -131,7 +131,7 @@ function uniq(arr) {
   return [...new Set(arr.filter(Boolean))];
 }
 
-// ---------- CLI mode ----------
+// ---------- Chế độ CLI ----------
 function runCli(args, root) {
   const phase = typeof args['--phase'] === 'string' ? args['--phase'] : '';
   const pathsArg = typeof args['--paths'] === 'string' ? args['--paths'] : '';
@@ -168,19 +168,19 @@ function runCli(args, root) {
   }, null, 2));
 }
 
-// ---------- Hook mode ----------
+// ---------- Chế độ hook ----------
 function runHook(rootArg) {
   let raw = '';
-  try { raw = readFileSync(0, 'utf8'); } catch { /* no stdin */ }
+  try { raw = readFileSync(0, 'utf8'); } catch { /* không có stdin */ }
   let input = {};
-  try { input = JSON.parse(raw); } catch { /* ignore */ }
+  try { input = JSON.parse(raw); } catch { /* bỏ qua */ }
 
-  // The project root is the hook's cwd (where the manifest lives), falling back to rootArg.
+  // Gốc dự án là cwd của hook (nơi chứa manifest), nếu không có thì dùng rootArg.
   const root = (typeof input?.cwd === 'string' && input.cwd) ? input.cwd : rootArg;
   const filePath = input?.tool_input?.file_path;
   const manifest = loadManifest(root);
   if (!filePath || !manifest) {
-    process.stdout.write('{}'); // silent no-op
+    process.stdout.write('{}'); // no-op im lặng
     return;
   }
 
@@ -215,7 +215,7 @@ function runHook(rootArg) {
   }));
 }
 
-// ---------- entry ----------
+// ---------- điểm vào ----------
 function parseArgs(argv) {
   const args = {};
   for (let i = 0; i < argv.length; i++) {
@@ -237,7 +237,7 @@ try {
   if (args['--hook']) runHook(root);
   else runCli(args, root);
 } catch (e) {
-  // Never break the caller — degrade to no-op.
+  // Không bao giờ làm hỏng bên gọi — hạ về no-op.
   if (args['--hook']) process.stdout.write('{}');
   else process.stdout.write(JSON.stringify({ ok: false, manifest: 'error', error: String(e), stacks: [], mandatory: [], cards: [], on_demand: [] }));
 }

@@ -7,7 +7,7 @@ Khi tệp này, `AGENTS.md` và mã nguồn nói khác nhau: nguồn cụ thể 
 
 ## Repo này là gì
 
-Nguồn của marketplace Claude Code `vnr-ai`, phân phối hai plugin **chỉ gồm nội dung** (markdown + vài script Node/PowerShell/Python,
+Nguồn của marketplace Claude Code `vnr-marketplace`, phân phối hai plugin **chỉ gồm nội dung** (markdown + vài script Node/PowerShell/Python,
 không biên dịch):
 
 - `plugins/vnr-swe/` — pipeline Spec-Driven Development cho dev HRM. Một User Story của BA đi qua:
@@ -38,9 +38,10 @@ Không cập nhật cho sửa lỗi hay refactor không đổi mục đích củ
 ## Quy ước ngôn ngữ
 
 - **Tiếng Anh:** định danh (tên tệp, skill, agent, biến, hàm, khoá frontmatter, tên nhánh), lệnh, chuỗi log/lỗi kỹ thuật,
-  `README.md` gốc (được đóng vào zip cho người dùng cuối).
-- **Tiếng Việt:** phần còn lại — thân skill/agent, comment trong script, `AGENTS.md`, mô tả PR, `README.vi.md`.
-  Nội dung plugin hiện có hỗn hợp Anh/Việt; khi sửa một tệp, giữ ngôn ngữ tệp đó đang dùng.
+  văn bản `--help` của CLI.
+- **Tiếng Việt:** phần còn lại — mọi `README.md`, thân skill/agent, comment trong script (kể cả help `<# .SYNOPSIS … #>`
+  của PowerShell), mô tả trong tệp cấu hình, `AGENTS.md`, mô tả PR. Thuật ngữ theo `docs/glossary.md`.
+  Thân skill/agent hiện còn hỗn hợp Anh/Việt; khi sửa một tệp, giữ ngôn ngữ tệp đó đang dùng cho đến khi tệp được dịch trọn.
 
 ## Tự đủ — người đọc chỉ có repo này
 

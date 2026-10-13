@@ -1,10 +1,10 @@
 #!/usr/bin/env pwsh
-# Common PowerShell functions for Vnr plugin
+# Các hàm PowerShell dùng chung cho plugin Vnr
 
-# Resolve the plugin install root (where this plugin's agents/, memory/, templates/,
-# scripts/ live). The plugin is installed via Claude Code — not scaffolded into the
-# project — so prefer the CLAUDE_PLUGIN_ROOT env var Claude sets for plugin commands;
-# fall back to this script's own location (scripts/powershell -> plugin root is two up).
+# Xác định gốc cài đặt của plugin (nơi chứa agents/, memory/, templates/,
+# scripts/ của plugin). Plugin được cài qua Claude Code, không được scaffold vào
+# project, nên ưu tiên biến môi trường CLAUDE_PLUGIN_ROOT do Claude đặt cho các lệnh của plugin;
+# nếu không có thì dựa vào vị trí của chính script này (scripts/powershell -> gốc plugin cách hai cấp).
 function Get-PluginDir {
     if ($env:CLAUDE_PLUGIN_ROOT) {
         return $env:CLAUDE_PLUGIN_ROOT
@@ -12,8 +12,8 @@ function Get-PluginDir {
     return (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "../..")).Path
 }
 
-# Get the target project root (where specs/ and src/ live). Prefer the git toplevel;
-# fall back to the current working directory for non-git projects.
+# Lấy gốc dự án đích (nơi chứa specs/ và src/). Ưu tiên git toplevel;
+# dự án không dùng git thì quay về thư mục làm việc hiện tại.
 function Get-RepoRoot {
     try {
         $result = git rev-parse --show-toplevel 2>$null
@@ -22,25 +22,25 @@ function Get-RepoRoot {
         }
     }
     catch {
-        # Git command failed
+        # Lệnh git thất bại
     }
 
-    # Final fallback for non-git repos: the current working directory
+    # Phương án cuối cho repo không dùng git: thư mục làm việc hiện tại
     return (Get-Location).Path
 }
 
 function Get-CurrentBranch {
-    # First check VNR_FEATURE environment variable
+    # Kiểm tra biến môi trường VNR_FEATURE trước
     if ($env:VNR_FEATURE) {
         return $env:VNR_FEATURE
     }
 
-    # Backward-compatible fallback
+    # Phương án dự phòng tương thích ngược
     if ($env:SPECIFY_FEATURE) {
         return $env:SPECIFY_FEATURE
     }
 
-    # Then check git if available at the Vnr root (not parent)
+    # Sau đó kiểm tra git nếu có tại gốc Vnr (không xét thư mục cha)
     $repoRoot = Get-RepoRoot
     if (Test-HasGit) {
         try {
@@ -50,11 +50,11 @@ function Get-CurrentBranch {
             }
         }
         catch {
-            # Git command failed
+            # Lệnh git thất bại
         }
     }
 
-    # For non-git repos, try to find the latest feature directory
+    # Với repo không dùng git, thử tìm thư mục feature mới nhất
     $specsDir = Join-Path $repoRoot "specs"
 
     if (Test-Path $specsDir) {
@@ -64,7 +64,7 @@ function Get-CurrentBranch {
 
         Get-ChildItem -Path $specsDir -Directory | ForEach-Object {
             if ($_.Name -match '^(\d{8}-\d{6})-') {
-                # Timestamp-based branch: compare lexicographically
+                # Nhánh theo timestamp: so sánh theo thứ tự từ điển
                 $ts = $matches[1]
                 if ($ts -gt $latestTimestamp) {
                     $latestTimestamp = $ts
@@ -75,7 +75,7 @@ function Get-CurrentBranch {
                 [long]$num = 0
                 if ([long]::TryParse($matches[1], [ref]$num) -and $num -gt $highest) {
                     $highest = $num
-                    # Only update if no timestamp branch found yet
+                    # Chỉ cập nhật nếu chưa tìm thấy nhánh timestamp nào
                     if (-not $latestTimestamp) {
                         $latestFeature = $_.Name
                     }
@@ -88,27 +88,27 @@ function Get-CurrentBranch {
         }
     }
 
-    # Final fallback
+    # Phương án cuối
     return "main"
 }
 
-# Check if we have git available at the Vnr root level
-# Returns true only if git is installed and the repo root is inside a git work tree
-# Handles both regular repos (.git directory) and worktrees/submodules (.git file)
+# Kiểm tra git có dùng được ở cấp gốc Vnr không
+# Chỉ trả về true khi git đã cài và gốc repo nằm trong một git work tree
+# Xử lý cả repo thường (thư mục .git) lẫn worktree/submodule (tệp .git)
 function Test-HasGit {
-    # First check if git command is available
+    # Trước hết kiểm tra lệnh git có sẵn không
     if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
         return $false
     }
 
     $repoRoot = Get-RepoRoot
 
-    # Check if .git exists (directory or file for worktrees/submodules)
+    # Kiểm tra .git có tồn tại không (thư mục, hoặc tệp với worktree/submodule)
     if (-not (Test-Path -LiteralPath (Join-Path $repoRoot ".git"))) {
         return $false
     }
 
-    # Verify it's actually a valid git work tree
+    # Xác minh đó đúng là một git work tree hợp lệ
     try {
         $null = git -C $repoRoot rev-parse --is-inside-work-tree 2>$null
         return ($LASTEXITCODE -eq 0)
@@ -124,7 +124,7 @@ function Test-FeatureBranch {
         [bool]$HasGit = $true
     )
 
-    # For non-git repos, we can't enforce branch naming but still provide output
+    # Với repo không dùng git, không thể ép quy tắc đặt tên nhánh nhưng vẫn xuất kết quả
     if (-not $HasGit) {
         Write-Warning "[vnr] Warning: Git repository not detected; skipped branch validation"
         return $true
@@ -149,13 +149,13 @@ function Get-FeatureDir {
 }
 
 function Resolve-UserStoryPath {
-    # Resolve the BA User Story file inside a feature folder.
-    # Convention: `<US-ID>_<slug>.md` (e.g., SCC-E01-F01-U02_Thiet_Lap_Phan_Tang_Nhan_Tai.md).
-    # Fallbacks: any *.md that isn't a generated SWE artifact, then a legacy 'spec.md'.
+    # Xác định tệp User Story của BA trong thư mục feature.
+    # Quy ước: `<US-ID>_<slug>.md` (ví dụ SCC-E01-F01-U02_Thiet_Lap_Phan_Tang_Nhan_Tai.md).
+    # Dự phòng: mọi *.md không phải artifact do SWE sinh ra, sau đó là 'spec.md' kiểu cũ.
     param([string]$FeatureDir)
 
     if (-not (Test-Path -LiteralPath $FeatureDir -PathType Container)) {
-        return (Join-Path $FeatureDir 'spec.md')  # legacy fallback
+        return (Join-Path $FeatureDir 'spec.md')  # dự phòng kiểu cũ
     }
 
     $reserved = @(
@@ -172,12 +172,12 @@ function Resolve-UserStoryPath {
 
     if ($candidate) { return $candidate }
 
-    # Legacy fallback so existing features keep working
+    # Dự phòng kiểu cũ để các feature hiện có vẫn chạy được
     return (Join-Path $FeatureDir 'spec.md')
 }
 
 function Resolve-UiDetailPath {
-    # BA's `<US-ID>_*_ui-detail.md` takes precedence; fall back to SWE-generated 'ui-detail.md'.
+    # `<US-ID>_*_ui-detail.md` của BA được ưu tiên; không có thì dùng 'ui-detail.md' do SWE sinh ra.
     param([string]$FeatureDir)
 
     if (-not (Test-Path -LiteralPath $FeatureDir -PathType Container)) {
@@ -207,8 +207,8 @@ function Get-FeaturePathsEnv {
         FEATURE_DIR    = $featureDir
         USER_STORY     = $userStory
         UI_DETAIL      = $uiDetail
-        # FEATURE_SPEC kept as alias of USER_STORY for backwards compatibility
-        # with skills/scripts that still reference the old name.
+        # FEATURE_SPEC giữ lại làm alias của USER_STORY để tương thích ngược
+        # với các skill/script vẫn còn dùng tên cũ.
         FEATURE_SPEC   = $userStory
         IMPL_PLAN      = Join-Path $featureDir 'plan.md'
         TASKS          = Join-Path $featureDir 'tasks.md'
@@ -252,11 +252,11 @@ function Test-DirHasFiles {
     }
 }
 
-# Resolve a template name to a file path using the priority stack (all under the plugin root):
+# Xác định một tên template thành đường dẫn tệp theo ngăn xếp ưu tiên (đều nằm dưới gốc plugin):
 #   1. templates/overrides/
-#   2. presets/<preset-id>/templates/ (sorted by priority from .registry)
+#   2. presets/<preset-id>/templates/ (sắp theo mức ưu tiên từ .registry)
 #   3. extensions/<ext-id>/templates/
-#   4. templates/ (core)
+#   4. templates/ (lõi)
 function Resolve-Template {
     param(
         [Parameter(Mandatory = $true)][string]$TemplateName,
@@ -266,13 +266,13 @@ function Resolve-Template {
     $pluginDir = $PluginDir
     $base = Join-Path $pluginDir 'templates'
 
-    # Priority 1: Project overrides
+    # Ưu tiên 1: ghi đè theo dự án
     $override = Join-Path $base "overrides/$TemplateName.md"
     if (Test-Path -LiteralPath $override) {
         return $override
     }
 
-    # Priority 2: Installed presets (sorted by priority from .registry)
+    # Ưu tiên 2: các preset đã cài (sắp theo mức ưu tiên từ .registry)
     $presetsDir = Join-Path $pluginDir 'presets'
     if (Test-Path -LiteralPath $presetsDir) {
         $registryFile = Join-Path $presetsDir '.registry'
@@ -289,7 +289,7 @@ function Resolve-Template {
                 }
             }
             catch {
-                # Fallback: alphabetical directory order
+                # Dự phòng: theo thứ tự thư mục bảng chữ cái
                 $sortedPresets = @()
             }
         }
@@ -312,7 +312,7 @@ function Resolve-Template {
         }
     }
 
-    # Priority 3: Extension-provided templates
+    # Ưu tiên 3: template do extension cung cấp
     $extDir = Join-Path $pluginDir 'extensions'
     if (Test-Path -LiteralPath $extDir) {
         foreach ($ext in Get-ChildItem -LiteralPath $extDir -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '.*' } | Sort-Object Name) {
@@ -323,7 +323,7 @@ function Resolve-Template {
         }
     }
 
-    # Priority 4: Core templates
+    # Ưu tiên 4: template lõi
     $core = Join-Path $base "$TemplateName.md"
     if (Test-Path -LiteralPath $core) {
         return $core

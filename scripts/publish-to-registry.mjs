@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Publishes the marketplace zip to the VNR artifact registry (Artifact Keeper,
- * generic repo). Cross-platform (Windows + Linux). Configuration is env-only:
- *   AK_TOKEN       (required) — registry API token with repository:write
- *   AK_REPO_BASE   (optional) — default https://registry.vnresource.net/api/v1/repositories/vnr-ai
- *   AK_ARTIFACT    (optional) — default marketplace.zip
+ * Publish zip marketplace lên registry artifact của VNR (Artifact Keeper,
+ * repo generic). Chạy được trên Windows và Linux. Cấu hình chỉ qua biến môi trường:
+ *   AK_TOKEN       (bắt buộc) — API token của registry có quyền repository:write
+ *   AK_REPO_BASE   (tuỳ chọn) — mặc định https://registry.vnresource.net/api/v1/repositories/vnr-ai
+ *   AK_ARTIFACT    (tuỳ chọn) — mặc định marketplace.zip
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -48,7 +48,7 @@ let checksum = '';
 try {
   checksum = JSON.parse(text).checksum_sha256 ?? '';
 } catch {
-  /* the response body is informational only */
+  /* nội dung phản hồi chỉ mang tính thông tin */
 }
 console.log(`Published. Anonymous download: ${repoBase}/download/${artifact}`);
 if (checksum) console.log(`sha256: ${checksum}`);

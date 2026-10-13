@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Setup implementation plan for a Vnr feature
+# Chuẩn bị kế hoạch triển khai cho một feature Vnr
 
 [CmdletBinding()]
 param(
@@ -9,7 +9,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Show help if requested
+# Hiển thị trợ giúp nếu được yêu cầu
 if ($Help) {
     Write-Output "Usage: ./setup-plan.ps1 [-Json] [-Help]"
     Write-Output "  -Json     Output results in JSON format"
@@ -17,21 +17,21 @@ if ($Help) {
     exit 0
 }
 
-# Load common functions
+# Nạp các hàm dùng chung
 . "$PSScriptRoot/common.ps1"
 
-# Get all paths and variables from common functions
+# Lấy mọi đường dẫn và biến từ các hàm dùng chung
 $paths = Get-FeaturePathsEnv
 
-# Check if we're on a proper feature branch (only for git repos)
+# Kiểm tra đang ở nhánh feature hợp lệ (chỉ với repo git)
 if (-not (Test-FeatureBranch -Branch $paths.CURRENT_BRANCH -HasGit $paths.HAS_GIT)) {
     exit 1
 }
 
-# Ensure the feature directory exists
+# Đảm bảo thư mục feature tồn tại
 New-Item -ItemType Directory -Path $paths.FEATURE_DIR -Force | Out-Null
 
-# Copy plan template if it exists, otherwise create empty file
+# Sao chép template kế hoạch nếu có, không thì tạo tệp rỗng
 $template = $null
 
 try {
@@ -41,7 +41,7 @@ catch {
     $template = $null
 }
 
-# Fallback path for Vnr speckit template
+# Đường dẫn dự phòng cho template speckit của Vnr
 if (-not $template) {
     $template = Join-Path $paths.PLUGIN_DIR 'templates/plan-template.md'
 }
@@ -55,7 +55,7 @@ else {
     New-Item -ItemType File -Path $paths.IMPL_PLAN -Force | Out-Null
 }
 
-# Output results
+# Xuất kết quả
 if ($Json) {
     $result = [PSCustomObject]@{
         PLUGIN_DIR   = $paths.PLUGIN_DIR
