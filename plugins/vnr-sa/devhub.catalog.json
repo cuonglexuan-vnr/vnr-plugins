@@ -1,0 +1,15 @@
+{
+  "$schema": "https://registry.vnresource.net/schemas/devhub.catalog.schema.json",
+  "schemaVersion": 1,
+  "icon": "📝",
+  "tags": ["solution-architect", "docs"],
+  "defaultScope": "project",
+  "examples": [
+    "/vnr-md2docx: chuyển playbook Markdown thành file Word có bìa, mục lục và đánh số đề mục",
+    "/vnr-tfs pbi: soạn PBI từ mô tả ngắn, xem trước rồi mới tạo",
+    "/vnr-tfs inspect 2481: xem PBI cùng các task con và chênh lệch ước lượng"
+  ],
+  "changelog": [
+    { "version": "1.0.0", "publishedAt": "2026-06-24", "notes": ["Bản phát hành đầu tiên: skill vnr-md2docx"] }
+  ]
+}

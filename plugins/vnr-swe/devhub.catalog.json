@@ -1,0 +1,26 @@
+{
+  "$schema": "https://registry.vnresource.net/schemas/devhub.catalog.schema.json",
+  "schemaVersion": 1,
+  "icon": "🧭",
+  "tags": ["sdd", "pipeline", "dotnet", "angular"],
+  "examples": [
+    "/vnr-auto-pipeline: chạy từ User Story đến báo cáo cuối, dừng lại để bạn duyệt ở các bước quan trọng",
+    "/vnr-clarify: Claude hỏi lại tối đa 5 điểm chưa rõ trong đặc tả",
+    "/vnr-wiki: tìm ngữ cảnh nghiệp vụ trong wiki dự án"
+  ],
+  "providesTable": [
+    { "area": "Đặc tả", "description": "Dựng khung, làm rõ và phân tích User Story của BA trước khi viết code" },
+    { "area": "Lập kế hoạch", "description": "plan.md, data-model.md và API contract từ đặc tả đã duyệt" },
+    { "area": "Chia task", "description": "tasks.md sắp theo thứ tự phụ thuộc, mỗi bước ghi rõ đường dẫn tệp" },
+    { "area": "Triển khai", "description": "Thực hiện BE → FE → Mobile, có build gate giữa các phạm vi" },
+    { "area": "Review", "description": "Agent review code, kiến trúc và bảo mật với gate PASS/WARN/FAIL" },
+    { "area": "Báo cáo", "description": "final-report.md và user-guide.md tiếng Việt cho từng tính năng" }
+  ],
+  "changelog": [
+    { "version": "1.0.0", "publishedAt": "2026-06-10", "notes": [
+      "Quy trình SDD đầy đủ: spec → plan → tasks → implement → review → report",
+      "14 agent, 20 skill, tích hợp knowledge base của wiki",
+      "Gate review kiến trúc và bảo mật, chạy tiếp được từ một bước bằng --from=<phase>"
+    ] }
+  ]
+}
