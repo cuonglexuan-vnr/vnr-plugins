@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VNR Auto-Pipeline Workflow Overview</title>
+    <title>Tổng Quan Quy Trình VNR Auto-Pipeline</title>
     <style>
         :root {
             --bg: #0f1419;
@@ -122,7 +122,7 @@
         }
 
         .flow-parallel::before {
-            content: "parallel";
+            content: "song song";
             position: absolute;
             top: -16px;
             left: 50%;
@@ -528,40 +528,40 @@
 </head>
 <body>
     <div class="container">
-        <h1>VNR Auto-Pipeline Workflow</h1>
-        <p class="subtitle">Pipeline tự động từ spec &rarr; report &mdash; <strong style="color: var(--cyan);">tối đa 2 HITL checkpoints</strong>: Plan Review (luôn có) + Stack Confirm (chỉ khi phát hiện &gt;1 UI stack). Mọi bước còn lại chạy tự động.</p>
+        <h1>Quy Trình VNR Auto-Pipeline</h1>
+        <p class="subtitle">Pipeline tự động từ spec &rarr; report &mdash; <strong style="color: var(--cyan);">tối đa 2 điểm dừng HITL</strong>: Duyệt Plan (luôn có) + Xác nhận Stack (chỉ khi phát hiện &gt;1 UI stack). Mọi bước còn lại chạy tự động.</p>
 
         <!-- TOC -->
         <div class="toc">
-            <div class="toc-title">Table of Contents</div>
+            <div class="toc-title">Mục Lục</div>
             <ul class="toc-list">
-                <li><a href="#architecture">1. Architecture Overview</a></li>
-                <li><a href="#flow">2. Pipeline Flow Diagram</a></li>
-                <li><a href="#registry">3. Agent &amp; Skill Registry</a></li>
-                <li><a href="#steps">4. Step-by-Step Detail</a></li>
-                <li><a href="#data-flow">5. Data Flow (Artifacts)</a></li>
-                <li><a href="#gates">6. Gate Conditions</a></li>
-                <li><a href="#recovery">7. Recovery &amp; Resume</a></li>
-                <li><a href="#source">8. Source Code Structure</a></li>
+                <li><a href="#architecture">1. Tổng Quan Kiến Trúc</a></li>
+                <li><a href="#flow">2. Sơ Đồ Luồng Pipeline</a></li>
+                <li><a href="#registry">3. Danh Mục Agent &amp; Skill</a></li>
+                <li><a href="#steps">4. Chi Tiết Từng Bước</a></li>
+                <li><a href="#data-flow">5. Luồng Dữ Liệu (Artifacts)</a></li>
+                <li><a href="#gates">6. Điều Kiện Cổng (Gate)</a></li>
+                <li><a href="#recovery">7. Khôi Phục &amp; Tiếp Tục</a></li>
+                <li><a href="#source">8. Cấu Trúc Mã Nguồn</a></li>
             </ul>
         </div>
 
         <!-- Legend -->
         <div class="legend">
             <div class="legend-item"><div class="legend-dot green"></div>Skill Tool (vnr-plan, vnr-tasks, vnr-implement)</div>
-            <div class="legend-item"><div class="legend-dot purple"></div>Agent Tool (general-purpose subagent)</div>
-            <div class="legend-item"><div class="legend-dot cyan"></div>Specialized Agents (vnr-backend-developer, vnr-frontend-developer)</div>
-            <div class="legend-item"><div class="legend-dot orange"></div>CLI / Stub Check</div>
-            <div class="legend-item"><div class="legend-dot yellow"></div>Parallel Execution</div>
-            <div class="legend-item"><div class="legend-dot red"></div>HITL (Plan Review always + conditional Stack Confirm) &mdash; Auto-stop on build fail / review FAIL</div>
+            <div class="legend-item"><div class="legend-dot purple"></div>Agent Tool (subagent general-purpose)</div>
+            <div class="legend-item"><div class="legend-dot cyan"></div>Agent chuyên biệt (vnr-backend-developer, vnr-frontend-developer)</div>
+            <div class="legend-item"><div class="legend-dot orange"></div>CLI / Kiểm tra Stub</div>
+            <div class="legend-item"><div class="legend-dot yellow"></div>Thực thi song song</div>
+            <div class="legend-item"><div class="legend-dot red"></div>HITL (Duyệt Plan luôn có + Xác nhận Stack tùy điều kiện) &mdash; Tự dừng khi build lỗi / review FAIL</div>
         </div>
 
         <!-- Architecture -->
-        <h2 class="section-title" id="architecture">1. Architecture Overview</h2>
+        <h2 class="section-title" id="architecture">1. Tổng Quan Kiến Trúc</h2>
         <div class="arch-diagram">
             <div class="arch-layers">
                 <div class="arch-layer">
-                    <div class="arch-layer-label">User</div>
+                    <div class="arch-layer-label">Người dùng</div>
                     <div class="arch-layer-content">
                         <div class="arch-box user">/vnr-auto-pipeline &lt;feature&gt; [--from=&lt;phase-id&gt;]</div>
                     </div>
@@ -573,7 +573,7 @@
                         <div class="arch-box orchestrator">SKILL.md (vnr-auto-pipeline)</div>
                     </div>
                 </div>
-                <div class="arrow-down">&darr; dispatches via Skill tool or Agent tool</div>
+                <div class="arrow-down">&darr; điều phối qua Skill tool hoặc Agent tool</div>
                 <div class="arch-layer">
                     <div class="arch-layer-label">Skills</div>
                     <div class="arch-layer-content">
@@ -583,7 +583,7 @@
                         <div class="arch-box skill-box">vnr-wiki</div>
                     </div>
                 </div>
-                <div class="arrow-down">&darr; skills internally read agent .md files</div>
+                <div class="arrow-down">&darr; skills đọc nội bộ các file .md của agent</div>
                 <div class="arch-layer">
                     <div class="arch-layer-label">Agents</div>
                     <div class="arch-layer-content">
@@ -596,7 +596,7 @@
                         <div class="arch-box agent-box">vnr-mobile-developer</div>
                         <div class="arch-box agent-box">vnr-arch-reviewer</div>
                         <div class="arch-box agent-box">vnr-sec-reviewer</div>
-                        <div class="arch-box agent-new">vnr-code-reviewer ✦ NEW</div>
+                        <div class="arch-box agent-new">vnr-code-reviewer ✦ MỚI</div>
                         <div class="arch-box agent-box">vnr-tech-writer</div>
                     </div>
                 </div>
@@ -604,18 +604,18 @@
                 <div class="arch-layer">
                     <div class="arch-layer-label">CLI / Stub</div>
                     <div class="arch-layer-content">
-                        <div class="arch-box cli-box">stub check/create (e2e)</div>
+                        <div class="arch-box cli-box">kiểm tra/tạo stub (e2e)</div>
                         <div class="arch-box cli-box">git (branch/commit/push)</div>
                     </div>
                 </div>
                 <div class="arrow-down">&darr;</div>
                 <div class="arch-layer">
-                    <div class="arch-layer-label">Outputs</div>
+                    <div class="arch-layer-label">Đầu ra</div>
                     <div class="arch-layer-content">
                         <div class="arch-box output">plan.md</div>
                         <div class="arch-box output">tasks.md</div>
                         <div class="arch-box output">testcases.md</div>
-                        <div class="arch-box output">e2e stub file</div>
+                        <div class="arch-box output">file e2e stub</div>
                         <div class="arch-box output">final-report.md</div>
                         <div class="arch-box output">user-guide.md</div>
                     </div>
@@ -624,77 +624,77 @@
         </div>
 
         <!-- Pipeline Flow -->
-        <h2 class="section-title" id="flow">2. Pipeline Flow Diagram</h2>
+        <h2 class="section-title" id="flow">2. Sơ Đồ Luồng Pipeline</h2>
         <div class="pipeline-flow">
             <div class="flow-step">
-                <span class="step-num">Step 0</span>
-                <span class="step-name">Validate</span>
+                <span class="step-num">Bước 0</span>
+                <span class="step-name">Kiểm tra</span>
             </div>
             <span class="flow-arrow">&rarr;</span>
             <div class="flow-step">
-                <span class="step-num">Step 1a</span>
+                <span class="step-num">Bước 1a</span>
                 <span class="step-name">Plan</span>
             </div>
             <span class="flow-arrow">&rarr;</span>
             <div class="flow-step" style="border-color: var(--cyan);">
-                <span class="step-num" style="color: var(--cyan);">Step 1b</span>
-                <span class="step-name">Plan Review ✦</span>
+                <span class="step-num" style="color: var(--cyan);">Bước 1b</span>
+                <span class="step-name">Duyệt Plan ✦</span>
                 <span class="checkpoint-badge">HITL</span>
             </div>
             <span class="flow-arrow">&rarr;</span>
             <div class="flow-step">
-                <span class="step-num">Step 1c</span>
+                <span class="step-num">Bước 1c</span>
                 <span class="step-name">Tasks</span>
             </div>
             <span class="flow-arrow">&rarr;</span>
             <div class="flow-step">
-                <span class="step-num">Step 2</span>
+                <span class="step-num">Bước 2</span>
                 <span class="step-name">Testcases</span>
             </div>
             <span class="flow-arrow">&rarr;</span>
             <div class="flow-step">
-                <span class="step-num">Step 3</span>
-                <span class="step-name">Implement</span>
+                <span class="step-num">Bước 3</span>
+                <span class="step-name">Triển khai</span>
             </div>
             <span class="flow-arrow">&rarr;</span>
             <div class="flow-step" style="border-color: var(--cyan);">
-                <span class="step-num" style="color: var(--cyan);">Step 4</span>
-                <span class="step-name">Code Review</span>
+                <span class="step-num" style="color: var(--cyan);">Bước 4</span>
+                <span class="step-name">Review Code</span>
             </div>
             <span class="flow-arrow">&rarr;</span>
             <div class="flow-parallel">
                 <div class="flow-step">
-                    <span class="step-num">Step 5</span>
-                    <span class="step-name">Arch Review</span>
+                    <span class="step-num">Bước 5</span>
+                    <span class="step-name">Review Kiến trúc</span>
                 </div>
                 <div class="flow-step">
-                    <span class="step-num">Step 6</span>
-                    <span class="step-name">Sec Review</span>
+                    <span class="step-num">Bước 6</span>
+                    <span class="step-name">Review Bảo mật</span>
                 </div>
             </div>
             <span class="flow-arrow">&rarr;</span>
             <div class="flow-step" style="border-color: var(--yellow);">
-                <span class="step-num">Step 7</span>
+                <span class="step-num">Bước 7</span>
                 <span class="step-name">E2E Stubs</span>
                 <span class="stub-badge">STUB</span>
             </div>
             <span class="flow-arrow">&rarr;</span>
             <div class="flow-step">
-                <span class="step-num">Step 8</span>
-                <span class="step-name">Report</span>
+                <span class="step-num">Bước 8</span>
+                <span class="step-name">Báo cáo</span>
             </div>
         </div>
 
         <!-- Agent Registry -->
-        <h2 class="section-title" id="registry">3. Agent &amp; Skill Registry</h2>
+        <h2 class="section-title" id="registry">3. Danh Mục Agent &amp; Skill</h2>
         <table class="registry-table">
             <thead>
                 <tr>
-                    <th>Step</th>
-                    <th>Agent Name</th>
-                    <th>Agent File</th>
-                    <th>Invocation Method</th>
-                    <th>Type</th>
+                    <th>Bước</th>
+                    <th>Tên Agent</th>
+                    <th>File Agent</th>
+                    <th>Cách gọi</th>
+                    <th>Loại</th>
                 </tr>
             </thead>
             <tbody>
@@ -710,7 +710,7 @@
                     <td>vnr-plan-reviewer</td>
                     <td><code>$PLUGIN_DIR/agents/vnr-plan-reviewer.md</code></td>
                     <td>Agent tool (general-purpose)</td>
-                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-new">NEW</span></td>
+                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-new">MỚI</span></td>
                 </tr>
                 <tr>
                     <td>1c</td>
@@ -729,36 +729,36 @@
                 <tr>
                     <td>3</td>
                     <td>vnr-backend-developer / vnr-frontend-developer / vnr-mobile-developer</td>
-                    <td><code>auto-detected by scope from tasks.md</code></td>
+                    <td><code>tự động nhận diện theo scope từ tasks.md</code></td>
                     <td>Skill: <code>vnr-implement</code></td>
                     <td><span class="badge badge-skill">Skill</span></td>
                 </tr>
                 <tr style="background: rgba(57, 197, 207, 0.05);">
-                    <td>4 ✦ NEW</td>
+                    <td>4 ✦ MỚI</td>
                     <td>vnr-code-reviewer</td>
                     <td><code>$PLUGIN_DIR/agents/vnr-code-reviewer.md</code></td>
                     <td>Agent tool (general-purpose)</td>
-                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-new">NEW</span></td>
+                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-new">MỚI</span></td>
                 </tr>
                 <tr>
                     <td>5</td>
                     <td>vnr-arch-reviewer</td>
                     <td><code>$PLUGIN_DIR/agents/vnr-arch-reviewer.md</code></td>
                     <td>Agent tool (general-purpose)</td>
-                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-parallel">Parallel</span></td>
+                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-parallel">Song song</span></td>
                 </tr>
                 <tr>
                     <td>6</td>
                     <td>vnr-sec-reviewer</td>
                     <td><code>$PLUGIN_DIR/agents/vnr-sec-reviewer.md</code></td>
                     <td>Agent tool (general-purpose)</td>
-                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-parallel">Parallel</span></td>
+                    <td><span class="badge badge-agent">Agent</span> <span class="badge badge-parallel">Song song</span></td>
                 </tr>
                 <tr>
                     <td>7</td>
                     <td>&mdash;</td>
                     <td>&mdash;</td>
-                    <td>CLI: stub file check / create</td>
+                    <td>CLI: kiểm tra / tạo file stub</td>
                     <td><span class="badge badge-cli">Stub</span></td>
                 </tr>
                 <tr>
@@ -772,33 +772,33 @@
         </table>
 
         <!-- Step-by-Step Details -->
-        <h2 class="section-title" id="steps">4. Step-by-Step Detail</h2>
+        <h2 class="section-title" id="steps">4. Chi Tiết Từng Bước</h2>
         <div class="step-cards">
 
             <!-- Step 0 -->
             <div class="step-card cli">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 0</span>
-                    <span class="step-card-title">Validate &amp; Initialize</span>
+                    <span class="step-card-num">Bước 0</span>
+                    <span class="step-card-title">Kiểm tra &amp; Khởi tạo</span>
                     <span class="badge badge-cli">CLI</span>
                 </div>
                 <div class="step-card-body">
                     <div class="info-block">
-                        <div class="info-block-title">What it does</div>
+                        <div class="info-block-title">Chức năng</div>
                         <div class="info-block-content">
                             <ul>
-                                <li>Checks <code>specs/&lt;feature&gt;/spec.md</code> exists (hard stop if missing)</li>
-                                <li>Detects repo structure from <code>docs/wiki/index.md</code> (tags: <code>architecture</code> / <code>recipe</code>); fallback: scans <code>src/</code> for project markers (<code>.sln</code>, <code>angular.json</code>, <code>pubspec.yaml</code>)</li>
-                                <li>Creates <code>feature/&lt;feature&gt;</code> branches in each discovered repo if missing</li>
-                                <li>Checks durable ledger (<code>TaskList</code>) for interrupted runs → <code>AskUserQuestion</code> to resume from detected phase</li>
-                                <li>Creates <code>TaskCreate</code> panel for ALL phases (all at once) with <code>[$FEATURE] &lt;phase.name&gt;</code></li>
+                                <li>Kiểm tra <code>specs/&lt;feature&gt;/spec.md</code> tồn tại (dừng ngay nếu thiếu)</li>
+                                <li>Phát hiện cấu trúc repo từ <code>docs/wiki/index.md</code> (tag: <code>architecture</code> / <code>recipe</code>); dự phòng: quét <code>src/</code> tìm dấu hiệu dự án (<code>.sln</code>, <code>angular.json</code>, <code>pubspec.yaml</code>)</li>
+                                <li>Tạo branch <code>feature/&lt;feature&gt;</code> trong mỗi repo phát hiện được nếu chưa có</li>
+                                <li>Kiểm tra ledger bền vững (<code>TaskList</code>) tìm các lần chạy bị gián đoạn → <code>AskUserQuestion</code> để tiếp tục từ phase phát hiện được</li>
+                                <li>Tạo panel <code>TaskCreate</code> cho TẤT CẢ các phase (cùng lúc) với <code>[$FEATURE] &lt;phase.name&gt;</code></li>
                             </ul>
                         </div>
                     </div>
                     <div class="info-block">
-                        <div class="info-block-title">Skip condition</div>
+                        <div class="info-block-title">Điều kiện bỏ qua</div>
                         <div class="info-block-content">
-                            If <code>--from=&lt;phase-id&gt;</code> is passed, skips validation entirely. All prior phases are marked <code>completed</code> and the orchestrator jumps directly to the specified phase.
+                            Nếu truyền <code>--from=&lt;phase-id&gt;</code>, bỏ qua hoàn toàn bước kiểm tra. Mọi phase trước đó được đánh dấu <code>completed</code> và orchestrator nhảy thẳng tới phase được chỉ định.
                         </div>
                     </div>
                 </div>
@@ -807,20 +807,20 @@
             <!-- Step 1a -->
             <div class="step-card skill">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 1a</span>
-                    <span class="step-card-title">Plan</span>
+                    <span class="step-card-num">Bước 1a</span>
+                    <span class="step-card-title">Plan (Lập kế hoạch)</span>
                     <span class="badge badge-skill">Skill: vnr-plan</span>
                 </div>
                 <div class="step-card-body">
                     <div class="info-block">
-                        <div class="info-block-title">Invocation</div>
+                        <div class="info-block-title">Cách gọi</div>
                         <div class="info-block-content">
                             <code>Skill tool: vnr-plan</code><br>
-                            Internally reads: <code>agents/vnr-planner.md</code>
+                            Đọc nội bộ: <code>agents/vnr-planner.md</code>
                         </div>
                     </div>
                     <div class="info-block">
-                        <div class="info-block-title">Outputs</div>
+                        <div class="info-block-title">Đầu ra</div>
                         <div class="info-block-content">
                             <ul>
                                 <li><code>specs/&lt;feature&gt;/plan.md</code></li>
@@ -832,98 +832,98 @@
                     </div>
                 </div>
                 <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
-                    <strong style="color: var(--green);">Auto</strong> &mdash; Plan Review (Step 1b) runs immediately after.
+                    <strong style="color: var(--green);">Tự động</strong> &mdash; Duyệt Plan (Bước 1b) chạy ngay sau đó.
                 </div>
             </div>
 
             <!-- Step 1b (NEW) -->
             <div class="step-card new-step">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 1b ✦ NEW</span>
-                    <span class="step-card-title">Plan Review</span>
+                    <span class="step-card-num">Bước 1b ✦ MỚI</span>
+                    <span class="step-card-title">Duyệt Plan</span>
                     <span class="badge badge-agent">Agent: vnr-plan-reviewer</span>
                 </div>
                 <div class="step-card-body">
                     <div class="info-block">
-                        <div class="info-block-title">What it checks (18 checks)</div>
+                        <div class="info-block-title">Nội dung kiểm tra (18 mục)</div>
                         <div class="info-block-content">
                             <ul>
-                                <li>P-01..P-05: Spec Coverage (AC, BR, VM, Data Dict, NEEDS CLARIFICATION)</li>
-                                <li>P-06..P-09: API &amp; Contracts (endpoints, permission keys, wrappers)</li>
-                                <li>P-10..P-14: Architecture Alignment (Clean Arch, CQRS, layers)</li>
-                                <li>P-15..P-18: Feasibility &amp; Completeness (phase order, FK consistency)</li>
+                                <li>P-01..P-05: Độ phủ Spec (AC, BR, VM, Data Dict, NEEDS CLARIFICATION)</li>
+                                <li>P-06..P-09: API &amp; Contracts (endpoint, permission key, wrapper)</li>
+                                <li>P-10..P-14: Tuân thủ kiến trúc (Clean Arch, CQRS, các tầng)</li>
+                                <li>P-15..P-18: Khả thi &amp; Đầy đủ (thứ tự phase, nhất quán FK)</li>
                             </ul>
                         </div>
                     </div>
                     <div class="info-block">
-                        <div class="info-block-title">Verdict logic</div>
+                        <div class="info-block-title">Logic kết luận</div>
                         <div class="info-block-content">
                             <ul>
                                 <li>🔴 Critical &ge; 1 &rarr; FAIL ⛔</li>
                                 <li>🟡 Warning &ge; 1, Critical = 0 &rarr; WARN ⚠️</li>
-                                <li>Both = 0 &rarr; PASS ✅</li>
+                                <li>Cả hai = 0 &rarr; PASS ✅</li>
                             </ul>
                         </div>
                     </div>
                 </div>
                 <div class="gate-info hitl">
-                    <strong>HITL Flow (after plan-reviewer completes):</strong><br>
-                    1. <em>Conditional (auto-skips if single stack):</em> If plan resolves &gt;1 UI stack → Stack Confirm <code>AskUserQuestion</code>; confirmed stack is written back to plan's <code>## Stack &amp; Constraints</code>.<br>
-                    2. <em>Always:</em> Main review → Human decides: [approve &rarr; continue] / [modify &rarr; edit <code>plan.md</code> manually then re-approve] / [reject &rarr; <code>--from=plan</code>]
+                    <strong>Luồng HITL (sau khi plan-reviewer hoàn tất):</strong><br>
+                    1. <em>Tùy điều kiện (tự bỏ qua nếu chỉ 1 stack):</em> Nếu plan phân giải &gt;1 UI stack → Xác nhận Stack qua <code>AskUserQuestion</code>; stack đã xác nhận được ghi lại vào mục <code>## Stack &amp; Constraints</code> của plan.<br>
+                    2. <em>Luôn có:</em> Duyệt chính → Con người quyết định: [approve &rarr; tiếp tục] / [modify &rarr; sửa <code>plan.md</code> thủ công rồi duyệt lại] / [reject &rarr; <code>--from=plan</code>]
                 </div>
             </div>
 
             <!-- Step 1c -->
             <div class="step-card skill">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 1c</span>
-                    <span class="step-card-title">Tasks</span>
+                    <span class="step-card-num">Bước 1c</span>
+                    <span class="step-card-title">Tasks (Chia task)</span>
                     <span class="badge badge-skill">Skill: vnr-tasks</span>
                 </div>
                 <div class="step-card-body">
                     <div class="info-block">
-                        <div class="info-block-title">Invocation</div>
+                        <div class="info-block-title">Cách gọi</div>
                         <div class="info-block-content">
                             <code>Skill tool: vnr-tasks</code><br>
-                            Internally reads: <code>agents/vnr-task-breaker.md</code>
+                            Đọc nội bộ: <code>agents/vnr-task-breaker.md</code>
                         </div>
                     </div>
                     <div class="info-block">
-                        <div class="info-block-title">Outputs</div>
+                        <div class="info-block-title">Đầu ra</div>
                         <div class="info-block-content">
                             <ul>
                                 <li><code>specs/&lt;feature&gt;/tasks.md</code></li>
                             </ul>
-                            Contains N tasks organized in parallel groups.
+                            Chứa N task được tổ chức theo các nhóm song song.
                         </div>
                     </div>
                 </div>
                 <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
-                    <strong style="color: var(--green);">Auto</strong> &mdash; Tasks complete &rarr; Testcase Writer (Step 2) starts immediately. No user confirmation required.
+                    <strong style="color: var(--green);">Tự động</strong> &mdash; Tasks xong &rarr; Testcase Writer (Bước 2) chạy ngay. Không cần xác nhận từ người dùng.
                 </div>
             </div>
 
             <!-- Step 2 -->
             <div class="step-card agent">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 2</span>
+                    <span class="step-card-num">Bước 2</span>
                     <span class="step-card-title">Testcase Writer</span>
                     <span class="badge badge-agent">Agent: vnr-testcase-writer</span>
                 </div>
                 <div class="step-card-body">
                     <div class="info-block">
-                        <div class="info-block-title">What it does</div>
+                        <div class="info-block-title">Chức năng</div>
                         <div class="info-block-content">
                             <ul>
-                                <li>Reads wiki, spec, plan, tasks, contracts, UI detail</li>
-                                <li>Output: <code>testcases.md</code></li>
-                                <li>Categories: API, UI, Authorization, Integration</li>
-                                <li>Priority: P0 (Critical) / P1 (High) / P2 (Medium) / P3 (Low)</li>
+                                <li>Đọc wiki, spec, plan, tasks, contracts, chi tiết UI</li>
+                                <li>Đầu ra: <code>testcases.md</code></li>
+                                <li>Phân loại: API, UI, Authorization, Integration</li>
+                                <li>Độ ưu tiên: P0 (Nghiêm trọng) / P1 (Cao) / P2 (Trung bình) / P3 (Thấp)</li>
                             </ul>
                         </div>
                     </div>
                     <div class="info-block">
-                        <div class="info-block-title">Output</div>
+                        <div class="info-block-title">Đầu ra</div>
                         <div class="info-block-content">
                             <ul>
                                 <li><code>specs/&lt;feature&gt;/testcases.md</code></li>
@@ -932,176 +932,176 @@
                     </div>
                 </div>
                 <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
-                    <strong style="color: var(--green);">Auto</strong> &mdash; Testcases complete &rarr; Implement (Step 3) starts immediately. No user confirmation required.
+                    <strong style="color: var(--green);">Tự động</strong> &mdash; Testcases xong &rarr; Triển khai (Bước 3) chạy ngay. Không cần xác nhận từ người dùng.
                 </div>
             </div>
 
             <!-- Step 3 -->
             <div class="step-card skill">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 3</span>
-                    <span class="step-card-title">Implement</span>
+                    <span class="step-card-num">Bước 3</span>
+                    <span class="step-card-title">Triển khai (Implement)</span>
                     <span class="badge badge-skill">Skill: vnr-implement</span>
                 </div>
                 <div class="step-card-body">
                     <div class="info-block">
-                        <div class="info-block-title">Invocation</div>
+                        <div class="info-block-title">Cách gọi</div>
                         <div class="info-block-content">
                             <code>Skill tool: vnr-implement</code><br>
-                            Auto-detects scope from <code>tasks.md</code> path prefixes &mdash; dispatches sequentially:<br>
+                            Tự động nhận diện scope từ tiền tố đường dẫn trong <code>tasks.md</code> &mdash; điều phối tuần tự:<br>
                             <code>src/backend/</code> &rarr; vnr-backend-developer<br>
                             <code>src/frontend/</code> &rarr; vnr-frontend-developer<br>
                             <code>src/app-mobile/</code> &rarr; vnr-mobile-developer
                         </div>
                     </div>
                     <div class="info-block">
-                        <div class="info-block-title">What it does</div>
+                        <div class="info-block-title">Chức năng</div>
                         <div class="info-block-content">
                             <ul>
-                                <li>Loads tasks.md + plan.md + contracts + data-model</li>
-                                <li>Executes tasks per phase, marks [x] when done</li>
-                                <li>Stops if non-parallel task fails</li>
-                                <li>Build must pass (0 errors)</li>
+                                <li>Nạp tasks.md + plan.md + contracts + data-model</li>
+                                <li>Thực thi task theo từng phase, đánh dấu [x] khi xong</li>
+                                <li>Dừng nếu một task không song song bị lỗi</li>
+                                <li>Build phải pass (0 lỗi)</li>
                             </ul>
                         </div>
                     </div>
                 </div>
                 <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
-                    <strong style="color: var(--green);">Auto</strong> &mdash; Build success &rarr; Step 4 starts immediately. <strong style="color: var(--red);">Auto-stop</strong> if build fails &mdash; user must fix then <code>--from=implement</code>.
+                    <strong style="color: var(--green);">Tự động</strong> &mdash; Build thành công &rarr; Bước 4 chạy ngay. <strong style="color: var(--red);">Tự dừng</strong> nếu build lỗi &mdash; người dùng sửa rồi <code>--from=implement</code>.
                 </div>
             </div>
 
             <!-- Step 4 NEW -->
             <div class="step-card new-step">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 4 ✦ NEW</span>
-                    <span class="step-card-title">Code Review</span>
+                    <span class="step-card-num">Bước 4 ✦ MỚI</span>
+                    <span class="step-card-title">Review Code</span>
                     <span class="badge badge-agent">Agent: vnr-code-reviewer</span>
                 </div>
                 <div class="step-card-body">
                     <div class="info-block">
-                        <div class="info-block-title">What it checks</div>
+                        <div class="info-block-title">Nội dung kiểm tra</div>
                         <div class="info-block-content">
                             <ul>
-                                <li><strong>AC/BR Completeness</strong> — every AC in spec.md has code</li>
-                                <li><strong>Task Completeness</strong> — every task in tasks.md implemented</li>
-                                <li><strong>Code Quality</strong> — naming, DRY, dead code, error handling, null safety</li>
-                                <li><strong>Logic Correctness</strong> — branches, off-by-one, async/await</li>
-                                <li><strong>Hardcode / Magic Numbers</strong> — no literals that should be config</li>
+                                <li><strong>Đầy đủ AC/BR</strong> — mọi AC trong spec.md đều có code</li>
+                                <li><strong>Đầy đủ Task</strong> — mọi task trong tasks.md đều được hiện thực</li>
+                                <li><strong>Chất lượng code</strong> — đặt tên, DRY, code chết, xử lý lỗi, an toàn null</li>
+                                <li><strong>Đúng logic</strong> — nhánh điều kiện, off-by-one, async/await</li>
+                                <li><strong>Hardcode / Magic Number</strong> — không có giá trị cứng đáng lẽ phải là config</li>
                             </ul>
                         </div>
                     </div>
                     <div class="info-block">
-                        <div class="info-block-title">Verdict logic</div>
+                        <div class="info-block-title">Logic kết luận</div>
                         <div class="info-block-content">
                             <ul>
-                                <li>🔴 Critical &ge; 1 <em>or missing AC</em> &rarr; FAIL ⛔</li>
+                                <li>🔴 Critical &ge; 1 <em>hoặc thiếu AC</em> &rarr; FAIL ⛔</li>
                                 <li>🟡 Warning &ge; 1, Critical = 0 &rarr; WARN ⚠️</li>
-                                <li>Both = 0 &rarr; PASS ✅</li>
+                                <li>Cả hai = 0 &rarr; PASS ✅</li>
                             </ul>
-                            Reads: <code>spec.md</code>, <code>tasks.md</code>, wiki conventions, constitution
+                            Đọc: <code>spec.md</code>, <code>tasks.md</code>, quy ước wiki, constitution
                         </div>
                     </div>
                 </div>
                 <div class="gate-info">
-                    <strong>Auto-stop</strong> if FAIL &mdash; fix logic/AC violations then <code>--from=code-review</code>. PASS/WARN &rarr; Step 5+6 starts immediately.
+                    <strong>Tự dừng</strong> nếu FAIL &mdash; sửa lỗi logic/AC rồi <code>--from=code-review</code>. PASS/WARN &rarr; Bước 5+6 chạy ngay.
                 </div>
             </div>
 
             <!-- Step 5+6 -->
             <div class="step-card parallel">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 5 + 6</span>
-                    <span class="step-card-title">Architecture Review + Security Review (PARALLEL)</span>
+                    <span class="step-card-num">Bước 5 + 6</span>
+                    <span class="step-card-title">Review Kiến trúc + Review Bảo mật (SONG SONG)</span>
                     <span class="badge badge-agent">Agent</span>
-                    <span class="badge badge-parallel">Parallel</span>
+                    <span class="badge badge-parallel">Song song</span>
                 </div>
                 <div class="step-card-body">
                     <div class="info-block">
-                        <div class="info-block-title">Architecture Review (Step 5)</div>
+                        <div class="info-block-title">Review Kiến trúc (Bước 5)</div>
                         <div class="info-block-content">
                             <ul>
                                 <li>Agent: <code>vnr-arch-reviewer</code></li>
-                                <li>Reads: architecture standards, contracts, constitution</li>
-                                <li>Runs: 14 checks BE + 10 checks FE</li>
-                                <li>Verdict: PASS / WARN / FAIL</li>
+                                <li>Đọc: chuẩn kiến trúc, contracts, constitution</li>
+                                <li>Chạy: 14 mục BE + 10 mục FE</li>
+                                <li>Kết luận: PASS / WARN / FAIL</li>
                             </ul>
                         </div>
                     </div>
                     <div class="info-block">
-                        <div class="info-block-title">Security Review (Step 6)</div>
+                        <div class="info-block-title">Review Bảo mật (Bước 6)</div>
                         <div class="info-block-content">
                             <ul>
                                 <li>Agent: <code>vnr-sec-reviewer</code></li>
-                                <li>Reads: permission standards, security-hooks, constitution</li>
-                                <li>Runs: OWASP checklist (14 BE + 7 FE)</li>
-                                <li>Verdict: PASS / WARN / FAIL</li>
+                                <li>Đọc: chuẩn permission, security-hooks, constitution</li>
+                                <li>Chạy: checklist OWASP (14 BE + 7 FE)</li>
+                                <li>Kết luận: PASS / WARN / FAIL</li>
                             </ul>
                         </div>
                     </div>
                 </div>
                 <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
-                    <strong style="color: var(--green);">Auto</strong> &mdash; PASS/WARN &rarr; Step 7 starts immediately. <strong style="color: var(--red);">Auto-stop</strong> if FAIL &mdash; user must fix then <code>--from=arch-sec-review</code>.
+                    <strong style="color: var(--green);">Tự động</strong> &mdash; PASS/WARN &rarr; Bước 7 chạy ngay. <strong style="color: var(--red);">Tự dừng</strong> nếu FAIL &mdash; người dùng sửa rồi <code>--from=arch-sec-review</code>.
                 </div>
             </div>
 
             <!-- Step 7 -->
             <div class="step-card agent">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 7</span>
-                    <span class="step-card-title">E2E Stubs (Placeholder)</span>
+                    <span class="step-card-num">Bước 7</span>
+                    <span class="step-card-title">E2E Stubs (Khung mẫu)</span>
                     <span class="badge badge-agent">Agent (inline)</span>
-                    <span class="stub-badge">ALWAYS PASS</span>
+                    <span class="stub-badge">LUÔN PASS</span>
                 </div>
                 <div class="step-card-body">
                     <div class="info-block">
-                        <div class="info-block-title">What it does</div>
+                        <div class="info-block-title">Chức năng</div>
                         <div class="info-block-content">
                             <ul>
-                                <li>Checks if <code>src/frontend/e2e/&lt;feature&gt;.e2e.spec.ts</code> exists</li>
-                                <li>If not: creates minimal stub with <code>test.todo()</code> for P0+P1 testcases</li>
-                                <li>Does NOT run any tests</li>
-                                <li>Always passes &mdash; status: ⏭ STUB</li>
+                                <li>Kiểm tra <code>src/frontend/e2e/&lt;feature&gt;.e2e.spec.ts</code> có tồn tại không</li>
+                                <li>Nếu chưa: tạo stub tối thiểu với <code>test.todo()</code> cho các testcase P0+P1</li>
+                                <li>KHÔNG chạy bất kỳ test nào</li>
+                                <li>Luôn pass &mdash; trạng thái: ⏭ STUB</li>
                             </ul>
                         </div>
                     </div>
                     <div class="info-block">
-                        <div class="info-block-title">Dispatch</div>
+                        <div class="info-block-title">Điều phối</div>
                         <div class="info-block-content">
-                            <code>type: agent</code> with <code>inline_prompt</code> in workflow.yml — no separate agent file.<br>
-                            Reads <code>docs/wiki/index.md</code> for E2E recipe path; falls back to <code>src/frontend/e2e/{feature}.e2e.spec.ts</code>.<br>
-                            Stub references <code>testcases.md</code> (P0+P1). Automation team implements body separately.
+                            <code>type: agent</code> với <code>inline_prompt</code> trong workflow.yml — không có file agent riêng.<br>
+                            Đọc <code>docs/wiki/index.md</code> để tìm đường dẫn recipe E2E; dự phòng dùng <code>src/frontend/e2e/{feature}.e2e.spec.ts</code>.<br>
+                            Stub tham chiếu <code>testcases.md</code> (P0+P1). Đội automation hiện thực phần thân riêng.
                         </div>
                     </div>
                 </div>
                 <div class="gate-info" style="border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.08);">
-                    <strong style="color: var(--green);">No checkpoint</strong> &mdash; automatically proceeds to Step 8. Always ⏭ STUB.
+                    <strong style="color: var(--green);">Không có điểm dừng</strong> &mdash; tự động chuyển sang Bước 8. Luôn ⏭ STUB.
                 </div>
             </div>
 
             <!-- Step 8 -->
             <div class="step-card agent">
                 <div class="step-card-header">
-                    <span class="step-card-num">Step 8</span>
-                    <span class="step-card-title">Report</span>
+                    <span class="step-card-num">Bước 8</span>
+                    <span class="step-card-title">Báo cáo (Report)</span>
                     <span class="badge badge-agent">Agent: vnr-tech-writer</span>
                 </div>
                 <div class="step-card-body">
                     <div class="info-block">
-                        <div class="info-block-title">Invocation</div>
+                        <div class="info-block-title">Cách gọi</div>
                         <div class="info-block-content">
                             <code>Agent tool</code> (general-purpose)<br>
-                            Reads: <code>agents/vnr-tech-writer.md</code>
+                            Đọc: <code>agents/vnr-tech-writer.md</code>
                         </div>
                     </div>
                     <div class="info-block">
-                        <div class="info-block-title">Outputs</div>
+                        <div class="info-block-title">Đầu ra</div>
                         <div class="info-block-content">
                             <ul>
                                 <li><code>specs/&lt;feature&gt;/result/final-report.md</code></li>
                                 <li><code>specs/&lt;feature&gt;/result/user-guide.md</code></li>
                             </ul>
-                            Includes: summary table (Arch, Security, E2E Stubs), findings, files changed, sign-off checklist, user guide in Vietnamese.
+                            Bao gồm: bảng tổng hợp (Kiến trúc, Bảo mật, E2E Stubs), phát hiện, file thay đổi, checklist sign-off, hướng dẫn sử dụng bằng tiếng Việt.
                         </div>
                     </div>
                 </div>
@@ -1110,184 +1110,184 @@
         </div>
 
         <!-- Data Flow -->
-        <h2 class="section-title" id="data-flow">5. Data Flow (Artifacts between Steps)</h2>
+        <h2 class="section-title" id="data-flow">5. Luồng Dữ Liệu (Artifacts giữa các bước)</h2>
         <div class="data-flow">
             <div class="flow-row">
-                <div class="flow-from">Step 0 (Input)</div>
+                <div class="flow-from">Bước 0 (Đầu vào)</div>
                 <span class="flow-direction">&rarr;</span>
                 <div class="flow-artifact">specs/&lt;feature&gt;/&lt;feature&gt;_*.md</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">Step 1a (Plan)</div>
+                <div class="flow-to">Bước 1a (Plan)</div>
             </div>
             <div class="flow-row">
-                <div class="flow-from">Step 1a (Plan)</div>
+                <div class="flow-from">Bước 1a (Plan)</div>
                 <span class="flow-direction">&rarr;</span>
                 <div class="flow-artifact">plan.md, data-model.md, contracts/, research.md</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">Step 1b (Plan Review)</div>
+                <div class="flow-to">Bước 1b (Duyệt Plan)</div>
             </div>
             <div class="flow-row">
-                <div class="flow-from">Step 1b (Plan Review)</div>
+                <div class="flow-from">Bước 1b (Duyệt Plan)</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-artifact">Review verdict + findings (in context)</div>
+                <div class="flow-artifact">Kết luận review + phát hiện (trong ngữ cảnh)</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">HITL &rarr; Step 1c (Tasks)</div>
+                <div class="flow-to">HITL &rarr; Bước 1c (Tasks)</div>
             </div>
             <div class="flow-row">
-                <div class="flow-from">Step 1c (Tasks)</div>
+                <div class="flow-from">Bước 1c (Tasks)</div>
                 <span class="flow-direction">&rarr;</span>
                 <div class="flow-artifact">tasks.md</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">Step 2 (auto), Step 3</div>
+                <div class="flow-to">Bước 2 (tự động), Bước 3</div>
             </div>
             <div class="flow-row">
-                <div class="flow-from">Step 2 (Testcase)</div>
+                <div class="flow-from">Bước 2 (Testcase)</div>
                 <span class="flow-direction">&rarr;</span>
                 <div class="flow-artifact">testcases.md</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">Step 3 (auto), Step 7 (stub ref), Step 8</div>
+                <div class="flow-to">Bước 3 (tự động), Bước 7 (tham chiếu stub), Bước 8</div>
             </div>
             <div class="flow-row">
-                <div class="flow-from">Step 3 (Implement)</div>
+                <div class="flow-from">Bước 3 (Triển khai)</div>
                 <span class="flow-direction">&rarr;</span>
                 <div class="flow-artifact">src/backend/**/*.cs, src/frontend/**/*.ts</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">Step 4 (Code Review)</div>
+                <div class="flow-to">Bước 4 (Review Code)</div>
             </div>
             <div class="flow-row">
-                <div class="flow-from">Step 4 (Code Review)</div>
+                <div class="flow-from">Bước 4 (Review Code)</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-artifact">Code Review verdict + findings (AC coverage, quality)</div>
+                <div class="flow-artifact">Kết luận Review Code + phát hiện (độ phủ AC, chất lượng)</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">Step 5+6 (Arch+Sec Review)</div>
+                <div class="flow-to">Bước 5+6 (Review Kiến trúc + Bảo mật)</div>
             </div>
             <div class="flow-row">
-                <div class="flow-from">Step 5+6 (Reviews)</div>
+                <div class="flow-from">Bước 5+6 (Review)</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-artifact">Arch verdict + Sec verdict + findings</div>
+                <div class="flow-artifact">Kết luận Kiến trúc + Kết luận Bảo mật + phát hiện</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">Step 8 (Report)</div>
+                <div class="flow-to">Bước 8 (Báo cáo)</div>
             </div>
             <div class="flow-row">
-                <div class="flow-from">Step 7 (E2E Stubs)</div>
+                <div class="flow-from">Bước 7 (E2E Stubs)</div>
                 <span class="flow-direction">&rarr;</span>
                 <div class="flow-artifact">e2e/&lt;feature&gt;.e2e.spec.ts (stub)</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">Step 8 (Report reference)</div>
+                <div class="flow-to">Bước 8 (tham chiếu trong Báo cáo)</div>
             </div>
             <div class="flow-row">
-                <div class="flow-from">Step 8 (Report)</div>
+                <div class="flow-from">Bước 8 (Báo cáo)</div>
                 <span class="flow-direction">&rarr;</span>
                 <div class="flow-artifact">final-report.md + user-guide.md</div>
                 <span class="flow-direction">&rarr;</span>
-                <div class="flow-to">PR Creation (manual)</div>
+                <div class="flow-to">Tạo PR (thủ công)</div>
             </div>
         </div>
 
         <!-- Gates -->
-        <h2 class="section-title" id="gates">6. Gate Conditions (from Constitution)</h2>
+        <h2 class="section-title" id="gates">6. Điều Kiện Cổng (theo Constitution)</h2>
         <table class="registry-table">
             <thead>
                 <tr>
-                    <th>Transition</th>
-                    <th>Gate Condition</th>
-                    <th>On Failure</th>
+                    <th>Chuyển tiếp</th>
+                    <th>Điều kiện cổng</th>
+                    <th>Khi thất bại</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>Step 1a &rarr; 1b</td>
-                    <td>Automatic &mdash; Plan Review runs immediately</td>
+                    <td>Bước 1a &rarr; 1b</td>
+                    <td>Tự động &mdash; Duyệt Plan chạy ngay</td>
                     <td>&mdash;</td>
                 </tr>
                 <tr style="background: rgba(57, 197, 207, 0.05);">
-                    <td>Step 1b &rarr; 1c</td>
-                    <td>plan.md approved by user (after reviewing plan-reviewer findings)</td>
-                    <td>Reject &rarr; fix plan &rarr; <code>--from=plan</code></td>
+                    <td>Bước 1b &rarr; 1c</td>
+                    <td>plan.md được người dùng duyệt (sau khi xem phát hiện của plan-reviewer)</td>
+                    <td>Từ chối &rarr; sửa plan &rarr; <code>--from=plan</code></td>
                 </tr>
                 <tr>
-                    <td>Step 1c &rarr; 2</td>
-                    <td>Automatic &mdash; Tasks complete &rarr; Testcase Writer starts immediately</td>
+                    <td>Bước 1c &rarr; 2</td>
+                    <td>Tự động &mdash; Tasks xong &rarr; Testcase Writer chạy ngay</td>
                     <td>&mdash;</td>
                 </tr>
                 <tr>
-                    <td>Step 2 &rarr; 3</td>
-                    <td>Automatic &mdash; Testcases complete &rarr; Implement starts immediately</td>
+                    <td>Bước 2 &rarr; 3</td>
+                    <td>Tự động &mdash; Testcases xong &rarr; Triển khai chạy ngay</td>
                     <td>&mdash;</td>
                 </tr>
                 <tr>
-                    <td>Step 3 &rarr; 4</td>
-                    <td>Automatic if build success (0 errors) &mdash; both BE and FE</td>
-                    <td>Auto-stop, fix then <code>--from=implement</code></td>
+                    <td>Bước 3 &rarr; 4</td>
+                    <td>Tự động nếu build thành công (0 lỗi) &mdash; cả BE và FE</td>
+                    <td>Tự dừng, sửa rồi <code>--from=implement</code></td>
                 </tr>
                 <tr style="background: rgba(57, 197, 207, 0.05);">
-                    <td>Step 4 &rarr; 5+6</td>
-                    <td>Automatic if Code Review PASS/WARN</td>
-                    <td>Auto-stop if FAIL, fix then <code>--from=code-review</code></td>
+                    <td>Bước 4 &rarr; 5+6</td>
+                    <td>Tự động nếu Review Code PASS/WARN</td>
+                    <td>Tự dừng nếu FAIL, sửa rồi <code>--from=code-review</code></td>
                 </tr>
                 <tr>
-                    <td>Step 5+6 &rarr; 7</td>
-                    <td>Automatic if Arch PASS/WARN + Security PASS/WARN</td>
-                    <td>Auto-stop if FAIL, fix then <code>--from=arch-sec-review</code></td>
+                    <td>Bước 5+6 &rarr; 7</td>
+                    <td>Tự động nếu Kiến trúc PASS/WARN + Bảo mật PASS/WARN</td>
+                    <td>Tự dừng nếu FAIL, sửa rồi <code>--from=arch-sec-review</code></td>
                 </tr>
                 <tr>
-                    <td>Step 7 &rarr; 8</td>
-                    <td>Automatic &mdash; stub always passes</td>
+                    <td>Bước 7 &rarr; 8</td>
+                    <td>Tự động &mdash; stub luôn pass</td>
                     <td>&mdash;</td>
                 </tr>
                 <tr>
-                    <td>Step 8 &rarr; Done</td>
-                    <td>Automatic &mdash; pipeline complete, artifacts ready for PR</td>
+                    <td>Bước 8 &rarr; Hoàn tất</td>
+                    <td>Tự động &mdash; pipeline hoàn tất, artifacts sẵn sàng cho PR</td>
                     <td>&mdash;</td>
                 </tr>
             </tbody>
         </table>
 
         <!-- Recovery -->
-        <h2 class="section-title" id="recovery">7. Recovery &amp; Resume</h2>
+        <h2 class="section-title" id="recovery">7. Khôi Phục &amp; Tiếp Tục</h2>
         <div class="source-struct">
-            <span class="comment"># Resume from specific phase (reuses existing artifacts)</span><br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=plan</span>              &larr; re-run Plan (planner)<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=plan-review</span>       &larr; re-run Plan Review only<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=tasks</span>             &larr; from Tasks (plan approved)<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=testcases</span>         &larr; from Testcase Writer<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=implement</span>         &larr; from Implement (build fixed)<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=code-review</span>       &larr; from Code Review (logic/AC fixed) ✦ NEW<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=arch-sec-review</span>   &larr; from Arch+Sec Review (arch/sec fixed)<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=e2e-stubs</span>         &larr; from E2E Stubs check<br>
-            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=report</span>            &larr; Report only<br>
+            <span class="comment"># Tiếp tục từ một phase cụ thể (tái sử dụng artifacts hiện có)</span><br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=plan</span>              &larr; chạy lại Plan (planner)<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=plan-review</span>       &larr; chạy lại riêng Duyệt Plan<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=tasks</span>             &larr; từ Tasks (plan đã duyệt)<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=testcases</span>         &larr; từ Testcase Writer<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=implement</span>         &larr; từ Triển khai (đã sửa build)<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=code-review</span>       &larr; từ Review Code (đã sửa logic/AC) ✦ MỚI<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=arch-sec-review</span>   &larr; từ Review Kiến trúc+Bảo mật (đã sửa arch/sec)<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=e2e-stubs</span>         &larr; từ bước kiểm tra E2E Stubs<br>
+            <span class="highlight">/vnr-auto-pipeline</span> &lt;feature&gt; <span class="highlight">--from=report</span>            &larr; chỉ Báo cáo<br>
             <br>
-            <span class="comment"># When --from=&lt;phase-id&gt;: skips validation of prior steps,</span><br>
-            <span class="comment"># reuses existing artifacts (plan.md, tasks.md, etc.)</span>
+            <span class="comment"># Khi dùng --from=&lt;phase-id&gt;: bỏ qua kiểm tra các bước trước,</span><br>
+            <span class="comment"># tái sử dụng artifacts hiện có (plan.md, tasks.md, v.v.)</span>
         </div>
 
         <!-- Source Structure -->
-        <h2 class="section-title" id="source">8. Source Code Structure</h2>
+        <h2 class="section-title" id="source">8. Cấu Trúc Mã Nguồn</h2>
         <div class="source-struct">
             src/<br>
-            &boxv;&boxh;&boxh; <span class="highlight">backend/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># ASP.NET Core &mdash; SEPARATE GIT REPO</span><br>
-            &boxv;&nbsp;&nbsp; &boxur;&boxh;&boxh; ...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Handlers, Validators, etc.</span><br>
-            &boxur;&boxh;&boxh; <span class="highlight">frontend/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Angular 19 &mdash; SEPARATE GIT REPO</span><br>
+            &boxv;&boxh;&boxh; <span class="highlight">backend/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># ASP.NET Core &mdash; GIT REPO RIÊNG</span><br>
+            &boxv;&nbsp;&nbsp; &boxur;&boxh;&boxh; ...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Handlers, Validators, v.v.</span><br>
+            &boxur;&boxh;&boxh; <span class="highlight">frontend/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Angular 19 &mdash; GIT REPO RIÊNG</span><br>
             &nbsp;&nbsp;&nbsp; &boxv;&boxh;&boxh; apps/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Remote apps</span><br>
-            &nbsp;&nbsp;&nbsp; &boxv;&boxh;&boxh; <span class="highlight">e2e/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Playwright E2E stubs (Step 7 output — automation team implements)</span><br>
-            &nbsp;&nbsp;&nbsp; &boxur;&boxh;&boxh; ...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Components, Services, etc.</span><br>
+            &nbsp;&nbsp;&nbsp; &boxv;&boxh;&boxh; <span class="highlight">e2e/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Playwright E2E stubs (đầu ra Bước 7 — đội automation hiện thực)</span><br>
+            &nbsp;&nbsp;&nbsp; &boxur;&boxh;&boxh; ...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Components, Services, v.v.</span><br>
             <br>
             specs/&lt;feature&gt;/<br>
-            &boxv;&boxh;&boxh; <span class="highlight">&lt;feature&gt;_*.md</span>&nbsp;&nbsp;&nbsp;<span class="comment"># User Story (BA input)</span><br>
-            &boxv;&boxh;&boxh; plan.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Step 1a output</span><br>
-            &boxv;&boxh;&boxh; data-model.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Step 1a output</span><br>
-            &boxv;&boxh;&boxh; tasks.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Step 1c output</span><br>
-            &boxv;&boxh;&boxh; testcases.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># Step 2 output</span><br>
+            &boxv;&boxh;&boxh; <span class="highlight">&lt;feature&gt;_*.md</span>&nbsp;&nbsp;&nbsp;<span class="comment"># User Story (đầu vào BA)</span><br>
+            &boxv;&boxh;&boxh; plan.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># đầu ra Bước 1a</span><br>
+            &boxv;&boxh;&boxh; data-model.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># đầu ra Bước 1a</span><br>
+            &boxv;&boxh;&boxh; tasks.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># đầu ra Bước 1c</span><br>
+            &boxv;&boxh;&boxh; testcases.md&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment"># đầu ra Bước 2</span><br>
             &boxv;&boxh;&boxh; contracts/<br>
             &boxv;&nbsp;&nbsp; &boxur;&boxh;&boxh; api-commitments.md<br>
             &boxur;&boxh;&boxh; result/<br>
-            &nbsp;&nbsp;&nbsp; &boxv;&boxh;&boxh; <span class="highlight">final-report.md</span>&nbsp;<span class="comment"># Step 8 output</span><br>
-            &nbsp;&nbsp;&nbsp; &boxur;&boxh;&boxh; <span class="highlight">user-guide.md</span>&nbsp;&nbsp;&nbsp;<span class="comment"># Step 8 output</span>
+            &nbsp;&nbsp;&nbsp; &boxv;&boxh;&boxh; <span class="highlight">final-report.md</span>&nbsp;<span class="comment"># đầu ra Bước 8</span><br>
+            &nbsp;&nbsp;&nbsp; &boxur;&boxh;&boxh; <span class="highlight">user-guide.md</span>&nbsp;&nbsp;&nbsp;<span class="comment"># đầu ra Bước 8</span>
         </div>
 
         <!-- Footer -->
         <div style="text-align: center; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.82rem;">
-            VNR Auto-Pipeline Workflow Documentation &bull; Updated 2026-06-15
+            Tài liệu Quy trình VNR Auto-Pipeline &bull; Cập nhật 2026-06-15
         </div>
     </div>
 </body>

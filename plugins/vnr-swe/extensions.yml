@@ -7,11 +7,10 @@ hooks:
     command: vnr-wiki
     enabled: true
     optional: false
-    prompt: Load wiki business context before planning?
+    prompt: Nạp context nghiệp vụ từ wiki dự án trước khi lập kế hoạch?
     description: >-
-      Load docs/wiki/ context (entities, concepts, workflows) to ground
-      the implementation plan in domain knowledge. Falls back to docs/raw/
-      if wiki is not yet populated.
+      Nạp context docs/wiki/ (entities, concepts, workflows) để kế hoạch triển khai
+      bám đúng kiến thức nghiệp vụ. Nếu wiki chưa có nội dung thì dùng docs/raw/.
     condition: null
 
   before_implement:
@@ -19,10 +18,10 @@ hooks:
     command: vnr-wiki
     enabled: true
     optional: false
-    prompt: Load wiki business context before implementing?
+    prompt: Nạp context nghiệp vụ từ wiki dự án trước khi triển khai?
     description: >-
-      Load docs/wiki/ context before implementation: entities → Domain model,
-      concepts → Handler logic. Falls back to docs/raw/ if wiki not populated.
+      Nạp context docs/wiki/ trước khi viết mã: entities → Domain model,
+      concepts → logic Handler. Nếu wiki chưa có nội dung thì dùng docs/raw/.
     condition: null
 
   after_implement:
@@ -30,8 +29,8 @@ hooks:
     command: vnr-wiki-sync
     enabled: true
     optional: false
-    prompt: Sync wiki from updated raw docs after implementation?
+    prompt: Đồng bộ wiki từ tài liệu thô đã cập nhật sau khi triển khai?
     description: >-
-      Synchronize docs/wiki/ from docs/raw/ to capture any new domain
-      knowledge documented during this feature implementation.
+      Đồng bộ docs/wiki/ từ docs/raw/ để ghi nhận kiến thức nghiệp vụ mới
+      phát sinh trong lúc triển khai tính năng này.
     condition: null

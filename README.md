@@ -1,78 +1,69 @@
-# Install `vnr-swe`
+# Cài đặt plugin VNR cho Claude Code
 
-## Requirements
+Marketplace `vnr-marketplace` phân phối hai plugin: `vnr-swe` (quy trình phát triển theo đặc tả cho dev HRM) và `vnr-sa`
+(bộ công cụ cho Solution Architect). Lệnh `vnr-bootstrap` đăng ký marketplace với Claude Code rồi cài plugin;
+plugin chạy từ kho plugin của Claude, **không** chép tệp nào vào dự án của bạn.
 
-- Node.js `>= 18.18.0` [[12]]
-- `claude` CLI available in `PATH`
+## Yêu cầu
 
-> `vnr-bootstrap` adds the `vnr-ai` marketplace and installs the `vnr-swe` plugin through Claude Code. It does **not** copy any files into your project — the plugin runs from Claude's plugin store.
+- Node.js `>= 18.18.0`
+- `claude` CLI có trong `PATH`
 
-## PowerShell
+## Cài đặt
 
-### Install
-``` powershell
+Chạy trong thư mục dự án (phạm vi cài đặt mặc định là `project`):
+
+```powershell
 npx github:cuonglexuan-vnr/vnr-plugins init vnr-swe
 ```
 
-### Install from the current project folder
-```powershell
-powershell -ExecutionPolicy Bypass -File "\\company-pc\tools\vnr-plugins\install-vnr-swe.ps1"
-```
+Cài `vnr-sa` thay vì `vnr-swe`: thay tên plugin ở cuối lệnh.
 
-### Install to a specific project folder
-```powershell
-powershell -ExecutionPolicy Bypass -File "\\company-pc\tools\vnr-plugins\install-vnr-swe.ps1" -ProjectDir "C:\work\my-project"
-```
+Bản checkout của repo này có wrapper Windows thay cho `npx`. Chạy wrapper **từ thư mục dự án** và gọi theo đường dẫn tới
+bản checkout: wrapper mặc định cài vào thư mục hiện tại, nên chạy ngay trong bản checkout sẽ cài nhầm vào đó. Lệnh PowerShell
+dùng `-ExecutionPolicy Bypass` vì chính sách mặc định chặn chạy tệp `.ps1`.
 
-## CMD
+| Shell | Lệnh | Tuỳ chọn |
+|---|---|---|
+| PowerShell | `powershell -ExecutionPolicy Bypass -File <thư-mục-checkout>\install-vnr-swe.ps1` | `-ProjectDir "C:\work\my-project"`, `-Scope user`, `-RefreshMarketplace` |
+| CMD | `<thư-mục-checkout>\install-vnr-swe.cmd "C:\work\my-project"` | `--scope user` (đặt sau thư mục dự án) |
 
-### Install from the current project folder
-```bat
-\\company-pc\tools\vnr-plugins\install-vnr-swe.cmd
-```
+Wrapper chỉ cài `vnr-swe`; cài `vnr-sa` thì dùng `npx github:cuonglexuan-vnr/vnr-plugins init vnr-sa`.
 
-### Install to a specific project folder
-```bat
-\\company-pc\tools\vnr-plugins\install-vnr-swe.cmd "C:\work\my-project"
-```
+## Tuỳ chọn của bootstrap
 
-## Options
+| Tuỳ chọn | Tác dụng |
+|---|---|
+| `--scope project` (mặc định) | Cài plugin cho dự án hiện tại |
+| `--scope user` | Cài plugin cho người dùng hiện tại, dùng được ở mọi dự án |
+| `--refresh-marketplace` | Xoá marketplace đã cache rồi đăng ký lại |
+| `--help` | Hiện hướng dẫn |
 
-The bootstrap supports `--scope <project|user>`, `--refresh-marketplace`, and `--help`. The default scope is `project`.
+## Nâng cấp từ marketplace `vnr-ai`
 
-| Purpose | PowerShell | CMD | Effect |
-|---|---|---|---|
-| Install to project scope | `-Scope project` | `--scope project` | Install plugin for the current project  |
-| Install to user scope | `-Scope user` | `--scope user` | Install plugin for the current user  |
-| Refresh marketplace cache | `-RefreshMarketplace` | `--refresh-marketplace` | Remove cached marketplace and re-add it  |
-| Show bootstrap help | *(run bootstrap directly)* | `--help` | Show bootstrap help  |
+Marketplace trước đây tên `vnr-ai`.
 
-## Examples
+- **Cài lại từng plugin.** Bootstrap gỡ marketplace `vnr-ai` ở mọi phạm vi cài đặt trước khi đăng ký `vnr-marketplace`;
+  việc này cũng gỡ mọi plugin đã cài từ `vnr-ai`. Chạy lại lệnh cài cho từng plugin và phạm vi bạn từng dùng: thêm
+  `--scope user` nếu trước đây cài theo người dùng; chạy `init vnr-sa` trong thư mục từng cài `vnr-sa` (thường là repo
+  Deliverables).
+- **Settings dự án đã commit.** Nếu `.claude/settings.json` của repo nhóm có khoá `vnr-swe@vnr-ai` (hoặc `vnr-sa@vnr-ai`)
+  trong `enabledPlugins`, đổi thành `vnr-swe@vnr-marketplace` (hoặc `vnr-sa@vnr-marketplace`) rồi commit, để đồng nghiệp
+  không gặp báo "enabled but not installed". Bootstrap không sửa tệp này.
+- **Người dùng DevHub.** Sau lần **Sync** kế tiếp trong Settings › Marketplaces, chạy `claude plugin marketplace list`;
+  nếu còn `vnr-ai`, chạy `claude plugin marketplace remove vnr-ai` rồi cài lại plugin từ `vnr-marketplace`
+  (trong Claude: `/plugin`).
 
-### PowerShell
-```powershell
-powershell -ExecutionPolicy Bypass -File "\\company-pc\tools\vnr-plugins\install-vnr-swe.ps1" -ProjectDir "C:\work\my-project"
-```
+## Publish lên registry VNR
 
-```powershell
-powershell -ExecutionPolicy Bypass -File "\\company-pc\tools\vnr-plugins\install-vnr-swe.ps1" -Scope user
-```
+DevHub nhận marketplace dưới dạng một zip trên registry VNR, nên đồng nghiệp không có quyền vào repo TFS này vẫn cài được.
+Publish sau khi merge thay đổi trong `plugins/` hoặc `.claude-plugin/marketplace.json`.
 
-### CMD
-```bat
-\\company-pc\tools\vnr-plugins\install-vnr-swe.cmd "C:\work\my-project"
-```
+> **Lưu ý:** publish bản 1.1.0 đổi tên marketplace thành `vnr-marketplace` với mọi người dùng DevHub. Kiểm trước trên một
+> máy DevHub (Sync, rồi `claude plugin marketplace list` và `/plugin`) rồi mới thông báo.
 
-```bat
-\\company-pc\tools\vnr-plugins\install-vnr-swe.cmd "C:\work\my-project" --scope user
-```
-
-## Publishing to the VNR registry
-
-DevHub distributes this marketplace as one zip on the VNR artifact registry, so teammates without access to
-this TFS repository still get it. Publish after merging changes to plugins or `.claude-plugin/marketplace.json`.
-
-Requirements: Node.js 18 or newer, and a registry API token with `repository:write` on the `vnr-ai` repository.
+Yêu cầu: Node.js 18 trở lên và token registry có quyền `repository:write` trên kho `vnr-ai`
+(tên kho trên registry khác tên marketplace, cố ý giữ nguyên).
 
 ```powershell
 npm install
@@ -85,11 +76,19 @@ npm install
 AK_TOKEN='<registry token>' npm run publish:registry
 ```
 
-The script zips only `.claude-plugin/`, `plugins/` and `README.md` (flat, at the zip root) and uploads it to:
+Script chỉ nén `.claude-plugin/`, `plugins/` và `README.md` (phẳng, ở gốc zip) rồi tải lên:
 
 ```text
 https://registry.vnresource.net/api/v1/repositories/vnr-ai/download/marketplace.zip
 ```
 
-DevHub picks the new version up on the next **Sync** in Settings › Marketplaces. Optional overrides:
-`AK_REPO_BASE` (another repository) and `AK_ARTIFACT` (another file name). Run `npm test` to check the zip builder.
+DevHub nhận bản mới ở lần **Sync** kế tiếp trong Settings › Marketplaces. Biến môi trường tuỳ chọn:
+`AK_REPO_BASE` (kho khác) và `AK_ARTIFACT` (tên tệp khác). Chạy `npm test` để kiểm tra bộ dựng zip.
+
+## Tệp giới thiệu cho DevHub
+
+Mỗi plugin có thể kèm tệp tuỳ chọn `plugins/<plugin>/devhub.catalog.json` mô tả cách plugin hiện trong trang Tiện ích của
+DevHub: `icon` (emoji), `tags`, `examples` (câu hỏi mẫu), `defaultScope`, `providesTable` (bảng "Dùng cho") và
+`changelog`. Control plane nexus đọc tệp này khi đồng bộ marketplace. Tệp sai không chặn plugin: plugin vẫn vào catalog,
+tệp bị bỏ qua kèm cảnh báo. Thêm plugin mới không cần cấu hình gì ở nexus — nguồn `vnr-marketplace` đã được xác minh nên
+mọi plugin từ đây đều có dấu xác minh và hiện dưới «Dành riêng cho VNR».

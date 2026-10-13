@@ -53,25 +53,25 @@ except ImportError:
         "       Install it with:  pip install python-docx\n")
     sys.exit(2)
 
-# ── Locate the VNR-ARCH template + logo. When run without an explicit --template
-#    (e.g. the export-docx wrappers / raw python), search the current working dir
-#    (the deliverables repo the user runs in) first, then the script dir. Matches
-#    both the repo-local `templates/word/` layout and the VNR.Platform superrepo
-#    `src/vnr.hrm.deliverables/templates/word/` layout. The Claude Code skill passes
-#    --template explicitly, so it never depends on this lookup. ──
+# ── Xác định vị trí template VNR-ARCH + logo. Khi chạy không có --template tường minh
+#    (ví dụ qua các wrapper export-docx hoặc chạy python trực tiếp), tìm trước trong thư mục làm
+#    việc hiện tại (repo deliverables mà người dùng đang chạy), sau đó mới tới thư mục script.
+#    Khớp cả layout `templates/word/` cục bộ của repo lẫn layout superrepo VNR.Platform
+#    `src/vnr.hrm.deliverables/templates/word/`. Skill Claude Code luôn truyền
+#    --template tường minh, nên không bao giờ phụ thuộc vào bước tìm này. ──
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _REL_LAYOUTS = (
-    os.path.join("templates", "word"),                                 # repo-local (deliverables repo)
-    os.path.join("src", "vnr.hrm.deliverables", "templates", "word"),  # VNR.Platform superrepo
+    os.path.join("templates", "word"),                                 # cục bộ của repo (repo deliverables)
+    os.path.join("src", "vnr.hrm.deliverables", "templates", "word"),  # superrepo VNR.Platform
 )
 _TEMPLATE_NAME = "VNR-ARCH_Tai_Lieu_Dac_Ta_Kien_Truc_He_Thong.docx"
 
 
 def _find_template_dir():
-    # Search CWD (the repo the user runs in) first, then the script dir.
+    # Tìm trong CWD (repo người dùng đang chạy) trước, sau đó tới thư mục script.
     for start in (os.getcwd(), _SCRIPT_DIR):
         d = start
-        for _ in range(8):  # walk up a bounded number of levels
+        for _ in range(8):  # đi ngược lên một số cấp có giới hạn
             for rel in _REL_LAYOUTS:
                 cand = os.path.join(d, rel)
                 if os.path.isfile(os.path.join(cand, _TEMPLATE_NAME)):
@@ -80,7 +80,7 @@ def _find_template_dir():
             if parent == d:
                 break
             d = parent
-    # Fallback: superrepo layout, 3 levels up from the script.
+    # Dự phòng: layout superrepo, lên 3 cấp từ thư mục script.
     return os.path.normpath(os.path.join(_SCRIPT_DIR, "..", "..", "..", _REL_LAYOUTS[1]))
 
 
@@ -88,7 +88,7 @@ _TEMPLATE_DIR = _find_template_dir()
 DEFAULT_TEMPLATE = os.path.join(_TEMPLATE_DIR, _TEMPLATE_NAME)
 DEFAULT_LOGO = os.path.join(_TEMPLATE_DIR, "logo-vnresource.png")
 
-# Brand palette (matches the template).
+# Bảng màu thương hiệu (khớp với template).
 C_TEXT = '1A1A1A'
 C_BRAND = '1F4E79'
 C_ACCENT = '2E75B6'
@@ -98,7 +98,7 @@ C_HEADER_TEXT = 'FFFFFF'
 
 
 # ──────────────────────────────────────────────
-# DOCX HELPERS (match template styles exactly)
+# DOCX HELPERS (khớp chính xác style của template)
 # ──────────────────────────────────────────────
 
 def clear_body(doc):
@@ -201,7 +201,7 @@ def _code_block(doc, text):
     pf.space_before = Pt(6)
     pf.space_after = Pt(6)
     pf.left_indent = Cm(0.3)
-    # Code box: light gray fill + thin box + brand-blue left accent bar (đẹp, on-brand)
+    # Hộp mã: nền xám nhạt + khung mỏng + thanh nhấn xanh thương hiệu bên trái (đẹp, đúng nhận diện)
     pPr = p._p.get_or_add_pPr()
     pPr.append(parse_xml(f'<w:shd {nsdecls("w")} w:val="clear" w:color="auto" w:fill="F4F6F8"/>'))
     pPr.append(parse_xml(
@@ -252,11 +252,11 @@ def _add_table(doc, headers, rows, caption=None):
         tblPr.remove(tblLayout)
     tblPr.append(parse_xml(f'<w:tblLayout {nsdecls("w")} w:type="fixed"/>'))
 
-    # Column widths: headers must fit one line; distribute the rest by content length.
+    # Độ rộng cột: tiêu đề phải vừa một dòng; phần còn lại chia theo độ dài nội dung.
     num_cols = len(headers)
     TWIPS_PER_CHAR = 120
     CELL_PADDING = 200
-    total_twips = 9072  # A4 portrait usable width
+    total_twips = 9072  # bề rộng dùng được của khổ A4 dọc
 
     col_min_width = []
     col_content_len = []
@@ -355,14 +355,14 @@ def _add_table(doc, headers, rows, caption=None):
 
 
 def _set_header_footer(doc, doc_title, doc_code, version="v1.0"):
-    # Each H1 chapter inserts its own section break (_h1() -> _section_break()), so the
-    # document ends up with many sections. Word only inherits header/footer FORWARD
-    # through sections left "linked to previous" — and the template's own trailing
-    # section (doc.sections[-1], carried over from the original body's closing
-    # w:sectPr) already ships with its own explicit (stale, placeholder) header/footer
-    # override, so it does NOT inherit from anything. Setting content on just one
-    # section (first or last) always leaves some sections blank or stale — every
-    # section must be set explicitly.
+    # Mỗi chương H1 tự chèn một section break (_h1() -> _section_break()), nên
+    # tài liệu có nhiều section. Word chỉ kế thừa header/footer THEO CHIỀU TIẾN
+    # qua các section còn "linked to previous" — mà section cuối của chính template
+    # (doc.sections[-1], mang từ w:sectPr đóng của phần thân gốc sang) đã có sẵn
+    # header/footer ghi đè tường minh (cũ, giữ chỗ), nên nó KHÔNG kế thừa từ đâu cả.
+    # Chỉ đặt nội dung cho một section (đầu hoặc cuối) thì luôn để sót một số section
+    # trống hoặc cũ — mọi section
+    # đều phải được đặt tường minh.
     for section in doc.sections:
         header = section.header
         header.is_linked_to_previous = False
@@ -397,7 +397,7 @@ def _set_header_footer(doc, doc_title, doc_code, version="v1.0"):
 
 
 # ──────────────────────────────────────────────
-# MARKDOWN PARSER
+# BỘ PHÂN TÍCH MARKDOWN
 # ──────────────────────────────────────────────
 
 def parse_inline(text):
@@ -450,7 +450,7 @@ def parse_table(lines):
         if i == 0:
             headers = cells
         elif i == 1:
-            continue  # separator
+            continue  # dòng phân cách
         else:
             rows.append(cells)
     return headers, rows
@@ -477,7 +477,7 @@ def parse_md_to_blocks(md_text):
         if m:
             level = len(m.group(1))
             text = m.group(2).strip()
-            # Strip manual numbering — Word auto-numbers via Heading styles.
+            # Bỏ số thứ tự gõ tay — Word tự đánh số qua style Heading.
             text = re.sub(r'^\d+(\.\d+)*\.?\s+', '', text)
             blocks.append(('h{}'.format(level), text))
             i += 1
@@ -547,7 +547,7 @@ def extract_metadata(blocks):
 
 def blocks_to_docx(doc, blocks):
     """Convert parsed blocks into DOCX content (main body)."""
-    # H2-based file? (single title H1, ## as main sections) -> promote h2->H1 etc.
+    # File dựa trên H2? (một H1 tiêu đề, ## là các mục chính) -> nâng h2->H1, v.v.
     content_h1_count = sum(1 for i, (bt, _) in enumerate(blocks) if bt == 'h1' and i > 0)
     promote = content_h1_count <= 1
 
@@ -660,7 +660,7 @@ def blocks_to_docx(doc, blocks):
 
 
 # ──────────────────────────────────────────────
-# COVER PAGE + FRONT MATTER
+# TRANG BÌA + PHẦN MỞ ĐẦU
 # ──────────────────────────────────────────────
 
 def _build_cover(doc, title, doc_code, version, project_code, cover_date, template_dir):
@@ -732,7 +732,7 @@ def _build_cover(doc, title, doc_code, version, project_code, cover_date, templa
 
 
 def _build_frontmatter(doc, version, update_date, author):
-    # Revision history
+    # Lịch sử sửa đổi
     _h1_no_num(doc, 'Lịch sử cập nhật')
     _empty(doc)
     _add_table(doc,
@@ -740,7 +740,7 @@ def _build_frontmatter(doc, version, update_date, author):
                [[version, update_date, author, 'Khởi tạo tài liệu']])
     _empty(doc)
 
-    # Approval history
+    # Lịch sử phê duyệt
     _section_break(doc)
     _h1_no_num(doc, 'Lịch sử phê duyệt')
     _empty(doc)
@@ -749,7 +749,7 @@ def _build_frontmatter(doc, version, update_date, author):
                [['{Người duyệt}', '{Ngày duyệt}', '{Nội dung duyệt}', '{Ghi chú}']])
     _empty(doc)
 
-    # Table of contents (auto-updating field)
+    # Mục lục (trường tự cập nhật)
     _section_break(doc)
     _h1_no_num(doc, 'Mục lục')
     p = doc.add_paragraph()
@@ -769,7 +769,7 @@ def _build_frontmatter(doc, version, update_date, author):
 
 
 # ──────────────────────────────────────────────
-# ORCHESTRATION
+# ĐIỀU PHỐI
 # ──────────────────────────────────────────────
 
 def _derive_code_from_filename(path):
@@ -786,9 +786,9 @@ def convert(md_path, out_path, template, code=None, title=None, version=None,
     fm_meta, body = split_frontmatter(md_text)
     blocks = parse_md_to_blocks(body)
     bq_meta = extract_metadata(blocks)
-    meta = {**fm_meta, **bq_meta}  # blockquote wins on conflict (in-body source of truth)
+    meta = {**fm_meta, **bq_meta}  # khi xung đột thì blockquote thắng (nguồn chuẩn nằm trong thân tài liệu)
 
-    # Resolve metadata with precedence: CLI arg > frontmatter/blockquote > default.
+    # Xác định metadata theo thứ tự ưu tiên: tham số CLI > frontmatter/blockquote > mặc định.
     if not code:
         code = (_derive_code_from_filename(md_path)
                 or meta.get('Mã tài liệu') or meta.get('code') or 'VNR-XXX-000')
@@ -838,7 +838,7 @@ def _resolve_output(md_path, output):
     md_stem = os.path.splitext(os.path.basename(md_path))[0]
     if not output:
         return os.path.join(os.path.dirname(os.path.abspath(md_path)), md_stem + '.docx')
-    # Directory (existing dir, trailing sep, or no .docx extension) -> derive filename.
+    # Thư mục (thư mục có sẵn, có dấu phân cách cuối, hoặc không có đuôi .docx) -> suy ra tên tệp.
     is_dir = (os.path.isdir(output) or output.endswith(('/', '\\'))
               or not output.lower().endswith('.docx'))
     return os.path.join(output, md_stem + '.docx') if is_dir else output

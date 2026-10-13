@@ -1,27 +1,27 @@
 #!/usr/bin/env pwsh
 <#!
 .SYNOPSIS
-Update agent context files with information from plan.md (PowerShell version)
+Cập nhật các tệp ngữ cảnh agent bằng thông tin từ plan.md (phiên bản PowerShell)
 
 .DESCRIPTION
-Mirrors the behavior of scripts/bash/update-agent-context.sh:
- 1. Environment Validation
- 2. Plan Data Extraction
- 3. Agent File Management (create from template or update existing)
- 4. Content Generation (technology stack, recent changes, timestamp)
- 5. Multi-Agent Support (claude, gemini, copilot, cursor-agent, qwen, opencode, codex, windsurf, junie, kilocode, auggie, roo, codebuddy, amp, shai, tabnine, kiro-cli, agy, bob, vibe, qodercli, kimi, trae, pi, iflow, generic)
+Phản chiếu hành vi của scripts/bash/update-agent-context.sh:
+ 1. Kiểm tra môi trường
+ 2. Trích xuất dữ liệu từ plan
+ 3. Quản lý tệp agent (tạo từ template hoặc cập nhật tệp có sẵn)
+ 4. Sinh nội dung (technology stack, thay đổi gần đây, timestamp)
+ 5. Hỗ trợ nhiều agent (claude, gemini, copilot, cursor-agent, qwen, opencode, codex, windsurf, junie, kilocode, auggie, roo, codebuddy, amp, shai, tabnine, kiro-cli, agy, bob, vibe, qodercli, kimi, trae, pi, iflow, generic)
 
 .PARAMETER AgentType
-Optional agent key to update a single agent. If omitted, updates all existing agent files (creating a default Claude file if none exist).
+Khoá agent tuỳ chọn để chỉ cập nhật một agent. Nếu bỏ trống, cập nhật mọi tệp agent hiện có (tạo tệp Claude mặc định nếu chưa có tệp nào).
 
 .EXAMPLE
 ./update-agent-context.ps1 -AgentType claude
 
 .EXAMPLE
-./update-agent-context.ps1   # Updates all existing agent files
+./update-agent-context.ps1   # Cập nhật mọi tệp agent hiện có
 
 .NOTES
-Relies on common helper functions in common.ps1
+Dựa vào các hàm trợ giúp chung trong common.ps1
 #>
 param(
     [Parameter(Position=0)]
@@ -31,11 +31,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Import common helpers
+# Nạp các hàm trợ giúp chung
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $ScriptDir 'common.ps1')
 
-# Acquire environment paths
+# Lấy các đường dẫn môi trường
 $envData = Get-FeaturePathsEnv
 $REPO_ROOT     = $envData.REPO_ROOT
 $PLUGIN_DIR    = $envData.PLUGIN_DIR
@@ -44,7 +44,7 @@ $HAS_GIT       = $envData.HAS_GIT
 $IMPL_PLAN     = $envData.IMPL_PLAN
 $NEW_PLAN = $IMPL_PLAN
 
-# Agent file paths
+# Đường dẫn các tệp agent
 $CLAUDE_FILE   = Join-Path $REPO_ROOT 'CLAUDE.md'
 $GEMINI_FILE   = Join-Path $REPO_ROOT 'GEMINI.md'
 $COPILOT_FILE  = Join-Path $REPO_ROOT '.github/copilot-instructions.md'
@@ -71,7 +71,7 @@ $IFLOW_FILE    = Join-Path $REPO_ROOT 'IFLOW.md'
 
 $TEMPLATE_FILE = Join-Path $PLUGIN_DIR 'templates/agent-file-template.md'
 
-# Parsed plan data placeholders
+# Biến giữ chỗ cho dữ liệu đọc được từ plan
 $script:NEW_LANG = ''
 $script:NEW_FRAMEWORK = ''
 $script:NEW_DB = ''
@@ -136,7 +136,7 @@ function Extract-PlanField {
         [string]$PlanFile
     )
     if (-not (Test-Path $PlanFile)) { return '' }
-    # Lines like **Language/Version**: Python 3.12
+    # Các dòng dạng **Language/Version**: Python 3.12
     $regex = "^\*\*$([Regex]::Escape($FieldPattern))\*\*: (.+)$"
     Get-Content -LiteralPath $PlanFile -Encoding utf8 | ForEach-Object {
         if ($_ -match $regex) { 
@@ -233,7 +233,7 @@ function New-AgentFile {
     $content = $content -replace '\[PROJECT NAME\]',$ProjectName
     $content = $content -replace '\[DATE\]',$Date.ToString('yyyy-MM-dd')
     
-    # Build the technology stack string safely
+    # Dựng chuỗi technology stack một cách an toàn
     $techStackForTemplate = ""
     if ($escaped_lang -and $escaped_framework) {
         $techStackForTemplate = "- $escaped_lang + $escaped_framework ($escaped_branch)"
@@ -244,14 +244,14 @@ function New-AgentFile {
     }
     
     $content = $content -replace '\[EXTRACTED FROM ALL PLAN.MD FILES\]',$techStackForTemplate
-    # For project structure we manually embed (keep newlines)
+    # Với cấu trúc dự án thì nhúng thủ công (giữ nguyên xuống dòng)
     $escapedStructure = [Regex]::Escape($projectStructure)
     $content = $content -replace '\[ACTUAL STRUCTURE FROM PLANS\]',$escapedStructure
-    # Replace escaped newlines placeholder after all replacements
+    # Thay placeholder xuống dòng đã escape sau khi mọi phép thay thế hoàn tất
     $content = $content -replace '\[ONLY COMMANDS FOR ACTIVE TECHNOLOGIES\]',$commands
     $content = $content -replace '\[LANGUAGE-SPECIFIC, ONLY FOR LANGUAGES IN USE\]',$languageConventions
     
-    # Build the recent changes string safely
+    # Dựng chuỗi các thay đổi gần đây một cách an toàn
     $recentChangesForTemplate = ""
     if ($escaped_lang -and $escaped_framework) {
         $recentChangesForTemplate = "- ${escaped_branch}: Added ${escaped_lang} + ${escaped_framework}"
@@ -262,10 +262,10 @@ function New-AgentFile {
     }
     
     $content = $content -replace '\[LAST 3 FEATURES AND WHAT THEY ADDED\]',$recentChangesForTemplate
-    # Convert literal \n sequences introduced by Escape to real newlines
+    # Đổi các chuỗi \n literal do Escape tạo ra thành xuống dòng thật
     $content = $content -replace '\\n',[Environment]::NewLine
 
-    # Prepend Cursor frontmatter for .mdc files so rules are auto-included
+    # Thêm frontmatter Cursor vào đầu tệp .mdc để quy tắc được tự động đưa vào
     if ($TargetFile -match '\.mdc$') {
         $frontmatter = @('---','description: Project Development Guidelines','globs: ["**/*"]','alwaysApply: true','---','') -join [Environment]::NewLine
         $content = $frontmatter + $content
@@ -342,12 +342,12 @@ function Update-ExistingAgentFile {
         $output.Add($line)
     }
 
-    # Post-loop check: if we're still in the Active Technologies section and haven't added new entries
+    # Kiểm tra sau vòng lặp: nếu vẫn đang ở mục Active Technologies mà chưa thêm mục mới
     if ($inTech -and -not $techAdded -and $newTechEntries.Count -gt 0) {
         $newTechEntries | ForEach-Object { $output.Add($_) }
     }
 
-    # Ensure Cursor .mdc files have YAML frontmatter for auto-inclusion
+    # Đảm bảo tệp Cursor .mdc có YAML frontmatter để được tự động đưa vào
     if ($TargetFile -match '\.mdc$' -and $output.Count -gt 0 -and $output[0] -ne '---') {
         $frontmatter = @('---','description: Project Development Guidelines','globs: ["**/*"]','alwaysApply: true','---','')
         $output.InsertRange(0, $frontmatter)

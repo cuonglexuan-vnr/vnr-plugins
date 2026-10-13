@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Create a new Vnr feature
+# Tạo một feature Vnr mới
 [CmdletBinding()]
 param(
     [switch]$Json,
@@ -15,7 +15,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Show help if requested
+# Hiển thị trợ giúp nếu được yêu cầu
 if ($Help) {
     Write-Host "Usage: ./create-new-feature.ps1 [-Json] [-AllowExistingBranch] [-ShortName <name>] [-Number N] [-Timestamp] <feature description>"
     Write-Host ""
@@ -34,7 +34,7 @@ if ($Help) {
     exit 0
 }
 
-# Check if feature description provided
+# Kiểm tra đã có mô tả feature chưa
 if (-not $FeatureDescription -or $FeatureDescription.Count -eq 0) {
     Write-Error "Usage: ./create-new-feature.ps1 [-Json] [-AllowExistingBranch] [-ShortName <name>] [-Number N] [-Timestamp] <feature description>"
     exit 1
@@ -42,7 +42,7 @@ if (-not $FeatureDescription -or $FeatureDescription.Count -eq 0) {
 
 $featureDesc = ($FeatureDescription -join ' ').Trim()
 
-# Validate description is not empty after trimming
+# Kiểm tra mô tả không rỗng sau khi cắt khoảng trắng
 if ([string]::IsNullOrWhiteSpace($featureDesc)) {
     Write-Error "Error: Feature description cannot be empty or contain only whitespace"
     exit 1
@@ -54,7 +54,7 @@ function Get-HighestNumberFromSpecs {
     [long]$highest = 0
     if (Test-Path $SpecsDir) {
         Get-ChildItem -Path $SpecsDir -Directory | ForEach-Object {
-            # Match sequential prefixes (>=3 digits), but skip timestamp dirs
+            # Khớp tiền tố tuần tự (>=3 chữ số), bỏ qua thư mục timestamp
             if ($_.Name -match '^(\d{3,})-' -and $_.Name -notmatch '^\d{8}-\d{6}-') {
                 [long]$num = 0
                 if ([long]::TryParse($matches[1], [ref]$num) -and $num -gt $highest) {
@@ -74,10 +74,10 @@ function Get-HighestNumberFromBranches {
         $branches = git branch -a 2>$null
         if ($LASTEXITCODE -eq 0) {
             foreach ($branch in $branches) {
-                # Clean branch name: remove leading markers and remote prefixes
+                # Làm sạch tên nhánh: bỏ ký hiệu đầu và tiền tố remote
                 $cleanBranch = $branch.Trim() -replace '^\*?\s+', '' -replace '^remotes/[^/]+/', ''
 
-                # Extract sequential feature number (>=3 digits), skip timestamp branches
+                # Lấy số thứ tự của feature (>=3 chữ số), bỏ qua nhánh timestamp
                 if ($cleanBranch -match '^(\d{3,})-' -and $cleanBranch -notmatch '^\d{8}-\d{6}-') {
                     [long]$num = 0
                     if ([long]::TryParse($matches[1], [ref]$num) -and $num -gt $highest) {
@@ -99,12 +99,12 @@ function Get-NextBranchNumber {
         [string]$SpecsDir
     )
 
-    # Fetch all remotes to get latest branch info (suppress errors if no remotes)
+    # Fetch mọi remote để có thông tin nhánh mới nhất (bỏ qua lỗi nếu không có remote)
     try {
         git fetch --all --prune 2>$null | Out-Null
     }
     catch {
-        # Ignore fetch errors
+        # Bỏ qua lỗi fetch
     }
 
     $highestBranch = Get-HighestNumberFromBranches
@@ -161,23 +161,23 @@ function Get-BranchName {
     }
 }
 
-# Load common helpers (expected: Get-RepoRoot, Test-HasGit, Resolve-Template)
+# Nạp các hàm trợ giúp chung (cần có: Get-RepoRoot, Test-HasGit, Resolve-Template)
 . "$PSScriptRoot/common.ps1"
 
-# Resolve the target project root (git toplevel, else cwd) and the plugin install root
+# Xác định gốc dự án đích (git toplevel, không thì cwd) và gốc cài đặt plugin
 $repoRoot = Get-RepoRoot
 $pluginDir = Get-PluginDir
 
-# Check if git is available at this repo root (not a parent)
+# Kiểm tra git có dùng được ở gốc repo này không (không xét thư mục cha)
 $hasGit = Test-HasGit
 
 Set-Location $repoRoot
 
-# Keep feature artifacts under root /specs to stay close to Spec Kit workflow
+# Đặt artifact của feature dưới /specs ở gốc để gần với quy trình Spec Kit
 $specsDir = Join-Path $repoRoot 'specs'
 New-Item -ItemType Directory -Path $specsDir -Force | Out-Null
 
-# Generate branch suffix
+# Tạo hậu tố tên nhánh
 if ($ShortName) {
     $branchSuffix = ConvertTo-CleanBranchName -Name $ShortName
 }
@@ -190,13 +190,13 @@ if ([string]::IsNullOrWhiteSpace($branchSuffix)) {
     exit 1
 }
 
-# Warn if -Number and -Timestamp are both specified
+# Cảnh báo nếu chỉ định đồng thời -Number và -Timestamp
 if ($Timestamp -and $Number -ne 0) {
     Write-Warning "[vnr-specify] Warning: -Number is ignored when -Timestamp is used"
     $Number = 0
 }
 
-# Determine branch prefix
+# Xác định tiền tố nhánh
 if ($Timestamp) {
     $featureNum = Get-Date -Format 'yyyyMMdd-HHmmss'
     $branchName = "$featureNum-$branchSuffix"
@@ -215,7 +215,7 @@ else {
     $branchName = "$featureNum-$branchSuffix"
 }
 
-# GitHub branch name limit
+# Giới hạn độ dài tên nhánh của GitHub
 $maxBranchLength = 244
 if ($branchName.Length -gt $maxBranchLength) {
     $prefixLength = $featureNum.Length + 1
@@ -241,7 +241,7 @@ if ($hasGit) {
         }
     }
     catch {
-        # swallow and handle below
+        # nuốt lỗi và xử lý ở bên dưới
     }
 
     if (-not $branchCreated) {
@@ -276,10 +276,10 @@ else {
 $featureDir = Join-Path $specsDir $branchName
 New-Item -ItemType Directory -Path $featureDir -Force | Out-Null
 
-# The canonical input is a BA-provided User Story file (<US-ID>_<slug>.md).
-# This script is a fallback for developers prototyping before BA output exists:
-# it creates a stub based on userstory-template.md, using the branch name as the US-ID.
-# If a BA User Story file already exists in $featureDir, skip stub creation.
+# Đầu vào chuẩn là tệp User Story do BA cung cấp (<US-ID>_<slug>.md).
+# Script này là phương án dự phòng cho dev làm thử trước khi BA có đầu ra:
+# nó tạo tệp stub từ userstory-template.md, lấy tên nhánh làm US-ID.
+# Nếu tệp User Story của BA đã có trong $featureDir thì bỏ qua bước tạo stub.
 $baFile = Get-ChildItem -LiteralPath $featureDir -Filter '*.md' -File -ErrorAction SilentlyContinue |
     Where-Object {
         ($_.Name -notmatch '_ui-detail\.md$') -and
@@ -315,7 +315,7 @@ else {
     }
 }
 
-# Set environment variables for current session
+# Đặt biến môi trường cho phiên hiện tại
 $env:VNR_FEATURE = $branchName
 $env:SPECIFY_FEATURE = $branchName
 
@@ -323,7 +323,7 @@ if ($Json) {
     $obj = [PSCustomObject]@{
         BRANCH_NAME = $branchName
         USER_STORY  = $specFile
-        SPEC_FILE   = $specFile   # alias kept for backwards compatibility
+        SPEC_FILE   = $specFile   # alias giữ lại để tương thích ngược
         FEATURE_DIR = $featureDir
         FEATURE_NUM = $featureNum
         HAS_GIT     = $hasGit

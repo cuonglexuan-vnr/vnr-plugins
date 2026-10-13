@@ -1,16 +1,16 @@
 <#
 .SYNOPSIS
-    Export a VNR playbook Markdown file to a branded DOCX — for team members
-    who run it directly (without Claude Code).
+    Xuất tệp Markdown playbook của VNR sang DOCX theo nhận diện thương hiệu — dành cho đồng đội
+    chạy trực tiếp (không qua Claude Code).
 
 .DESCRIPTION
-    Thin wrapper around md_to_docx.py: makes sure Python + python-docx are
-    available, then forwards all arguments to the exporter. Run from the
-    Deliverables repo root so the engine finds templates/word/ automatically,
-    or pass --template explicitly.
+    Wrapper mỏng bọc md_to_docx.py: đảm bảo đã có Python + python-docx,
+    rồi chuyển toàn bộ tham số cho bộ xuất. Chạy từ thư mục gốc của repo
+    Deliverables để engine tự tìm thấy templates/word/,
+    hoặc truyền --template tường minh.
 
 .EXAMPLE
-    # From the Deliverables repo root:
+    # Từ thư mục gốc của repo Deliverables:
     <path-to-skill>\export-docx.ps1 "<INPUT.md>" -o "customer\deployment"
 
 .EXAMPLE
@@ -20,7 +20,7 @@ $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $tool = Join-Path $scriptDir 'md_to_docx.py'
 
-# Find a Python launcher (PowerShell 5.1 compatible — no ?? operator).
+# Tìm trình chạy Python (tương thích PowerShell 5.1 — không dùng toán tử ??).
 $py = Get-Command python -ErrorAction SilentlyContinue
 if (-not $py) { $py = Get-Command py -ErrorAction SilentlyContinue }
 if (-not $py) {
@@ -28,13 +28,13 @@ if (-not $py) {
     exit 1
 }
 
-# Ensure python-docx is installed (one-time).
+# Đảm bảo python-docx đã được cài (chỉ cần một lần).
 & $py.Source -c "import docx" 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "python-docx not found - installing..." -ForegroundColor Yellow
     & $py.Source -m pip install --quiet python-docx
 }
 
-# Forward every argument to the exporter.
+# Chuyển toàn bộ tham số cho bộ xuất.
 & $py.Source $tool @args
 exit $LASTEXITCODE

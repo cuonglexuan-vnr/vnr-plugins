@@ -1,17 +1,17 @@
 #!/usr/bin/env pwsh
 
-# Consolidated prerequisite checking script (PowerShell)
+# Script kiểm tra điều kiện tiên quyết hợp nhất (PowerShell)
 #
-# This script provides unified prerequisite checking for Vnr SDLC workflow.
+# Script này kiểm tra điều kiện tiên quyết thống nhất cho quy trình Vnr SDLC.
 #
-# Usage: ./check-prerequisites.ps1 [OPTIONS]
+# Cách dùng: ./check-prerequisites.ps1 [OPTIONS]
 #
 # OPTIONS:
-#   -Json               Output in JSON format
-#   -RequireTasks       Require tasks.md to exist (for implementation phase)
-#   -IncludeTasks       Include tasks.md in AVAILABLE_DOCS list
-#   -PathsOnly          Only output path variables (no validation)
-#   -Help, -h           Show help message
+#   -Json               Xuất kết quả dạng JSON
+#   -RequireTasks       Bắt buộc phải có tasks.md (cho phase triển khai)
+#   -IncludeTasks       Đưa tasks.md vào danh sách AVAILABLE_DOCS
+#   -PathsOnly          Chỉ xuất các biến đường dẫn (không kiểm tra)
+#   -Help, -h           Hiển thị trợ giúp
 
 [CmdletBinding()]
 param(
@@ -25,7 +25,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Show help if requested
+# Hiển thị trợ giúp nếu được yêu cầu
 if ($Help) {
     Write-Output @"
 Usage: check-prerequisites.ps1 [OPTIONS]
@@ -53,17 +53,17 @@ EXAMPLES:
     exit 0
 }
 
-# Source common functions
+# Nạp các hàm dùng chung
 . "$PSScriptRoot/common.ps1"
 
-# Get feature paths and validate branch
+# Lấy đường dẫn của feature và kiểm tra tên nhánh
 $paths = Get-FeaturePathsEnv
 
 if (-not (Test-FeatureBranch -Branch $paths.CURRENT_BRANCH -HasGit:$paths.HAS_GIT)) {
     exit 1
 }
 
-# If paths-only mode, output paths and exit
+# Ở chế độ chỉ lấy đường dẫn: xuất đường dẫn rồi thoát
 if ($PathsOnly) {
     if ($Json) {
         [PSCustomObject]@{
@@ -92,7 +92,7 @@ if ($PathsOnly) {
     exit 0
 }
 
-# Validate required directories and files
+# Kiểm tra các thư mục và tệp bắt buộc
 if (-not (Test-Path $paths.FEATURE_DIR -PathType Container)) {
     Write-Output "ERROR: Feature directory not found: $($paths.FEATURE_DIR)"
     Write-Output "Create it and copy the BA User Story file(s) in, e.g.:"
@@ -115,33 +115,33 @@ if (-not (Test-Path $paths.IMPL_PLAN -PathType Leaf)) {
     exit 1
 }
 
-# Check for tasks.md if required
+# Kiểm tra tasks.md nếu được yêu cầu
 if ($RequireTasks -and -not (Test-Path $paths.TASKS -PathType Leaf)) {
     Write-Output "ERROR: tasks.md not found in $($paths.FEATURE_DIR)"
     Write-Output "Run /vnr-tasks first to create the task list."
     exit 1
 }
 
-# Build list of available documents
+# Dựng danh sách các tài liệu có sẵn
 $docs = @()
 
-# Always check these optional docs
+# Luôn kiểm tra các tài liệu tuỳ chọn này
 if (Test-Path $paths.RESEARCH) { $docs += 'research.md' }
 if (Test-Path $paths.DATA_MODEL) { $docs += 'data-model.md' }
 
-# Check contracts directory (only if it exists and has files)
+# Kiểm tra thư mục contracts (chỉ khi tồn tại và có tệp)
 if ((Test-Path $paths.CONTRACTS_DIR) -and (Get-ChildItem -Path $paths.CONTRACTS_DIR -ErrorAction SilentlyContinue | Select-Object -First 1)) {
     $docs += 'contracts/'
 }
 
 if (Test-Path $paths.QUICKSTART) { $docs += 'quickstart.md' }
 
-# Include tasks.md if requested and it exists
+# Thêm tasks.md nếu được yêu cầu và tệp tồn tại
 if ($IncludeTasks -and (Test-Path $paths.TASKS)) {
     $docs += 'tasks.md'
 }
 
-# Output results
+# Xuất kết quả
 if ($Json) {
     [PSCustomObject]@{
         PLUGIN_DIR     = $paths.PLUGIN_DIR

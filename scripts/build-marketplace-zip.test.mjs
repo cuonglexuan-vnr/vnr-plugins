@@ -10,7 +10,7 @@ test('zips the marketplace FLAT and only the included entries', () => {
   const root = mkdtempSync(path.join(tmpdir(), 'mkt-'));
   try {
     mkdirSync(path.join(root, '.claude-plugin'));
-    writeFileSync(path.join(root, '.claude-plugin', 'marketplace.json'), '{"name":"vnr-ai","plugins":[]}');
+    writeFileSync(path.join(root, '.claude-plugin', 'marketplace.json'), '{"name":"vnr-marketplace","plugins":[]}');
     mkdirSync(path.join(root, 'plugins', 'vnr-swe'), { recursive: true });
     writeFileSync(path.join(root, 'plugins', 'vnr-swe', 'plugin.json'), '{}');
     writeFileSync(path.join(root, 'README.md'), '# x');

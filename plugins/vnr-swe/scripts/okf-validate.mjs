@@ -1,25 +1,25 @@
 #!/usr/bin/env node
 /**
- * okf-validate.mjs — OKF v0.1 conformance validator for an LLM-wiki bundle.
+ * okf-validate.mjs — bộ kiểm tra tuân thủ OKF v0.1 cho một bundle LLM-wiki.
  *
- * TECHNOLOGY-AGNOSTIC. Ships with the vnr-swe plugin. Contains NO project/stack tokens.
- * Zero dependencies (node:fs + node:path only). Mirrors resolve-context.mjs style.
+ * KHÔNG phụ thuộc công nghệ. Đi kèm plugin vnr-swe. KHÔNG chứa token riêng của dự án/stack.
+ * Không phụ thuộc gói ngoài (chỉ node:fs + node:path). Theo phong cách của resolve-context.mjs.
  *
- * Two profiles (per the HRM9 <-> OKF Conformance Profile / ADR-001):
- *   --layer wiki  (default) : docs/wiki/ — strict OKF §9 + Profile R01-R22
- *   --layer raw             : docs/raw/  — authoring layer: frontmatter + non-empty `type` only
- *   --layer both            : run both
+ * Hai profile (theo HRM9 <-> OKF Conformance Profile / ADR-001):
+ *   --layer wiki  (mặc định) : docs/wiki/ — OKF §9 nghiêm ngặt + Profile R01-R22
+ *   --layer raw             : docs/raw/  — lớp soạn thảo: chỉ cần frontmatter + `type` không rỗng
+ *   --layer both            : chạy cả hai
  *
- * Usage:
+ * Cách dùng:
  *   node okf-validate.mjs --root <projectRoot> [--layer wiki|raw|both] [--json] [--strict]
- *   node okf-validate.mjs --root <projectRoot> --path docs/wiki/domains/x.md   (single file)
+ *   node okf-validate.mjs --root <projectRoot> --path docs/wiki/domains/x.md   (một tệp)
  *
- * Severity: ERROR = OKF §9 / Profile MUST violation; WARN = SHOULD / internal-quality.
- * Exit: 0 = no ERRORs (WARNs allowed) | 1 = ERRORs (or any WARN under --strict) | 2 = script failure.
+ * Mức độ: ERROR = vi phạm MUST của OKF §9 / Profile; WARN = SHOULD / chất lượng nội bộ.
+ * Mã thoát: 0 = không có ERROR (cho phép WARN) | 1 = có ERROR (hoặc có WARN khi dùng --strict) | 2 = script lỗi.
  *
- * Conformance vs quality: LINK-RESOLVES and RELATED-RESOLVES are internal-quality WARNs
- * (OKF §5.3 requires consumers tolerate broken links); they are NOT §9 conformance gates.
- * LOG-RESERVED frozen-log-entry WARNs are expected/permanent (log.md is append-only).
+ * Tuân thủ và chất lượng: LINK-RESOLVES và RELATED-RESOLVES là WARN chất lượng nội bộ
+ * (OKF §5.3 yêu cầu bên tiêu thụ chấp nhận liên kết hỏng); chúng KHÔNG phải cổng kiểm soát tuân thủ §9.
+ * WARN LOG-RESERVED cho mục log đã đóng băng là bình thường/vĩnh viễn (log.md chỉ ghi nối thêm).
  */
 
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
@@ -30,7 +30,7 @@ const RAW_DIR = 'docs/raw';
 const REQUIRED_FIELDS = ['id', 'title', 'folder', 'type', 'tags', 'related', 'timestamp', 'description'];
 const FOLDER_HEADING_RE = /^#{2,3}\s+(domains|patterns|guides|rules|stacks|decisions)\b/i;
 
-// ---------- helpers (style mirrored from resolve-context.mjs) ----------
+// ---------- hàm trợ giúp (phong cách theo resolve-context.mjs) ----------
 function norm(p) { return String(p).replace(/\\/g, '/'); }
 
 const FM_RE = /^\s*---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
@@ -75,7 +75,7 @@ function makeReporter() {
   };
 }
 
-// ---------- wiki layer (strict OKF §9 + Profile) ----------
+// ---------- lớp wiki (OKF §9 nghiêm ngặt + Profile) ----------
 function validateWiki(root, rep, only) {
   const wikiAbs = join(root, WIKI_DIR);
   let files = walkMd(wikiAbs);
@@ -88,8 +88,8 @@ function validateWiki(root, rep, only) {
     let text = '';
     try { text = readFileSync(file, 'utf8'); } catch { continue; }
 
-    if (base === 'index.md') { checkIndex(text, relPath, rep); continue; }   // reserved (OKF §3.1)
-    if (base === 'log.md') { checkLog(text, relPath, rep); continue; }       // reserved (OKF §3.1)
+    if (base === 'index.md') { checkIndex(text, relPath, rep); continue; }   // tên dành riêng (OKF §3.1)
+    if (base === 'log.md') { checkLog(text, relPath, rep); continue; }       // tên dành riêng (OKF §3.1)
 
     const fm = parseFrontmatter(text);
     if (!fm.found) {
@@ -114,7 +114,7 @@ function validateWiki(root, rep, only) {
       const d = stripQuotes(fm.keys.get('description'));
       if (d.length > 120) rep.add('ERROR', 'DESCRIPTION-LEN', relPath, 1, 'R11', `description ${d.length} > 120 chars`);
     }
-    // legacy-field detection (surfaces pre-migration state / regressions)
+    // phát hiện trường cũ (lộ trạng thái trước khi migrate / hồi quy)
     if (fm.keys.has('summary')) rep.add('WARN', 'LEGACY-FIELD', relPath, 1, 'R09', "legacy 'summary' (rename to 'description')");
     if (fm.keys.has('updated')) rep.add('WARN', 'LEGACY-FIELD', relPath, 1, 'R10', "legacy 'updated' (rename to 'timestamp')");
 
@@ -181,7 +181,7 @@ function checkIndex(text, relPath, rep) {
       const t = lines[i].trim();
       if (t.startsWith('|') && t.lastIndexOf('|') > 0) {
         rep.add('ERROR', 'CATALOG-FORMAT', relPath, i + 1, 'R06', 'folder catalog uses a GFM table row; OKF §6 requires a bullet list');
-        inCatalog = false; // one finding per section
+        inCatalog = false; // mỗi mục chỉ báo một phát hiện
       }
     }
   }
@@ -192,8 +192,8 @@ function checkLog(text, relPath, rep) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (!/^##\s+/.test(line)) continue;
-    if (/^##\s+\d{4}-\d{2}-\d{2}\s*$/.test(line)) continue;                       // bare ISO date — OK
-    if (/^##\s+\[\d{4}-\d{2}-\d{2}\]/.test(line)) {                               // frozen append-only entry
+    if (/^##\s+\d{4}-\d{2}-\d{2}\s*$/.test(line)) continue;                       // ngày ISO trần — hợp lệ
+    if (/^##\s+\[\d{4}-\d{2}-\d{2}\]/.test(line)) {                               // mục đã đóng băng, chỉ ghi nối thêm
       rep.add('WARN', 'LOG-RESERVED', relPath, i + 1, 'R07', 'frozen-log-entry: bracket-date heading (append-only; expected/permanent)');
       continue;
     }
@@ -203,7 +203,7 @@ function checkLog(text, relPath, rep) {
 
 function checkManifest(root, rep) {
   const mfPath = join(root, WIKI_DIR, 'manifest.json');
-  if (!existsSync(mfPath)) return; // absent manifest is valid (resolver no-ops)
+  if (!existsSync(mfPath)) return; // không có manifest là hợp lệ (resolver no-op)
   let mf;
   try { mf = JSON.parse(readFileSync(mfPath, 'utf8')); }
   catch { rep.add('ERROR', 'MANIFEST-PATHS', 'docs/wiki/manifest.json', 1, 'R16h', 'manifest.json is not valid JSON'); return; }
@@ -219,10 +219,10 @@ function checkManifest(root, rep) {
   }
 }
 
-// ---------- raw layer (authoring profile: frontmatter + non-empty type only) ----------
+// ---------- lớp raw (profile soạn thảo: chỉ cần frontmatter + type không rỗng) ----------
 function isExemptRaw(relPath) {
   const p = norm(relPath);
-  if (/(^|\/)_/.test(p)) return true; // any _-prefixed file/folder: _schema/, _inbox/, ...
+  if (/(^|\/)_/.test(p)) return true; // mọi tệp/thư mục bắt đầu bằng _: _schema/, _inbox/, ...
   const base = p.split('/').pop();
   return base === 'MIGRATION.md' || base === 'README.md' || base === 'index.md' || base === 'log.md';
 }
@@ -243,7 +243,7 @@ function validateRaw(root, rep, only) {
   }
 }
 
-// ---------- entry ----------
+// ---------- điểm vào ----------
 function parseArgs(argv) {
   const args = {};
   for (let i = 0; i < argv.length; i++) {

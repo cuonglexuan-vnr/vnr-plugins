@@ -1,11 +1,11 @@
 version: "1"
-# Pipeline phase definitions — read by vnr-auto-pipeline/SKILL.md (orchestrator).
-# Each phase type: skill | agent | parallel | cli
-# Orchestrator passes only: FEATURE, PLUGIN_DIR. Agents read their own .md for full context.
+# Định nghĩa các phase của pipeline — được vnr-auto-pipeline/SKILL.md (orchestrator) đọc.
+# Mỗi phase có type: skill | agent | parallel | cli
+# Orchestrator chỉ truyền: FEATURE, PLUGIN_DIR. Mỗi agent tự đọc tệp .md của mình để có đủ context.
 #
-# GATE-FATIGUE BUDGET (hard rule): <=2 interactive AskUserQuestion gates on the happy path —
-#   (1) plan-review (always), (2) stack-confirm (ONLY when the resolver reports >1 UI stack).
-# Every gate MUST auto-skip when not needed: no manifest / single unambiguous stack / PASS verdict.
+# NGÂN SÁCH CỔNG KIỂM SOÁT (quy tắc cứng): tối đa 2 cổng AskUserQuestion tương tác trên luồng thuận lợi —
+#   (1) plan-review (luôn có), (2) stack-confirm (CHỈ khi resolver báo có hơn 1 UI stack).
+# Mọi cổng kiểm soát PHẢI tự bỏ qua khi không cần: không có manifest / chỉ một stack rõ ràng / kết quả PASS.
 
 phases:
   - id: plan
@@ -18,15 +18,15 @@ phases:
     type: agent
     agent: vnr-plan-reviewer
     hitl: true
-    hitl_question: "Plan Review complete. Review the verdict and plan, then decide."
+    hitl_question: "Plan Review đã xong. Xem kết quả và kế hoạch triển khai rồi quyết định."
     hitl_preview_file: "specs/{feature}/plan.md"
     hitl_options:
       - label: "approve"
-        description: "Plan looks good — continue to Tasks"
+        description: "Kế hoạch ổn — sang bước Tasks"
       - label: "modify"
-        description: "I will edit plan.md manually, then approve"
+        description: "Tôi sẽ tự sửa plan.md rồi mới duyệt"
       - label: "reject"
-        description: "Discard this plan and restart from scratch"
+        description: "Bỏ kế hoạch này, lập lại từ đầu"
     on_reject:
       action: stop
       recovery: "--from=plan"
@@ -75,7 +75,7 @@ phases:
     type: agent
     agent: e2e-stubs-inline
     always_pass: true
-    # Inline agent prompt (orchestrator uses this instead of reading a .md file):
+    # Prompt agent nhúng sẵn (orchestrator dùng prompt này thay vì đọc tệp .md):
     inline_prompt: |
       Read docs/wiki/index.md → find entry tagged `recipe` for E2E setup → discover E2E test file path.
       If wiki has no E2E recipe → use path: specs/{feature}/testcases.md to infer, or default to src/frontend/e2e/{feature}.e2e.spec.ts.

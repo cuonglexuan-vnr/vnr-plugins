@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# Export a VNR playbook Markdown file to a branded DOCX — for team members who
-# run it directly (without Claude Code). Thin wrapper around md_to_docx.py:
-# ensures python-docx is installed, then forwards all arguments.
+# Xuất tệp Markdown playbook của VNR sang DOCX theo nhận diện thương hiệu — dành cho đồng đội
+# chạy trực tiếp (không qua Claude Code). Wrapper mỏng bọc md_to_docx.py:
+# đảm bảo đã cài python-docx, rồi chuyển toàn bộ tham số.
 #
-# Usage (from the Deliverables repo root, so templates/word/ is found automatically):
+# Cách dùng (từ thư mục gốc của repo Deliverables, để tự tìm thấy templates/word/):
 #   <path-to-skill>/export-docx.sh <INPUT.md> -o <OUTPUT.docx-or-dir> [options]
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TOOL="$DIR/md_to_docx.py"
 
-# Pick a Python 3 interpreter.
+# Chọn trình thông dịch Python 3.
 if command -v python >/dev/null 2>&1; then PY=python
 elif command -v python3 >/dev/null 2>&1; then PY=python3
 else
@@ -18,7 +18,7 @@ else
   exit 1
 fi
 
-# Ensure python-docx is installed (one-time).
+# Đảm bảo python-docx đã được cài (chỉ cần một lần).
 if ! "$PY" -c "import docx" >/dev/null 2>&1; then
   echo "python-docx not found - installing..."
   "$PY" -m pip install --quiet python-docx

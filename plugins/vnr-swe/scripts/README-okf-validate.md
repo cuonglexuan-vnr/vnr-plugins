@@ -1,56 +1,57 @@
-# okf-validate.mjs — OKF v0.1 conformance validator
+# okf-validate.mjs — Bộ kiểm tra tuân thủ OKF v0.1
 
-Technology-agnostic, zero-dependency Node.js validator for an LLM-wiki bundle that follows the
-**OKF (Open Knowledge Format) v0.1** spec. Ships with `vnr-swe`; contains no project/stack tokens.
-Mirrors `resolve-context.mjs` (same frontmatter-strip + glob style).
+Validator Node.js không phụ thuộc công nghệ và không có dependency, dùng cho một bundle LLM-wiki theo spec
+**OKF (Open Knowledge Format) v0.1**. Đi kèm `vnr-swe`; không chứa token riêng của dự án hay stack.
+Theo cùng phong cách với `resolve-context.mjs` (cùng cách tách frontmatter và so khớp glob).
 
-## Usage
+## Cách dùng
 
 ```sh
 node scripts/okf-validate.mjs --root <projectRoot> [--layer wiki|raw|both] [--json] [--strict]
-node scripts/okf-validate.mjs --root <projectRoot> --path docs/wiki/domains/x.md   # single file
+node scripts/okf-validate.mjs --root <projectRoot> --path docs/wiki/domains/x.md   # chỉ một tệp
 ```
 
-| Flag | Default | Meaning |
+| Flag | Mặc định | Ý nghĩa |
 |---|---|---|
-| `--root` | cwd | project root (`docs/wiki` and `docs/raw` live under it) |
-| `--layer` | `wiki` | `wiki` (strict §9 + profile) · `raw` (authoring) · `both` |
-| `--json` | off | emit one JSON finding per line (`{severity,rule,file,line,R,message}`) |
-| `--strict` | off | treat WARN as failure for the exit code |
-| `--path` | — | validate a single file only (per-file checks) |
+| `--root` | cwd | thư mục gốc dự án (`docs/wiki` và `docs/raw` nằm dưới đó) |
+| `--layer` | `wiki` | `wiki` (§9 nghiêm ngặt + profile) · `raw` (lớp soạn thảo) · `both` |
+| `--json` | off | in mỗi finding một dòng JSON (`{severity,rule,file,line,R,message}`) |
+| `--strict` | off | coi WARN là thất bại khi tính exit code |
+| `--path` | — | chỉ kiểm một tệp (các kiểm tra theo từng tệp) |
 
-**Exit:** `0` no ERRORs · `1` ERRORs (or any WARN with `--strict`) · `2` script failure.
+**Exit:** `0` không có ERROR · `1` có ERROR (hoặc có WARN khi dùng `--strict`) · `2` script bị lỗi.
 
-## Two profiles (per the project's OKF Conformance Profile / ADR-001)
+## Hai profile
 
-- **wiki** — the *published* OKF bundle. Strict: full 8-field frontmatter, relative links, index/log structure.
-- **raw** — the *authoring* layer. Requires only parseable frontmatter + non-empty `type`. Exempts
+Dự án dùng plugin khai báo profile tuân thủ OKF của mình; validator hỗ trợ hai profile:
+
+- **wiki** — bundle OKF *đã xuất bản*. Nghiêm ngặt: đủ 8 trường frontmatter, link tương đối, cấu trúc index/log.
+- **raw** — lớp *soạn thảo*. Chỉ yêu cầu frontmatter parse được và `type` không rỗng. Miễn trừ
   `_schema/**`, `_inbox/**`, `MIGRATION.md`, `README.md`.
 
-## Checks  (ERROR = OKF §9 / profile MUST · WARN = SHOULD / internal-quality)
+## Các kiểm tra  (ERROR = OKF §9 / profile MUST · WARN = SHOULD / chất lượng nội bộ)
 
-| Rule | Severity | Asserts |
+| Rule | Severity | Kiểm tra |
 |---|---|---|
-| `FM-PARSEABLE` | ERROR | every non-reserved `.md` has a YAML frontmatter block |
-| `FM-REQUIRED-FIELDS` | ERROR | the 8 fields present (`tier: card` pages: only `id` + `type`) |
-| `TIMESTAMP-FORMAT` | ERROR | `timestamp` is ISO 8601 |
-| `DESCRIPTION-LEN` | ERROR | `description` ≤ 120 chars |
-| `ID-UNIQUE` | ERROR | no duplicate `id` across the bundle |
-| `INDEX-FM-ONLY-OKFVER` / `INDEX-OKFVER` | ERROR | `index.md` frontmatter is exactly `okf_version` |
-| `CATALOG-FORMAT` | ERROR | `index.md` per-folder catalog is a §6 bullet list, not a GFM table |
-| `MANIFEST-PATHS` | ERROR | every `manifest.json` path exists on disk |
-| `LOG-RESERVED` | ERROR / WARN | `log.md` headings are bare `## YYYY-MM-DD`; pre-migration bracket-date entries are WARN `frozen-log-entry` (append-only → expected & permanent) |
-| `LINK-NO-WIKILINK` | WARN | published bundle should use relative links, not `[[id]]` |
-| `LINK-RESOLVES` | WARN | relative link target exists — **quality, NOT §9** (OKF §5.3 requires consumers tolerate broken links) |
-| `RELATED-RESOLVES` | WARN | `related: [folder/slug]` values resolve — quality |
-| `RAW-FM-PARSEABLE` / `RAW-FM-TYPE` | ERROR | (raw layer) frontmatter + non-empty `type` |
+| `FM-PARSEABLE` | ERROR | mọi tệp `.md` không thuộc nhóm dành riêng đều có khối frontmatter YAML |
+| `FM-REQUIRED-FIELDS` | ERROR | đủ 8 trường (trang `tier: card`: chỉ cần `id` + `type`) |
+| `TIMESTAMP-FORMAT` | ERROR | `timestamp` theo ISO 8601 |
+| `DESCRIPTION-LEN` | ERROR | `description` ≤ 120 ký tự |
+| `ID-UNIQUE` | ERROR | không có `id` trùng trong toàn bundle |
+| `INDEX-FM-ONLY-OKFVER` / `INDEX-OKFVER` | ERROR | frontmatter của `index.md` chỉ gồm đúng `okf_version` |
+| `CATALOG-FORMAT` | ERROR | catalog theo thư mục trong `index.md` là danh sách bullet theo §6, không phải bảng GFM |
+| `MANIFEST-PATHS` | ERROR | mọi path trong `manifest.json` đều tồn tại trên đĩa |
+| `LOG-RESERVED` | ERROR / WARN | heading trong `log.md` là `## YYYY-MM-DD` trần; các mục ngày-trong-ngoặc từ trước khi migrate là WARN `frozen-log-entry` (chỉ ghi thêm → là điều dự kiến và tồn tại vĩnh viễn) |
+| `LINK-NO-WIKILINK` | WARN | bundle đã xuất bản nên dùng link tương đối, không dùng `[[id]]` |
+| `LINK-RESOLVES` | WARN | đích của link tương đối tồn tại — **chất lượng, KHÔNG thuộc §9** (OKF §5.3 yêu cầu bên tiêu thụ chấp nhận link hỏng) |
+| `RELATED-RESOLVES` | WARN | giá trị `related: [folder/slug]` phân giải được — chất lượng |
+| `RAW-FM-PARSEABLE` / `RAW-FM-TYPE` | ERROR | (lớp raw) frontmatter hợp lệ + `type` không rỗng |
 
-## Integration
-- **`vnr-wiki-sync` Step 5** invokes it (`--layer wiki`); a sync must reach **0 ERROR**.
-- Standalone CLI for spot checks; CI can gate on the exit code.
+## Tích hợp
+- **`vnr-wiki-sync` Step 5** gọi validator này (`--layer wiki`); một lần sync phải đạt **0 ERROR**.
+- Dùng độc lập như CLI để kiểm nhanh; CI có thể chặn theo exit code.
 
-## Expected, non-actionable WARNs
-- `frozen-log-entry` WARNs — permanent (the log is append-only; old bracket-date headings stay).
-- A page that *documents the format* (e.g. `decisions/adr-001-okf-conformance-profile.md`) may itself
-  contain illustrative `[[id]]` / `[text](path)` snippets — these surface as WARN-level LINK findings,
-  not conformance errors.
+## WARN hợp lệ, không cần xử lý
+- WARN `frozen-log-entry` — tồn tại vĩnh viễn (log chỉ ghi thêm; heading ngày-trong-ngoặc cũ được giữ nguyên).
+- Một trang *mô tả chính định dạng* có thể tự chứa các đoạn minh hoạ `[[id]]` / `[text](path)` —
+  chúng hiện ra dưới dạng finding LINK mức WARN, không phải lỗi tuân thủ.

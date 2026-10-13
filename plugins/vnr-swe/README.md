@@ -1,383 +1,385 @@
 # vnr-swe
 
-> **VNR Plugin** — A plugin to help with VNR requirements.
+> **VNR Plugin** — Plugin hỗ trợ quy trình phát triển phần mềm của VNR.
 
-A content-driven plugin for the Claude Code / agent harness that provides a full development pipeline — from feature specification to implementation, testing, review, and final reporting. It orchestrates a team of specialized agents through structured, step-by-step workflows.
+Plugin chạy trên harness Claude Code / agent, cung cấp một pipeline phát triển đầy đủ — từ đặc tả tính năng đến triển khai, kiểm thử, review và xuất báo cáo cuối cùng. Plugin điều phối một đội agent chuyên biệt qua các workflow có cấu trúc, từng bước.
 
 ---
 
-## What It Provides
+## Tính năng cung cấp
 
-| Area | What you get |
+| Lĩnh vực | Nội dung |
 |---|---|
-| **Specification** | Guided creation and validation of feature specs with quality checklists |
-| **Planning** | Architecture-aware implementation plans, data models, and API contracts |
-| **Task breakdown** | Ordered, dependency-aware task lists organized by user story and phase |
-| **Implementation** | Phase-by-phase code execution driven by tasks.md |
-| **QC & Testing** | Test scenario generation, testcase writing, E2E test execution, and QC review |
-| **Code Review** | Architecture and security review with PASS / PASS+WARN / FAIL verdicts |
-| **Documentation** | Final reports and end-user guides from pipeline artifacts |
-| **Knowledge base** | Wiki/docs reading, LLM-wiki synchronization, and automatic context-loading hooks before plan and implement |
-| **Automation** | Full automated pipeline from spec → plan → tasks → implement → test → review → report |
-| **Customization** | Project-scoped skill and agent overrides |
+| **Đặc tả** | Tạo và kiểm tra chất lượng đặc tả tính năng kèm checklist |
+| **Lập kế hoạch** | Kế hoạch triển khai theo kiến trúc, data model và API contracts |
+| **Phân rã task** | Danh sách task có thứ tự, phân tách phụ thuộc, tổ chức theo user story và phase |
+| **Triển khai** | Thực thi code từng phase dựa trên tasks.md |
+| **QC & Kiểm thử** | Sinh test scenarios, viết testcase, chạy E2E và review QC |
+| **Review** | Review mã, review kiến trúc và review bảo mật với kết quả PASS / WARN / FAIL |
+| **Tài liệu** | Báo cáo cuối pipeline và hướng dẫn người dùng từ kết quả thực tế |
+| **Cơ sở tri thức** | Đọc wiki/docs, đồng bộ LLM-wiki, và hook tự động load context wiki trước khi plan và implement |
+| **Tự động hóa** | Pipeline đầy đủ: spec → plan → tasks → implement → test → review → report |
+| **Tùy chỉnh** | Ghi đè skill và agent ở phạm vi project |
 
 ---
 
-## Skills (Commands)
+## Skills (Lệnh sử dụng)
 
-| Skill | Command | Purpose |
+| Skill | Lệnh | Mục đích |
 |---|---|---|
-| `vnr-specify` | `/vnr-specify` | **Fallback** — stub a User Story file (`<US-ID>_*.md`) from a natural-language description when BA hasn't yet produced one. Normal flow: BA delivers the User Story file directly. |
-| `vnr-clarify` | `/vnr-clarify` | Ask up to 5 targeted questions to resolve underspecified areas in a spec |
-| `vnr-analyze` | `/vnr-analyze` | Non-destructive cross-artifact analysis — find gaps between spec, plan, and tasks |
-| `vnr-checklist` | `/vnr-checklist` | Generate a requirements-quality checklist ("unit tests for the spec") |
-| `vnr-plan` | `/vnr-plan` | Produce `plan.md`, `data-model.md`, and `contracts/` from the feature spec |
-| `vnr-tasks` | `/vnr-tasks` | Break the plan into an ordered, dependency-aware `tasks.md` |
-| `vnr-implement` | `/vnr-implement` | Execute tasks phase-by-phase; auto-detects scope and dispatches sequentially to `vnr-backend-developer` → `vnr-frontend-developer` → `vnr-mobile-developer` |
-| `vnr-run-testcases` | `/vnr-run-testcases` | Show, track, and update testcase statuses from `testcases.md` |
-| `vnr-run-e2e` | `/vnr-run-e2e` | Run Playwright E2E tests, collect screenshots, and generate an HTML report |
-| `vnr-qc-assistant` | `/vnr-qc-assistant` | Dual-mode QA assistant: apply QC feedback or audit testcases for improvements |
-| `vnr-wiki` | `/vnr-wiki` | Read and navigate `docs/wiki/` to gather domain/business context |
-| `vnr-wiki-init` | `/vnr-wiki-init` | Bootstrap a wiki in a new repo: seed the kit + `CLAUDE.md` anchor, explore `src/`, generate `arch-repo-roots.md` |
-| `vnr-wiki-sync` | `/vnr-wiki-sync` | Synchronize the compiled LLM wiki with the latest raw source documents |
-| `vnr-constitution` | `/vnr-constitution` | Create or update the project constitution and sync dependent templates |
-| `vnr-auto-pipeline` | `/vnr-auto-pipeline` | Run the full automated pipeline: spec → plan → plan review → tasks → testcases → implement → arch+sec review → e2e stubs → report |
-| `vnr-customize` | `/vnr-customize` | Create or override project-scoped skills/agents to customize plugin defaults |
+| `vnr-specify` | `/vnr-specify` | **Fallback** — tạo stub User Story (`<US-ID>_*.md`) từ mô tả ngôn ngữ tự nhiên khi BA chưa giao file. Quy trình chuẩn: BA tạo User Story file và dev copy vào `specs/<US-ID>/`. |
+| `vnr-clarify` | `/vnr-clarify` | Đặt tối đa 5 câu hỏi làm rõ các vùng chưa xác định trong spec |
+| `vnr-analyze` | `/vnr-analyze` | Phân tích chéo các artifact (spec, plan, tasks) để tìm thiếu sót và mâu thuẫn |
+| `vnr-checklist` | `/vnr-checklist` | Sinh checklist kiểm tra chất lượng đặc tả ("unit test cho spec") |
+| `vnr-plan` | `/vnr-plan` | Tạo `plan.md`, `data-model.md` và `contracts/` từ đặc tả tính năng |
+| `vnr-tasks` | `/vnr-tasks` | Phân rã kế hoạch thành `tasks.md` có thứ tự và phụ thuộc rõ ràng |
+| `vnr-implement` | `/vnr-implement` | Thực thi kế hoạch triển khai từng phase theo `tasks.md`; tự động phát hiện scope và dispatch tuần tự đến `vnr-backend-developer` → `vnr-frontend-developer` → `vnr-mobile-developer` |
+| `vnr-run-testcases` | `/vnr-run-testcases` | Hiển thị, theo dõi và cập nhật trạng thái testcase trong `testcases.md` |
+| `vnr-run-e2e` | `/vnr-run-e2e` | Chạy Playwright E2E tests, thu thập screenshots và xuất HTML report |
+| `vnr-arch-review` | `/vnr-arch-review` | Review kiến trúc mã BE + FE theo phạm vi, kết quả PASS / WARN / FAIL; chạy độc lập hoặc trong pipeline |
+| `vnr-mobile-implement` | `/vnr-mobile-implement` | Triển khai task Flutter mobile từ `tasks.md` |
+| `vnr-mobile-auto-test` | `/vnr-mobile-auto-test` | Sinh và chạy auto test cho Flutter app theo 3 cấp: Unit → Widget → Integration |
+| `vnr-wiki-add` | `/vnr-wiki-add` | Đưa ghi chú thô (md/txt) vào `docs/raw/` đúng cấu trúc; không tự sync wiki |
+| `vnr-wiki-init` | `/vnr-wiki-init` | Khởi tạo cấu trúc `docs/wiki/` cho dự án mới |
+| `vnr-qc-assistant` | `/vnr-qc-assistant` | QA assistant hai chế độ: áp dụng phản hồi QC hoặc audit testcase |
+| `vnr-wiki` | `/vnr-wiki` | Đọc và điều hướng `docs/wiki/` để lấy context nghiệp vụ / domain |
+| `vnr-wiki-sync` | `/vnr-wiki-sync` | Đồng bộ LLM wiki đã biên dịch với tài liệu nguồn mới nhất |
+| `vnr-constitution` | `/vnr-constitution` | Tạo hoặc cập nhật constitution dự án và đồng bộ template phụ thuộc |
+| `vnr-auto-pipeline` | `/vnr-auto-pipeline` | Chạy pipeline tự động đầy đủ: spec → plan → plan review → tasks → testcases → implement → code review → arch+sec review → e2e stubs → report |
+| `vnr-customize` | `/vnr-customize` | Tạo hoặc ghi đè skill/agent ở phạm vi project để tùy chỉnh plugin |
 
 ---
 
-## Automated Pipeline (`vnr-auto-pipeline`)
+## Pipeline Tự Động (`vnr-auto-pipeline`)
 
-The flagship skill runs the entire development pipeline end-to-end with checkpoints:
+Skill chủ đạo chạy toàn bộ pipeline phát triển theo trình tự có điểm dừng chờ người duyệt (HITL):
 
 ```
-BA User Story file (<US-ID>_*.md) → plan.md → plan review (HITL) → tasks.md [auto] → testcases.md [auto] → implement → arch review + sec review → e2e stubs → final report
+BA User Story file (<US-ID>_*.md) → plan.md → plan review (HITL) → tasks.md [tự động] → testcases.md [tự động] → implement → code review → arch review + sec review → e2e stubs → final report
 ```
 
-Each stage delegates to the appropriate specialized agent. HITL checkpoints pause after plan review, after implementation build, and after arch+sec review. Steps 1c (Tasks), 2 (Testcases) proceed automatically without user confirmation.
+Mỗi giai đoạn uỷ quyền cho agent chuyên biệt tương ứng. Điểm dừng chờ người duyệt duy nhất là plan review (`hitl: true`);
+pipeline chỉ hỏi thêm để xác nhận stack khi kế hoạch chạm hơn một UI stack. Build (sau implement) và review (sau review mã,
+sau review kiến trúc + bảo mật) là cổng kiểm soát: không đạt thì pipeline dừng. Tasks và testcases chạy tự động.
+
+- **Wiki hooks:** `before_plan` và `before_implement` tự nạp context wiki dự án; `after_implement` kích hoạt `vnr-wiki-sync`.
+- **Templates:** mọi artifact đầu ra được dựng từ template chuẩn trong `templates/`.
 
 ---
 
 ## Agents
 
-The plugin ships a team of specialized agents. Each agent has a defined role, I/O contract, and constraints.
+Plugin đi kèm một đội agent chuyên biệt. Mỗi agent có vai trò, hợp đồng I/O và ràng buộc riêng.
 
 ### `vnr-planner` — Software Architect / Tech Lead
 
-> Produces implementation plans from feature specs, following project conventions and constitution.
+> Tạo kế hoạch triển khai từ đặc tả tính năng, tuân theo quy ước dự án và constitution.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | Software Architect / Tech Lead |
-| **Inputs** | BA User Story file (`<US-ID>_*.md`, shape: `templates/userstory-template.md`), optional BA `<US-ID>_*_ui-detail.md`, `memory/constitution.md`, wiki context, templates |
-| **Outputs** | `plan.md`, `data-model.md`, `contracts/api-commitments.md`, `research.md` |
+| **Vai trò** | Software Architect / Tech Lead |
+| **Đầu vào** | BA User Story file (`<US-ID>_*.md`, shape: `templates/userstory-template.md`), optional BA `<US-ID>_*_ui-detail.md`, `memory/constitution.md`, wiki context, templates |
+| **Đầu ra** | `plan.md`, `data-model.md`, `contracts/api-commitments.md`, `research.md` |
 
-**Constraints:** Read-only relative to implementation (does not write code). Errors on unresolved gates. Must follow templates and constitution checks.
+**Ràng buộc:** Chỉ đọc so với triển khai (không viết code). Báo lỗi khi có điểm chưa giải quyết. Phải tuân theo templates và kiểm tra constitution.
 
 ---
 
-### `vnr-plan-reviewer` — Plan Quality Reviewer ✦ NEW
+### `vnr-plan-reviewer` — Người Review Kế Hoạch
 
-> Reviews `plan.md` against the User Story for spec coverage, architecture alignment and feasibility. Runs automatically after `vnr-planner`; provides PASS/WARN/FAIL with findings table to help humans make an informed approve/reject decision.
+> Review `plan.md` đối chiếu User Story để kiểm tra spec coverage, alignment kiến trúc và tính khả thi. Chạy tự động sau `vnr-planner`; cung cấp PASS/WARN/FAIL kèm bảng findings để Human đưa ra quyết định approve/reject đúng đắn.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | Plan Quality Reviewer |
-| **Inputs** | `plan.md`, `data-model.md`, `contracts/api-commitments.md`, BA User Story file, architecture standards, constitution |
-| **Outputs** | Review verdict (PASS/WARN/FAIL) + findings table (18 checks: spec coverage, API contracts, architecture alignment, feasibility) |
+| **Vai trò** | Plan Quality Reviewer |
+| **Đầu vào** | `plan.md`, `data-model.md`, `contracts/api-commitments.md`, BA User Story file, architecture standards, constitution |
+| **Đầu ra** | Kết quả review (PASS/WARN/FAIL) + bảng findings (18 checks: spec coverage, API contracts, architecture alignment, feasibility) |
 
-**Constraints:** Read-only — does not modify plan. Reports only. Human decides approve/reject/modify.
+**Ràng buộc:** Chỉ đọc — không sửa plan. Chỉ report. Human quyết định approve/reject/modify.
 
 ---
 
-### `vnr-task-breaker` — Tech Lead (Task Breaker)
+### `vnr-task-breaker` — Tech Lead (Phân rã Task)
 
-> Breaks a delivery plan into granular, file-path-specific, dependency-aware tasks.
+> Phân rã kế hoạch giao hàng thành task chi tiết, đặc định file-path, có phụ thuộc rõ ràng.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | Tech Lead |
-| **Inputs** | `plan.md` (required), `data-model.md`, `contracts/`, standards |
-| **Outputs** | `specs/<feature>/tasks.md` — organized by phase and user story, with T-IDs, dependencies, and parallel markers |
+| **Vai trò** | Tech Lead |
+| **Đầu vào** | `plan.md` (bắt buộc), `data-model.md`, `contracts/`, standards |
+| **Đầu ra** | `specs/<feature>/tasks.md` — tổ chức theo phase và user story, có T-ID, phụ thuộc và marker song song |
 
-**Constraints:** Tasks must be granular and file-path-specific. Must not merge unrelated layers into one task.
+**Ràng buộc:** Task phải đủ nhỏ và đặc định file-path. Không được gộp các layer không liên quan vào một task.
 
 ---
 
 ### `vnr-backend-developer` — Backend Developer
 
-> Implements ASP.NET Core backend code phase-by-phase following tasks.md. Handles `src/backend/` tasks only.
+> Triển khai code ASP.NET Core từng phase theo tasks.md. Chỉ xử lý các task `src/backend/`.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | Backend Developer |
-| **Inputs** | `tasks.md` (required), `plan.md`, `data-model.md`, `contracts/api-commitments.md`, wiki context |
-| **Outputs** | Implemented code in `src/backend/`; marks BE tasks `[x]` when done; reports build status |
+| **Vai trò** | Backend Developer |
+| **Đầu vào** | `tasks.md` (bắt buộc), `plan.md`, `data-model.md`, `contracts/api-commitments.md`, wiki context |
+| **Đầu ra** | Code trong `src/backend/`; đánh dấu BE task `[x]` khi hoàn thành; báo cáo build status |
 
-**Constraints:** Do not add features beyond tasks. Follows Clean Architecture / CQRS. Does not touch `src/frontend/` or `src/app-mobile/`.
+**Ràng buộc:** Không thêm tính năng ngoài tasks. Tuân theo Clean Architecture / CQRS. Không đụng vào `src/frontend/` hay `src/app-mobile/`.
 
 ---
 
 ### `vnr-frontend-developer` — Frontend Developer
 
-> Implements Angular 19 frontend code phase-by-phase following tasks.md. Handles `src/frontend/` tasks only.
+> Triển khai code Angular 19 từng phase theo tasks.md. Chỉ xử lý các task `src/frontend/`.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | Frontend Developer |
-| **Inputs** | `tasks.md` (required), `plan.md`, `contracts/api-commitments.md` (read first for API shape), wiki context |
-| **Outputs** | Implemented code in `src/frontend/`; marks FE tasks `[x]` when done; reports build status |
+| **Vai trò** | Frontend Developer |
+| **Đầu vào** | `tasks.md` (bắt buộc), `plan.md`, `contracts/api-commitments.md` (đọc đầu tiên để lấy API shape), wiki context |
+| **Đầu ra** | Code trong `src/frontend/`; đánh dấu FE task `[x]` khi hoàn thành; báo cáo build status |
 
-**Constraints:** Do not add features beyond tasks. Follows Angular 19 Micro-frontend conventions. Does not touch `src/backend/` or `src/app-mobile/`.
+**Ràng buộc:** Không thêm tính năng ngoài tasks. Tuân theo Angular 19 Micro-frontend conventions. Không đụng vào `src/backend/` hay `src/app-mobile/`.
 
 ---
 
 ### `vnr-mobile-developer` — Flutter Mobile Developer
 
-> Implements Flutter mobile code phase-by-phase following tasks.md. Handles `src/app-mobile/` tasks only.
+> Triển khai code Flutter mobile từng phase theo tasks.md. Chỉ xử lý các task `src/app-mobile/`.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | Flutter Mobile Developer |
-| **Inputs** | `tasks.md` (required), UI detail file (`<feature>_*_ui-detail.md` or `ui-detail.md`), mobile standards (VnR widgets, GetX, naming) |
-| **Outputs** | Implemented code in `src/app-mobile/`; marks Mobile tasks `[x]` when done |
+| **Vai trò** | Flutter Mobile Developer |
+| **Đầu vào** | `tasks.md` (bắt buộc), UI detail file (`<feature>_*_ui-detail.md` hoặc `ui-detail.md`), mobile standards (VnR widgets, GetX, naming) |
+| **Đầu ra** | Code trong `src/app-mobile/`; đánh dấu Mobile task `[x]` khi hoàn thành |
 
-**Constraints:** Do not add features beyond tasks. Follows Clean Architecture + GetX + VnR widget conventions. Does not touch `src/backend/` or `src/frontend/`.
+**Ràng buộc:** Không thêm tính năng ngoài tasks. Tuân theo Clean Architecture + GetX + VnR widget conventions. Không đụng vào `src/backend/` hay `src/frontend/`.
 
 ---
 
 ### `vnr-qc-generator` — QC Engineer (Shift-Left)
 
-> Generates test scenarios and Playwright stubs before implementation.
+> Sinh test scenarios và Playwright stubs trước khi triển khai.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | QC Engineer |
-| **Inputs** | Wiki (index/concepts/entities), BA User Story file (`<US-ID>_*.md`) §3/§4/§7, `plan.md`, standards |
-| **Outputs** | `specs/<feature>/test-scenarios.md` (Gherkin-like), `src/frontend/e2e/<feature>.e2e.spec.ts` (stubs with `test.todo`) |
+| **Vai trò** | QC Engineer |
+| **Đầu vào** | Wiki (index/concepts/entities), BA User Story file (`<US-ID>_*.md`) §3/§4/§7, `plan.md`, standards |
+| **Đầu ra** | `specs/<feature>/test-scenarios.md` (dạng Gherkin), `src/frontend/e2e/<feature>.e2e.spec.ts` (stubs với `test.todo`) |
 
-**Constraints:** Creates stubs only (`test.todo`) — does not implement test bodies.
+**Ràng buộc:** Chỉ tạo stub (`test.todo`) — không cài đặt thân test.
 
 ---
 
 ### `vnr-test-engineer` — Test Engineer
 
-> Writes unit tests and implements Playwright E2E tests from stubs.
+> Viết unit test và cài đặt Playwright E2E từ stub.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | Test Engineer |
-| **Inputs** | `test-scenarios.md`, `plan.md`, `contracts/api-commitments.md`, git diff |
-| **Outputs** | Unit test files (xUnit/Moq for backend, Jasmine for frontend), Playwright implementations replacing `test.todo` stubs |
+| **Vai trò** | Test Engineer |
+| **Đầu vào** | `test-scenarios.md`, `plan.md`, `contracts/api-commitments.md`, git diff |
+| **Đầu ra** | File unit test (xUnit/Moq cho backend, Jasmine cho frontend), Playwright thay thế `test.todo` thành test đầy đủ |
 
-**Constraints:** Does **not** modify application source code — writes tests only. Targets ≥ 80% coverage.
+**Ràng buộc:** **Không** sửa application source code — chỉ viết test. Mục tiêu độ phủ ≥ 80%.
 
 ---
 
-### `vnr-qc-assistant` — QA/QC Assistant (Dual-Mode)
+### `vnr-qc-assistant` — QA/QC Assistant (Hai Chế Độ)
 
-> Applies QC feedback to testcases or audits them for quality improvements.
+> Áp dụng phản hồi QC vào testcase hoặc audit testcase để cải thiện chất lượng.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | QA/QC Assistant |
-| **Inputs** | `specs/<US-ID>/testcases.md` (required); in Reviewer mode also the User Story file (`<US-ID>_*.md`), `plan.md`, `tasks.md`, wiki |
-| **Outputs** | **Feedback mode:** updated `testcases.md` + edit summary. **Reviewer mode:** 10-check review table + improvement suggestions |
+| **Vai trò** | QA/QC Assistant |
+| **Đầu vào** | `specs/<US-ID>/testcases.md` (bắt buộc); chế độ Reviewer thêm User Story file (`<US-ID>_*.md`), `plan.md`, `tasks.md`, wiki |
+| **Đầu ra** | **Chế độ Feedback:** `testcases.md` đã cập nhật + tóm tắt chỉnh sửa. **Chế độ Reviewer:** bảng review 10 tiêu chí + danh sách gợi ý cải thiện |
 
-**Constraints:** Feedback mode strictly applies QC feedback only. Reviewer mode does not modify files unless QC authorizes. Asks user when mode is ambiguous.
+**Ràng buộc:** Chế độ Feedback chỉ áp dụng đúng phản hồi QC. Chế độ Reviewer không sửa file trừ khi QC cho phép. Hỏi người dùng khi chế độ chưa rõ.
 
 ---
 
 ### `vnr-testcase-writer` — QA Test Analyst
 
-> Writes detailed manual testcases from spec and plan artifacts.
+> Viết testcase manual chi tiết từ spec và plan.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | QA Test Analyst |
-| **Inputs** | User Story file (`<US-ID>_*.md`), `plan.md`, `tasks.md`, wiki |
-| **Outputs** | `specs/<feature>/testcases.md` — manual testcases with pre-conditions, test data, steps, expected results |
+| **Vai trò** | QA Test Analyst |
+| **Đầu vào** | User Story file (`<US-ID>_*.md`), `plan.md`, `tasks.md`, wiki |
+| **Đầu ra** | `specs/<feature>/testcases.md` — testcase manual với điều kiện tiên quyết, dữ liệu test, các bước, kết quả mong đợi |
 
-**Constraints:** Produces human-readable, testable manual cases. Maps to automation TC IDs where possible. Does not write test code.
+**Ràng buộc:** Tạo testcase có thể đọc và thực thi bởi con người. Map với automation TC ID khi có thể. Không viết test code.
+
+---
+
+### `vnr-code-reviewer` — Code Reviewer
+
+> Review mã vừa triển khai về tính đúng đắn so với AC, chất lượng code và độ hoàn chỉnh của task.
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Vai trò** | Code Reviewer |
+| **Đầu vào** | Phạm vi git diff, `spec.md` (AC và BR), `tasks.md`, wiki context, `memory/constitution.md` |
+| **Đầu ra** | Review mã với kết quả **PASS** / **WARN** / **FAIL** và bảng phát hiện, ghi ra `specs/<feature>/result/code-review.md` |
+
+**Ràng buộc:** Chỉ đọc — không sửa code. Chỉ xét chất lượng code và logic; kiến trúc thuộc `vnr-arch-reviewer`, bảo mật thuộc `vnr-sec-reviewer`.
 
 ---
 
 ### `vnr-arch-reviewer` — Software Architect Reviewer
 
-> Reviews code changes for architecture compliance.
+> Review thay đổi code về mức độ tuân thủ kiến trúc.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | Software Architect Reviewer |
-| **Inputs** | Git diff scope, architecture standards (backend/frontend), specs/contracts, changed files |
-| **Outputs** | Markdown architecture review with verdict **PASS** / **PASS+WARN** / **FAIL** and a findings table (file:line, violation, suggested fix) |
+| **Vai trò** | Software Architect Reviewer |
+| **Đầu vào** | Phạm vi git diff, standards kiến trúc (backend/frontend), specs/contracts, file đã thay đổi |
+| **Đầu ra** | Markdown review kiến trúc với kết quả **PASS** / **WARN** / **FAIL** và bảng phát hiện (file:dòng, vi phạm, gợi ý sửa) |
 
-**Constraints:** Read-only — does not modify code. Critical findings result in FAIL verdict.
+**Ràng buộc:** Chỉ đọc — không sửa code. Phát hiện nghiêm trọng dẫn đến kết quả FAIL.
 
 ---
 
 ### `vnr-sec-reviewer` — Security Reviewer
 
-> Reviews code changes for security vulnerabilities.
+> Review thay đổi code về lỗ hổng bảo mật.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | Security Reviewer |
-| **Inputs** | Git diff scope, security standards, `security-hooks.json` scan patterns, changed files |
-| **Outputs** | Markdown security review with verdict **PASS** / **PASS+WARN** / **FAIL**, findings mapped to OWASP categories |
+| **Vai trò** | Security Reviewer |
+| **Đầu vào** | Phạm vi git diff, standards bảo mật, scan patterns từ `security-hooks.json`, file đã thay đổi |
+| **Đầu ra** | Markdown review bảo mật với kết quả **PASS** / **WARN** / **FAIL**, phát hiện ánh xạ theo danh mục OWASP |
 
-**Constraints:** Read-only. FAIL verdict should stop the pipeline. Follows scanning patterns from hooks.
+**Ràng buộc:** Chỉ đọc. Kết quả FAIL nên dừng pipeline. Tuân theo scan patterns từ hooks.
 
 ---
 
 ### `vnr-tech-writer` — Technical Writer
 
-> Produces the final report and end-user guide from pipeline artifacts.
+> Xuất báo cáo cuối pipeline và hướng dẫn người dùng từ kết quả thực tế.
 
-| Attribute | Detail |
+| Thuộc tính | Chi tiết |
 |---|---|
-| **Role** | Technical Writer |
-| **Inputs** | Architecture + security findings, unit & E2E results, screenshots, spec/plan, wiki context |
-| **Outputs** | `specs/<feature>/result/final-report.md`, `specs/<feature>/result/user-guide.md` |
+| **Vai trò** | Technical Writer |
+| **Đầu vào** | Kết quả review kiến trúc + bảo mật, kết quả unit & E2E test, screenshots, spec/plan, wiki context |
+| **Đầu ra** | `specs/<feature>/result/final-report.md`, `specs/<feature>/result/user-guide.md` |
 
-**Constraints:** Bases outputs on factual artifacts only (no speculation). Prefers Vietnamese for end-user language. Only references existing files/screenshots.
+**Ràng buộc:** Chỉ dựa trên kết quả thực tế (không suy đoán). Ưu tiên Tiếng Việt cho tài liệu người dùng. Chỉ tham chiếu các file/screenshot đã tồn tại.
 
 ---
 
-## Output Structure
+## Cấu Trúc Đầu Ra
 
-Every feature produces artifacts under a consistent directory layout:
+Mỗi tính năng tạo ra artifact theo cây thư mục nhất quán:
 
 ```
 specs/
- └── <US-ID>/                           # one folder per User Story (e.g. SCC-E01-F01-U02)
-      ├── <US-ID>_<slug>.md             # BA User Story file — source of truth (read-only for SWE)
-      ├── <US-ID>_<slug>_ui-detail.md   # BA UI detail (optional; ui-detail.md is SWE fallback)
-      ├── research.md                   # background & analysis (optional)
-      ├── data-model.md                 # data dependencies (read-only for most agents)
-      ├── plan.md                       # implementation plan (vnr-planner output)
-      ├── tasks.md                      # task breakdown (vnr-task-breaker output)
-      ├── test-scenarios.md             # QC scenarios (vnr-qc-generator output)
-      ├── testcases.md                  # manual testcases (vnr-testcase-writer output)
-      ├── checklists/                   # requirements-quality checklists
+ └── <US-ID>/                           # mỗi folder = một User Story (vd SCC-E01-F01-U02)
+      ├── <US-ID>_<slug>.md             # BA User Story file — nguồn sự thật (SWE chỉ đọc)
+      ├── <US-ID>_<slug>_ui-detail.md   # BA UI detail (tuỳ chọn; ui-detail.md là SWE fallback)
+      ├── research.md                   # phân tích & background (tùy chọn)
+      ├── data-model.md                 # phụ thuộc dữ liệu (chỉ đọc với hầu hết agent)
+      ├── plan.md                       # kế hoạch triển khai (đầu ra vnr-planner)
+      ├── tasks.md                      # phân rã task (đầu ra vnr-task-breaker)
+      ├── test-scenarios.md             # QC scenarios (đầu ra vnr-qc-generator)
+      ├── testcases.md                  # testcase manual (đầu ra vnr-testcase-writer)
+      ├── checklists/                   # checklist chất lượng yêu cầu
       ├── contracts/
       │    └── api-commitments.md
       └── result/
-           ├── final-report.md          # pipeline summary (vnr-tech-writer output)
-           └── user-guide.md            # end-user documentation
+           ├── final-report.md          # tóm tắt pipeline (đầu ra vnr-tech-writer)
+           └── user-guide.md            # tài liệu người dùng cuối
 
 src/
- ├── backend/                   # backend implementation (vnr-backend-developer output)
+ ├── backend/                   # code backend (đầu ra vnr-backend-developer)
  ├── frontend/
  │    └── e2e/
- │         └── <feature>.e2e.spec.ts   # E2E tests (vnr-test-engineer output)
- └── app-mobile/                # Flutter mobile (vnr-mobile-developer output)
+ │         └── <feature>.e2e.spec.ts   # E2E tests (đầu ra vnr-test-engineer)
+ └── app-mobile/                # Flutter mobile (đầu ra vnr-mobile-developer)
 ```
 
 ---
 
 ## MCP Servers
 
-The plugin connects to two internal SSE (Server-Sent Events) MCP servers configured in `.mcp.json`.
+Plugin kết nối đến hai máy chủ MCP kiểu SSE (Server-Sent Events), cấu hình trong `.mcp.json`.
 
-| Server | Type | URL | Purpose |
+| Server | Kiểu | URL | Mục đích |
 |---|---|---|---|
-| `tfs` | SSE | `http://172.21.55.10:8000/sse` | TFS integration (work items, changesets) |
-| `amis-task` | SSE | `http://172.21.55.10:8001/sse` | AMIS task management integration |
+| `tfs` | SSE | `https://sa-hrm.vnrlocal.com:9300/mcp` | Tích hợp TFS (work items, changesets); xác thực bằng PAT qua header |
+| `amis-task` | SSE | `http://172.21.35.7:9301/sse` | Tích hợp quản lý task AMIS; nhận `AMIS_USER_ID` qua `env` |
 
-### Configuration
+### Cấu hình
 
 ```json
 {
   "mcpServers": {
     "tfs": {
       "type": "sse",
-      "url": "http://172.21.55.10:8000/sse"
+      "url": "https://sa-hrm.vnrlocal.com:9300/mcp",
+      "headers": {
+        "Authorization": "Bearer <PAT>",
+        "X-TFS-Org-Url": "<TFS collection URL>",
+        "X-TFS-Default-Project": "<project>"
+      }
     },
     "amis-task": {
       "type": "sse",
-      "url": "http://172.21.55.10:8001/sse",
+      "url": "http://172.21.35.7:9301/sse",
       "env": {
-        "AMIS_USER_ID": "your_user_id_here"
+        "AMIS_USER_ID": "<AMIS user id>"
       }
     }
   }
 }
 ```
 
-**Setup steps:**
-1. Ensure the host machine has network access to `172.21.55.10` (internal network).
-2. Replace `"your_user_id_here"` with your actual AMIS user ID.
-3. If endpoint URLs change, update `.mcp.json` accordingly.
-4. MCP servers are **optional** — core skills work without them, but features that push to TFS or AMIS task boards require the connections.
+**Các bước thiết lập:**
+1. Tạo Personal Access Token (PAT) trên TFS rồi điền vào `Authorization` (`Bearer <PAT>`); đặt `X-TFS-Org-Url` và `X-TFS-Default-Project` theo dự án của bạn.
+2. Đặt `AMIS_USER_ID` bằng AMIS User ID thực tế của bạn.
+3. Khi chạy trong DevHub, `AMIS_USER_ID` và `USER_EMAIL` được điền tự động (khai báo trong `devhub.required-env.json`).
+4. MCP servers là **tùy chọn** — các skill cốt lõi hoạt động bình thường mà không cần kết nối, nhưng các tính năng đẩy dữ liệu lên TFS hoặc AMIS task boards thì cần.
 
 ---
 
-## Installation
+## Cài đặt
 
-1. **Copy the plugin** into the harness plugins directory (or whichever path your harness scans for plugins).
+Cài qua bootstrap (xem `README.md` ở gốc marketplace):
 
-2. **Review permissions** — `settings.json` sets `defaultPermissionMode: "acceptEdits"`. Adjust to match your team's policy.
+```powershell
+npx github:cuonglexuan-vnr/vnr-plugins init vnr-swe
+```
 
-3. **Configure MCP endpoints** (optional) — update `.mcp.json` with the correct URLs and set `AMIS_USER_ID`.
-
-4. **Restart the harness** so it picks up the new plugin from `.claude-plugin/plugin.json`.
-
-5. **Verify** by running `/vnr-wiki` — it should navigate the docs/wiki/ and return context.
+Sau khi cài: (1) nếu dùng MCP, đặt `AMIS_USER_ID` theo hướng dẫn ở mục *MCP Servers*; (2) kiểm tra bằng `/vnr-wiki`
+— skill đọc `docs/wiki/` của dự án và trả về context.
 
 ---
 
 ## Templates
 
-The `templates/` directory provides canonical templates used by agents and skills:
+Thư mục `templates/` cung cấp các template chuẩn được dùng bởi agents và skills:
 
-| Template | Purpose |
+| Template | Mục đích |
 |---|---|
-| `spec-template.md` | Feature specification structure |
-| `plan-template.md` | Implementation plan structure |
-| `tasks-template.md` | Task breakdown format |
-| `checklist-template.md` | Requirements quality checklist |
-| `constitution-template.md` | Project constitution/governance |
-| `agent-file-template.md` | Agent definition template |
+| `spec-template.md` | Cấu trúc đặc tả tính năng |
+| `plan-template.md` | Cấu trúc kế hoạch triển khai |
+| `tasks-template.md` | Định dạng phân rã task |
+| `checklist-template.md` | Checklist chất lượng đặc tả |
+| `constitution-template.md` | Constitution / quản trị dự án |
+| `userstory-template.md` | Khuôn User Story của BA (frontmatter + các mục mà agent đọc) |
+| `agent-file-template.md` | Khuôn tệp hướng dẫn phát triển cho agent (vd `CLAUDE.md`); `scripts/powershell/update-agent-context.ps1` điền từ các `plan.md` |
 
 ---
 
-## Configuration Files
+## Các File Cấu Hình
 
-| File | Purpose |
+| File | Mục đích |
 |---|---|
-| `.claude-plugin/plugin.json` | Plugin metadata (name, version, description, author) |
-| `settings.json` | Harness default permission mode |
-| `.mcp.json` | MCP / SSE server endpoint definitions |
-| `extensions.yml` | Plugin extension definitions |
-| `integration.json` | External integration configuration |
-| `init-options.json` | Plugin initialization options |
-| `hooks/security-hooks.json` | Security scanning patterns for `vnr-sec-reviewer` |
-
----
-
-## Plugin Metadata
-
-| Field | Value |
-|---|---|
-| Name | `vnr-swe` |
-| Version | `1.0.0` |
-| Author | VNR Team |
-| Runtime | Claude Code / agent harness (content-driven) |
-| Description | A plugin to help with VNR requirements |
-
----
-
-## How Workflows Work
-
-Each skill follows the same harness-enforced pattern:
-
-```
-SKILL.md  →  workflow.md  →  steps/step-01.md … step-N.md
-```
-
-- **One step at a time**: the harness loads and executes each step file individually.
-- **Specialized agents**: each step delegates to a named agent (e.g., `vnr-planner`, `vnr-backend-developer`, `vnr-frontend-developer`) that has a defined I/O contract.
-- **Human checkpoints (HITL)**: the pipeline pauses for human review at Plan Review (1b), after implementation build (3), and after arch+sec review (4+5). Steps 1c and 2 proceed automatically.
-- **Wiki hooks**: `before_plan` and `before_implement` automatically load wiki context; `after_implement` triggers wiki-sync.
-- **Templates**: all output artifacts are rendered using the canonical templates in `templates/`.
+| `.claude-plugin/plugin.json` | Metadata plugin (tên, phiên bản, mô tả, tác giả) |
+| `settings.json` | Chế độ quyền mặc định của harness |
+| `.mcp.json` | Định nghĩa MCP / SSE server endpoint |
+| `extensions.yml` | Định nghĩa extension của plugin |
+| `init-options.json` | Tùy chọn khởi tạo plugin |
+| `hooks/security-hooks.json` | Scan patterns bảo mật cho `vnr-sec-reviewer` |
+| `hooks/hooks.json` | Hook nạp ràng buộc wiki lúc Write/Edit (gọi `scripts/resolve-context.mjs --hook`) |
+| `devhub.required-env.json` | Biến môi trường DevHub tự điền (`AMIS_USER_ID`, `USER_EMAIL`) |
+| `.lsp.json` | Cấu hình LSP server của plugin (hiện để trống) |
