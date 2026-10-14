@@ -5,11 +5,23 @@ const fmtMs = ms => { const s = Math.round(ms / 1000); return `${Math.floor(s / 
 const clip = (s, n = 100) => (s ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 const INDENT = '\n' + ' '.repeat(22); // căn các dòng tiếp theo của mục nhiều dòng
 
-// Cảnh báo regex: số dòng file:dòng tối đa dưới mỗi luật, và độ dài excerpt.
+// Nghi ngờ (khớp regex, chưa kiểm sâu): số dòng file:dòng tối đa dưới mỗi luật, và độ dài excerpt.
 const REGEX_HITS_PER_RULE = 5;
 const REGEX_EXCERPT = 80;
 // Độ dài tối đa của dòng lý do (Vì / Vì sao).
 const REASON_CHARS = 200;
+// Bảng tóm tắt: độ dài tối đa cột Luật.
+const TABLE_NAME_CHARS = 60;
+
+// Bảng kiểu markdown nhưng căn cột bằng khoảng trắng — đọc được cả trong khối ``` và file --out; cột cuối (số) căn phải.
+function renderTable(header, rows) {
+  const w = header.map((h, c) => Math.max(h.length, ...rows.map(r => r[c].length)));
+  const last = header.length - 1;
+  const line = cells => '| ' + cells.map((v, c) => (c === last ? v.padStart(w[c]) : v.padEnd(w[c]))).join(' | ') + ' |';
+  return [line(header), '|' + w.map((n, c) => (c === last ? '-'.repeat(n + 1) + ':' : '-'.repeat(n + 2))).join('|') + '|', ...rows.map(line)];
+}
+// Gom theo mã luật, giữ thứ tự gặp đầu tiên.
+const groupByCode = items => { const m = new Map(); for (const i of items) { if (!m.has(i.code)) m.set(i.code, []); m.get(i.code).push(i); } return m; };
 
 // finalLine=false: bỏ dòng VERDICT cuối — nhiều repo dùng chung một dòng VERDICT do cli.mjs ghép.
 export function renderReport(plan, { results = {}, verifications = [], elapsedMs = 0, pluginVersion = '?', ci = false, finalLine = true }) {
@@ -46,22 +58,37 @@ export function renderReport(plan, { results = {}, verifications = [], elapsedMs
   L.push(`Luật: ${plan.ruleSets.map(s => `${s.aspect} v${s.version}`).join(' · ')}        (plugin vnr-swe ${pluginVersion})`);
   for (const e of plan.errors ?? []) L.push(`! ${e}`);
   L.push('');
-  const parts = [`${fail.length} FAIL`, `${warn.length} WARN`, `${rw.length} cảnh báo regex`, `${needs.length} cần ngữ cảnh`];
+  const parts = [`${fail.length} FAIL`, `${warn.length} WARN`, `${rw.length} nghi ngờ`, `${needs.length} cần ngữ cảnh`];
   L.push(`KẾT LUẬN: ${verdict}${verdict === 'PASS' ? '' : ' — ' + parts.join(' · ')}`);
+  // Bảng tóm tắt ngay dưới KẾT LUẬN: SE nhìn vài giây biết có gì; chi tiết ở các mục dưới.
+  const rwByCode = new Map();
+  for (const w of rw) { if (!rwByCode.has(w.code)) rwByCode.set(w.code, { name: w.name, n: 0 }); rwByCode.get(w.code).n++; }
+  const rows = [
+    ...[...groupByCode(fail)].map(([code, g]) => ['FAIL', code, g[0].name, g.length]),
+    ...[...groupByCode(warn)].map(([code, g]) => ['WARN', code, g[0].name, g.length]),
+    ...[...rwByCode].map(([code, { name, n }]) => ['nghi ngờ', code, name, n]),
+  ];
+  const cell = s => (s.length > TABLE_NAME_CHARS ? clip(s, TABLE_NAME_CHARS - 1) + '…' : s);
+  if (rows.length) L.push('', ...renderTable(['Mức', 'Mã', 'Luật', 'Số chỗ'], rows.map(r => [r[0], r[1], cell(r[2]), String(r[3])])));
+  // Mục FAIL/WARN nhóm theo luật: tên, Vì và → in một lần; mỗi vị trí một dòng (6 finding cùng luật: 9 dòng thay vì 24).
   const section = (title, items) => {
     if (!items.length) return;
     L.push('', title);
-    for (const i of items) {
-      L.push(`  ${i.code}  ${i.name}${i.unsure ? ' (chưa chắc)' : ''}`);
-      L.push(`    ${i.file}:${i.line ?? '?'}   \`${i.excerpt}\``);
-      if (i.why) L.push(`    Vì: ${i.why}`);
-      if (i.fix) L.push(`    → ${i.fix}`);
+    for (const [code, group] of groupByCode(items)) {
+      const head = group[0];
+      L.push(`  ${code}  ${head.name}  (${group.length} chỗ)`);
+      if (head.why) L.push(`    Vì: ${head.why}`);
+      if (head.fix) L.push(`    → ${head.fix}`);
+      for (const i of group) {
+        L.push(`    ${i.file}:${i.line ?? '?'}   \`${i.excerpt}\`${i.unsure ? '  (chưa chắc)' : ''}`);
+        if (i.why && i.why !== head.why) L.push(`      Vì: ${i.why}`); // lý do riêng khác lý do chung của nhóm
+      }
     }
   };
   section('FAIL', fail); section('WARN', warn);
   const line = (title, body) => L.push('', `${title}   ${body}`);
   if (rw.length) {
-    L.push('', `Cảnh báo regex (${rw.length}) — chưa kiểm sâu; /vnr-review --full để kiểm`);
+    L.push('', `Nghi ngờ (${rw.length}) — chưa kiểm sâu; /vnr-review --full để kiểm`);
     const byCode = new Map(); // Map giữ thứ tự gặp đầu tiên của mã luật
     for (const w of rw) { if (!byCode.has(w.code)) byCode.set(w.code, { name: w.name, reason: clip(w.reason, REASON_CHARS), hits: [] }); byCode.get(w.code).hits.push(w); }
     for (const [code, { name, reason, hits }] of byCode) {

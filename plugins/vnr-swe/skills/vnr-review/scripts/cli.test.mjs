@@ -85,7 +85,7 @@ test('plan writes one job per FAIL candidate with a prompt; report renders from 
   mkdirSync(join(state, 'results/vnr.hrm.web'), { recursive: true });
   writeFileSync(join(state, 'results/vnr.hrm.web', jobFile), JSON.stringify({ code: 'SLOP-01', verdict: 'FAIL', findings: [{ file: 'apps/a.ts', line: 2, excerpt: 'const MOCK = 1;', why: 'mock' }], needs_context: [] }));
   const r = run('report', '--state', state, '--ci', '--plugin-version', '1.1.0');
-  assert.equal(r.status, 1); assert.match(r.stdout, /KẾT LUẬN: FAIL — 1 FAIL · 0 WARN · 2 cảnh báo regex/); assert.match(r.stdout, /VERDICT:FAIL\s*$/);
+  assert.equal(r.status, 1); assert.match(r.stdout, /KẾT LUẬN: FAIL — 1 FAIL · 0 WARN · 2 nghi ngờ/); assert.match(r.stdout, /VERDICT:FAIL\s*$/);
   // Không truyền cờ: phiên bản plugin và thời gian chạy tự lấy từ plugin.json / started.json.
   const auto = run('report', '--state', state);
   assert.match(auto.stdout, /plugin vnr-swe \d+\.\d+/); assert.match(auto.stdout, /· \d+m\d\ds\)/);
@@ -261,6 +261,7 @@ test('report nhiều repo: mỗi repo không có VERDICT riêng, chỉ một dò
     assert.equal((r.stdout.match(/^VERDICT:/gm) ?? []).length, 1);
     assert.match(r.stdout, /KẾT LUẬN: FAIL/); assert.match(r.stdout, /KẾT LUẬN: PASS/);
     assert.match(r.stdout, /\n\nVERDICT:FAIL\s*$/);
+    assert.match(r.stdout, /^Tổng: (fe FAIL · be PASS|be PASS · fe FAIL)\n\n/, 'dòng Tổng ở đầu khi nhiều repo');
     // Cả hai PASS → VERDICT:PASS duy nhất.
     rmSync(join(d, 'results'), { recursive: true }); writeFileSync(join(d, 'plan-fe.json'), JSON.stringify(miniPlan('fe')));
     const ok = run('report', '--state', d, '--ci');

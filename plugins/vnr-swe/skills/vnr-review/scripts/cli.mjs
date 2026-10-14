@@ -146,7 +146,7 @@ function cmdPlan(o) {
         jobs: plan.jobs.map(j => ({ id: j.id, code: j.code, model: j.model, file: j.file, files: j.files, noIgnore: j.noIgnore })),
       }, null, 1));
       total += plan.jobs.length;
-      console.log(`${repo.name} @ ${plan.branch} (vs ${b.from ?? b.ref}, ${b.how}) · ${diff.files.length} file · ${plan.jobs.length} job LLM · ${plan.regexWarnings.length} cảnh báo regex · ${plan.skippedJobs.length} chưa kiểm · luật: ${plan.ruleSets.map(s => `${s.aspect} v${s.version}`).join(', ')}`);
+      console.log(`${repo.name} @ ${plan.branch} (vs ${b.from ?? b.ref}, ${b.how}) · ${diff.files.length} file · ${plan.jobs.length} job LLM · ${plan.regexWarnings.length} nghi ngờ · ${plan.skippedJobs.length} chưa kiểm · luật: ${plan.ruleSets.map(s => `${s.aspect} v${s.version}`).join(', ')}`);
       for (const e of plan.errors) console.log(`  ! ${e}`);
     } catch (e) { errored++; console.error(`${repo.name}: lỗi git — ${e.message}`); }
   }
@@ -184,17 +184,18 @@ function reportImpl(o) {
   const pluginVersion = o['plugin-version'] ?? readJson(PLUGIN_JSON)?.version ?? '?';
   // Nhiều repo: mỗi repo bỏ dòng VERDICT riêng, cuối cùng một dòng VERDICT chung (xấu nhất).
   const finalLine = planFiles.length < 2;
-  let anyFail = false, worst = 'PASS'; const outs = [];
+  let anyFail = false, worst = 'PASS'; const outs = [], perRepo = [];
   for (const f of planFiles) {
     const plan = JSON.parse(readFileSync(join(state, f), 'utf8'));
     const results = readJsonDir(join(state, 'results', plan.repo.name));
     const verifications = Object.values(readJsonDir(join(state, 'verify', plan.repo.name))).flat();
     const { text, verdict } = renderReport(plan, { results, verifications, elapsedMs, pluginVersion, ci: !!o.ci, finalLine });
-    outs.push(text); if (verdict === 'FAIL') anyFail = true;
+    outs.push(text); perRepo.push(`${plan.repo.name} ${verdict}`); if (verdict === 'FAIL') anyFail = true;
     if (verdict === 'FAIL' || (verdict === 'WARN' && worst === 'PASS')) worst = verdict;
   }
   if (!outs.length) { console.error(`Không có plan-*.json trong ${state} — chạy \`plan\` trước`); return 4; }
-  console.log(finalLine ? outs[0] : `${outs.join('\n\n')}\n\nVERDICT:${worst}`);
+  // Nhiều repo: dòng Tổng ở đầu để SE thấy kết quả từng repo trước khi cuộn.
+  console.log(finalLine ? outs[0] : `Tổng: ${perRepo.join(' · ')}\n\n${outs.join('\n\n')}\n\nVERDICT:${worst}`);
   return anyFail ? 1 : 0;
 }
 

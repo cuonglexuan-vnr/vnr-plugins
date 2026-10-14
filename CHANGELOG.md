@@ -11,7 +11,8 @@ Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Số phiên bản
   - Lớp máy `skills/vnr-review/scripts/` (diff · parse luật · cổng path/regex · phân tầng FAIL-first · báo cáo · `check`), có test (`npm test`).
   - Agent `vnr-rule-checker` (một luật × một file mỗi lượt) và `vnr-rule-verifier` (xác minh finding FAIL); mặc định `model: haiku`.
   - Chế độ `/vnr-review check`: kiểm 6 mốc máy đọc của file luật, sinh `docs/review/INDEX.md` và digest `.claude/rules/review-{fe,be}.md`.
-  - `templates/report.template.md`: khuôn báo cáo để orchestrator dán nguyên văn.
+  - `templates/report.template.md`: khuôn báo cáo để orchestrator dán nguyên văn — bảng tóm tắt theo mã luật dưới `KẾT LUẬN`,
+    mục FAIL/WARN nhóm theo luật (Vì/→ in một lần, mỗi vị trí một dòng), dòng `Tổng:` khi review nhiều repo.
 - `CHANGELOG.md` (tệp này) và bản đồ `AGENTS.md` cho `plugins/vnr-swe/`, `agents/`, `skills/vnr-review/`, `skills/vnr-review/scripts/`.
 
 ### Thay đổi
