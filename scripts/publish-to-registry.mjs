@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
  * Publish zip marketplace lên registry artifact của VNR (Artifact Keeper,
- * repo generic). Chạy được trên Windows và Linux. Cấu hình chỉ qua biến môi trường:
+ * repo generic). Chạy được trên Windows và Linux. Cấu hình chỉ qua biến môi trường
+ * (`task publish` nạp chúng từ `.env` ở gốc repo — xem `Taskfile.yml`, `.env.example`):
  *   AK_TOKEN       (bắt buộc) — API token của registry có quyền repository:write
- *   AK_REPO_BASE   (tuỳ chọn) — mặc định https://registry.vnresource.net/api/v1/repositories/vnr-ai
+ *   AK_REPO_BASE   (tuỳ chọn) — mặc định https://sa-hrm.vnrlocal.com:9091/api/v1/repositories/vnr-marketplace
  *   AK_ARTIFACT    (tuỳ chọn) — mặc định marketplace.zip
  */
 import { readFileSync } from 'node:fs';
@@ -11,7 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildMarketplaceZip, MARKETPLACE_ZIP_INCLUDE, MANIFEST_RELATIVE_PATH } from './build-marketplace-zip.mjs';
 
-const DEFAULT_REPO_BASE = 'https://registry.vnresource.net/api/v1/repositories/vnr-ai';
+const DEFAULT_REPO_BASE = 'https://sa-hrm.vnrlocal.com:9091/api/v1/repositories/vnr-marketplace';
 const DEFAULT_ARTIFACT = 'marketplace.zip';
 const UPLOAD_TIMEOUT_MS = 120_000;
 

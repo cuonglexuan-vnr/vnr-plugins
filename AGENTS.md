@@ -9,7 +9,7 @@ Repo nguồn của **Claude Code marketplace `vnr-marketplace`**, chứa hai plu
 Người dùng cuối cài qua `vnr-bootstrap` (`npx github:cuonglexuan-vnr/vnr-plugins init vnr-swe`, hoặc
 `install-vnr-swe.ps1` / `.cmd`) — bootstrap gọi `claude plugin marketplace add` + `claude plugin install`, **không** chép
 tệp vào project. DevHub nhận marketplace dưới dạng một zip phẳng trên registry VNR
-(`https://registry.vnresource.net/api/v1/repositories/vnr-ai/download/marketplace.zip`) — tên kho trên registry khác tên marketplace, cố ý.
+(`https://sa-hrm.vnrlocal.com:9091/api/v1/repositories/vnr-marketplace/download/marketplace.zip`) — tên kho trên registry trùng tên marketplace.
 
 Không có ở đây: mã nguồn HRM (BE .NET, FE Angular, Flutter) mà các agent của `vnr-swe` thao tác — đó là repo của dự án
 cài plugin; quy tắc kiến trúc theo stack cũng nằm ở wiki của dự án đó (`docs/wiki/manifest.json`), không nằm trong plugin.
@@ -25,6 +25,8 @@ cài plugin; quy tắc kiến trúc theo stack cũng nằm ở wiki của dự �
 | `scripts/build-marketplace-zip.mjs` | Dựng zip phẳng, chỉ gồm `MARKETPLACE_ZIP_INCLUDE` = `.claude-plugin`, `plugins`, `README.md` |
 | `scripts/build-marketplace-zip.test.mjs` | `node:test`: zip phẳng, loại `.git`/tooling, từ chối khi thiếu manifest |
 | `scripts/publish-to-registry.mjs` | PUT zip lên registry; env `AK_TOKEN` (bắt buộc), `AK_REPO_BASE`, `AK_ARTIFACT` |
+| `Taskfile.yml` | Lệnh cho người bảo trì ([Task](https://taskfile.dev)): `task test`, `task publish` (test rồi publish); nạp `.env` |
+| `.env.example` | Mẫu `.env` cho `task publish`; chép thành `.env` (bị `.gitignore`, không vào zip) |
 | `README.md` | Hướng dẫn cài và publish (tiếng Việt) — được đóng vào zip, người dùng cuối đọc |
 | `docs/glossary.md` | Bảng thuật ngữ dùng thống nhất cho mọi tài liệu/comment/mô tả |
 | `CHANGELOG.md` | Lịch sử phiên bản marketplace (Keep a Changelog); thêm mục mỗi khi tăng `version` |

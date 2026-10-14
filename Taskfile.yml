@@ -1,0 +1,17 @@
+# Lệnh cho người bảo trì marketplace. Cài Task: https://taskfile.dev (winget install Task.Task).
+# Biến môi trường (AK_TOKEN…) nạp từ .env ở gốc repo — chép từ .env.example, không commit.
+version: '3'
+
+dotenv: ['.env']
+
+tasks:
+  test:
+    desc: Chạy test của zip builder và script vnr-review
+    cmds:
+      - npm test
+
+  publish:
+    desc: Test rồi publish marketplace.zip lên registry VNR (cần AK_TOKEN trong .env)
+    deps: [test]
+    cmds:
+      - npm run publish:registry
