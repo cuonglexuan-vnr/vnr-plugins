@@ -27,13 +27,14 @@ cài plugin; quy tắc kiến trúc theo stack cũng nằm ở wiki của dự �
 | `scripts/publish-to-registry.mjs` | PUT zip lên registry; env `AK_TOKEN` (bắt buộc), `AK_REPO_BASE`, `AK_ARTIFACT` |
 | `README.md` | Hướng dẫn cài và publish (tiếng Việt) — được đóng vào zip, người dùng cuối đọc |
 | `docs/glossary.md` | Bảng thuật ngữ dùng thống nhất cho mọi tài liệu/comment/mô tả |
+| `CHANGELOG.md` | Lịch sử phiên bản marketplace (Keep a Changelog); thêm mục mỗi khi tăng `version` |
 | `assets/pat-page.png` | Ảnh minh hoạ trang tạo PAT |
 
 ## Subdirectories
 
 | Thư mục | Vai trò |
 |---|---|
-| `plugins/vnr-swe/` | Plugin SDD: `skills/` (`vnr-*`, mỗi skill một `SKILL.md`), `agents/` (14 agent), `memory/constitution.md`, `templates/`, `hooks/`, `scripts/` |
+| `plugins/vnr-swe/` | Plugin SDD: `skills/` (`vnr-*`, mỗi skill một `SKILL.md`), `agents/` (16 agent), `memory/constitution.md`, `templates/`, `hooks/`, `scripts/`; `vnr-review` = review diff trước khi push theo `docs/review/` của workspace |
 | `plugins/vnr-sa/` | Plugin SA: skill `vnr-md2docx` (Markdown → DOCX theo template VNR, Python) và `vnr-tfs` (PBI/Task TFS từ `config.yml` + template HTML) |
 | `docs/` | Tài liệu chính thức của repo (hiện: bảng thuật ngữ) |
 | `bin/` | Entry CLI của bootstrap |
@@ -64,8 +65,8 @@ cài plugin; quy tắc kiến trúc theo stack cũng nằm ở wiki của dự �
 
 ### Kiểm thử
 
-- `npm test` = `node --test "scripts/*.test.mjs"` — chỉ phủ zip builder. Test dựng repo giả trong `os.tmpdir()`
-  (`mkdtempSync`) và đọc lại zip bằng `adm-zip`.
+- `npm test` = `node --test "scripts/*.test.mjs" "plugins/vnr-swe/skills/vnr-review/scripts/*.test.mjs"` — phủ zip builder và lớp script của
+  `vnr-review`. Test dựng repo giả trong `os.tmpdir()` (`mkdtempSync`); test zip đọc lại zip bằng `adm-zip`.
 - Nội dung skill/agent không có test tự động; kiểm bằng cách cài marketplace cục bộ
   (`claude plugin marketplace add <đường dẫn repo>` rồi `claude plugin install <plugin>`) và chạy skill.
 - `plugins/vnr-swe/scripts/okf-validate.mjs` kiểm wiki của **dự án dùng plugin** (`--layer wiki|raw`), không kiểm repo này.
