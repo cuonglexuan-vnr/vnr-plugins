@@ -20,7 +20,7 @@
     "init:vnr-swe": "node ./bin/vnr-bootstrap.mjs init vnr-swe",
     "help": "node ./bin/vnr-bootstrap.mjs --help",
     "publish:registry": "node ./scripts/publish-to-registry.mjs",
-    "test": "node --test \"scripts/*.test.mjs\""
+    "test": "node --test \"scripts/*.test.mjs\" \"plugins/vnr-swe/skills/vnr-review/scripts/*.test.mjs\""
   },
   "keywords": [
     "claude-code",

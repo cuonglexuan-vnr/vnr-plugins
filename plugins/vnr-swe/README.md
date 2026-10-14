@@ -37,6 +37,7 @@ Plugin chạy trên harness Claude Code / agent, cung cấp một pipeline phát
 | `vnr-run-testcases` | `/vnr-run-testcases` | Hiển thị, theo dõi và cập nhật trạng thái testcase trong `testcases.md` |
 | `vnr-run-e2e` | `/vnr-run-e2e` | Chạy Playwright E2E tests, thu thập screenshots và xuất HTML report |
 | `vnr-arch-review` | `/vnr-arch-review` | Review kiến trúc mã BE + FE theo phạm vi, kết quả PASS / WARN / FAIL; chạy độc lập hoặc trong pipeline |
+| `vnr-review` | `/vnr-review` | Review phần code thay đổi chưa push (BE + FE) theo bộ luật `docs/review/` của workspace — báo cáo FAIL / WARN / PASS tiếng Việt, 5–10 phút; `/vnr-review check` cho owner bộ luật |
 | `vnr-mobile-implement` | `/vnr-mobile-implement` | Triển khai task Flutter mobile từ `tasks.md` |
 | `vnr-mobile-auto-test` | `/vnr-mobile-auto-test` | Sinh và chạy auto test cho Flutter app theo 3 cấp: Unit → Widget → Integration |
 | `vnr-wiki-add` | `/vnr-wiki-add` | Đưa ghi chú thô (md/txt) vào `docs/raw/` đúng cấu trúc; không tự sync wiki |
@@ -250,6 +251,34 @@ Plugin đi kèm một đội agent chuyên biệt. Mỗi agent có vai trò, h�
 | **Đầu ra** | Markdown review bảo mật với kết quả **PASS** / **WARN** / **FAIL**, phát hiện ánh xạ theo danh mục OWASP |
 
 **Ràng buộc:** Chỉ đọc. Kết quả FAIL nên dừng pipeline. Tuân theo scan patterns từ hooks.
+
+---
+
+### `vnr-rule-checker` — Rule Checker
+
+> Kiểm một luật review trên một file thay đổi (bước B5 của `/vnr-review`).
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Vai trò** | Rule Checker (một luật, một file) |
+| **Đầu vào** | Prompt do `skills/vnr-review/scripts/cli.mjs plan` sinh sẵn: từ điển khía cạnh, một khối luật, hunk của file, danh sách file được phép đọc thêm |
+| **Đầu ra** | Đúng một khối JSON: `verdict` (FAIL / WARN / PASS / NEEDS_CONTEXT) kèm `findings` (file, dòng, trích, lý do) và `needs_context` |
+
+**Ràng buộc:** Chỉ đọc. Chỉ kết luận trên điều nhìn thấy, không thêm luật từ trí nhớ; thiếu ngữ cảnh thì trả `NEEDS_CONTEXT`, không đoán thành PASS. Chỉ mở các file trong mục "File được phép đọc thêm".
+
+---
+
+### `vnr-rule-verifier` — Verifier
+
+> Xác minh lại một finding FAIL trước khi báo cáo tới SE (bước B6 của `/vnr-review`).
+
+| Thuộc tính | Chi tiết |
+|---|---|
+| **Vai trò** | Verifier (xác minh một finding FAIL) |
+| **Đầu vào** | Khối luật, một finding FAIL của `vnr-rule-checker` (file, dòng, trích, lý do), quyền đọc file đó và các file được phép đọc thêm |
+| **Đầu ra** | Một khối JSON: `verdict` = `confirmed` / `unsure` / `wrong` kèm `note` ≤ 1 câu |
+
+**Ràng buộc:** Chỉ đọc. Mở file tại dòng nêu (±15 dòng) và đối chiếu lại `FAIL khi`, `Ngoại lệ`, marker `review-ignore`. `unsure` hạ finding xuống WARN; `wrong` loại bỏ finding.
 
 ---
 

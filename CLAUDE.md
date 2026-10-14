@@ -53,8 +53,8 @@ Không nhắc đường dẫn ngoài repo, thư mục làm việc riêng (`.self
 
 - Đường dẫn trong nội dung plugin luôn qua `$PLUGIN_DIR/…` (skill/agent) hoặc `${CLAUDE_PLUGIN_ROOT}/…` (hook):
   plugin chạy từ plugin store của Claude, không nằm trong project người dùng.
-- Đổi nội dung được đóng gói (`.claude-plugin/`, `plugins/`, `README.md`) → tăng `version` trong `.claude-plugin/marketplace.json`;
-  đó là version gửi lên registry.
+- Đổi nội dung được đóng gói (`.claude-plugin/`, `plugins/`, `README.md`) → tăng `version` trong `.claude-plugin/marketplace.json`
+  (đó là version gửi lên registry) và thêm mục tương ứng vào `CHANGELOG.md`.
 - Zip phát hành là phẳng và allow-list (`scripts/build-marketplace-zip.mjs`); tooling, `.git`, `.self/` không bao giờ vào zip.
 - Gate trước khi báo xong, chạy từ gốc repo:
 
