@@ -33,11 +33,13 @@ test('full report shape and verdict', () => {
   assert.equal(verdict, 'FAIL');
   assert.match(text, /^Review  vnr\.hrm\.web/m);
   assert.match(text, /Luật: arch-fe v1 · slop v2/);
-  assert.match(text, /KẾT LUẬN: FAIL — 1 FAIL · 2 WARN · 3 cảnh báo regex · 1 cần ngữ cảnh/);
-  assert.match(text, /^FAIL\n  SLOP-01  Dữ liệu mẫu[^\n]*\n    apps\/x\/seed\.ts:349 /m);
-  assert.match(text, /→ Thay nguồn tĩnh bằng adapter HTTP\./);
-  assert.match(text, /^WARN\n(.*\n)*  ARCH-FE-04 .*\(chưa chắc\)/m);
-  assert.match(text, /^Cảnh báo regex \(3\) — chưa kiểm sâu; \/vnr-review --full để kiểm\n  UIUX-07  Màu cứng  \(2\)\n    apps\/x\/a\.component\.ts:41   `color: #000`\n    apps\/x\/b\.component\.ts:9   `color: #fff`\n  NAME-FE-03  Tên file  \(1\)\n    libs\/y\/z\.ts:12   `export class foo`$/m);
+  assert.match(text, /KẾT LUẬN: FAIL — 1 FAIL · 2 WARN · 3 nghi ngờ · 1 cần ngữ cảnh/);
+  // Bảng tóm tắt ngay dưới KẾT LUẬN: FAIL → WARN → nghi ngờ, cột cuối căn phải.
+  assert.match(text, /KẾT LUẬN: FAIL[^\n]*\n\n\| Mức      \| Mã         \| Luật +\| Số chỗ \|\n\|----------\|------------\|-+\|-------:\|\n\| FAIL     \| SLOP-01    \| Dữ liệu mẫu[^|]*\| +1 \|\n\| WARN     \| ARCH-FE-04 \|[^\n]*\n\| WARN     \| FW-FE-12   \|[^\n]*\n\| nghi ngờ \| UIUX-07    \| Màu cứng +\| +2 \|\n\| nghi ngờ \| NAME-FE-03 \|[^\n]*\| +1 \|\n\nFAIL\n/);
+  // Nhóm theo luật: tên + (N chỗ), Vì, →, rồi các vị trí.
+  assert.match(text, /^FAIL\n  SLOP-01  Dữ liệu mẫu[^\n]*  \(1 chỗ\)\n    Vì: mock\n    → Thay nguồn tĩnh bằng adapter HTTP\.\n    apps\/x\/seed\.ts:349 /m);
+  assert.match(text, /^WARN\n  ARCH-FE-04 [^\n]*\(1 chỗ\)\n(.*\n)*    libs\/ui\/x\.ts:18   `x`  \(chưa chắc\)$/m);
+  assert.match(text, /^Nghi ngờ \(3\) — chưa kiểm sâu; \/vnr-review --full để kiểm\n  UIUX-07  Màu cứng  \(2\)\n    apps\/x\/a\.component\.ts:41   `color: #000`\n    apps\/x\/b\.component\.ts:9   `color: #fff`\n  NAME-FE-03  Tên file  \(1\)\n    libs\/y\/z\.ts:12   `export class foo`$/m);
   assert.match(text, /Cần ngữ cảnh \(1\)\s+SLOP-10 .*UserController/);
   assert.match(text, /Bỏ qua có lý do \(1\)\s+SEC-03 apps\/x\/dev-proxy\.ts:9  "chỉ dùng cho env dev"/);
   assert.match(text, /Marker không hợp lệ \(1\)\s+SEC-01 .*luật không cho bỏ qua/);
@@ -93,14 +95,14 @@ test('Vì: dùng why của checker, không có thì rơi về lý do của luậ
   const p = { ...plan, jobs: [{ ...plan.jobs[0], reason: 'lý do luật' }, { ...plan.jobs[1], reason: 'lý do luật 2' }, { ...plan.jobs[2] }], regexWarnings: [], ignored: [], invalidIgnores: [], skippedJobs: [] };
   const r = { ...results, 'ARCH-FE-04__2': { code: 'ARCH-FE-04', verdict: 'FAIL', findings: [{ file: 'libs/ui/x.ts', line: 18, excerpt: 'x' }], needs_context: [] } };
   const { text } = renderReport(p, { results: r, elapsedMs: 1, pluginVersion: '1', ci: true });
-  assert.match(text, /`export const WF_MODULES = \['a'\]`\n    Vì: mock\n    → Thay nguồn/);
-  assert.match(text, /`x`\n    Vì: lý do luật 2\n    → Tách PR\./);
-  assert.match(text, /`this\.http\.get`\n    Vì: z\n/);
+  assert.match(text, /\(1 chỗ\)\n    Vì: mock\n    → Thay nguồn[^\n]*\n    apps\/x\/seed\.ts:349   `export const WF_MODULES = \['a'\]`/);
+  assert.match(text, /\(1 chỗ\)\n    Vì: lý do luật 2\n    → Tách PR\.\n    libs\/ui\/x\.ts:18   `x`/);
+  assert.match(text, /\(1 chỗ\)\n    Vì: z\n    → Dùng SupertoolApiClient\.\n    apps\/x\/p\.ts:61   `this\.http\.get`/);
   const noWhy = renderReport({ ...p, jobs: [p.jobs[2]] }, { results: { 'FW-FE-12__3': { code: 'FW-FE-12', verdict: 'WARN', findings: [{ file: 'a', line: 1, excerpt: 'e' }] } }, elapsedMs: 1, pluginVersion: '1', ci: true }).text;
   assert.doesNotMatch(noWhy, /Vì:/);
 });
 
-test('Vì sao: một dòng dưới mỗi mã cảnh báo regex, bỏ khi lý do rỗng', () => {
+test('Vì sao: một dòng dưới mỗi mã nghi ngờ, bỏ khi lý do rỗng', () => {
   const w = (code, n, reason) => ({ code, name: 'N', file: `f${n}.ts`, n, text: 't', reason });
   const p = { ...clean, jobs: [], regexWarnings: [w('A-1', 1, 'lý do A'), w('A-1', 2, 'lý do A'), w('B-1', 3, '')] };
   const { text } = renderReport(p, { ...opts, results: {} });
@@ -139,7 +141,7 @@ test('verdict FAIL/WARN không kèm finding → cần ngữ cảnh; PASS kèm fi
     assert.doesNotMatch(r.text, /^FAIL$/m);
   }
   const r = renderReport(p, { ...opts, results: { A__1: { verdict: 'PASS', findings: [{ file: 'a.ts', line: 1, excerpt: 'x', why: 'y' }], needs_context: [] } } });
-  assert.equal(r.verdict, 'WARN'); assert.match(r.text, /^WARN\n  A-01 /m);
+  assert.equal(r.verdict, 'WARN'); assert.match(r.text, /^WARN\n  A-01 [^\n]*\(1 chỗ\)/m);
 });
 
 test('clip ghi chú needs_context (200) và lý do bỏ qua (100)', () => {
@@ -149,19 +151,38 @@ test('clip ghi chú needs_context (200) và lý do bỏ qua (100)', () => {
   assert.ok(!/n{201}/.test(text) && /n{200}/.test(text)); assert.ok(!/r{101}/.test(text) && /r{100}/.test(text));
 });
 
-test('cảnh báo regex: tối đa 5 dòng/luật, cắt excerpt 80, giữ thứ tự mã, mục commit in (commit …):0', () => {
+test('nghi ngờ: tối đa 5 dòng/luật, cắt excerpt 80, giữ thứ tự mã, mục commit in (commit …):0', () => {
   const hit = (n, text = 't') => ({ code: 'W-1', name: 'Luật', file: `f${n}.ts`, n, text });
   const p = {
     ...clean, jobs: [],
     regexWarnings: [...[7, 6, 5, 4, 3, 2, 1].map(n => hit(n)), { code: 'W-0', name: 'Commit', file: '(commit abc1234567)', n: 0, text: 'x'.repeat(200) }],
   };
   const { text } = renderReport(p, { ...opts, results: {} });
-  assert.match(text, /Cảnh báo regex \(8\)/);
+  assert.match(text, /Nghi ngờ \(8\)/);
   assert.ok(text.indexOf('W-1  Luật  (7)') < text.indexOf('W-0  Commit  (1)'), 'first-seen order');
   const lines = text.split('\n').filter(l => /^    f\d\.ts:\d/.test(l));
   assert.deepEqual(lines.map(l => l.trim().split(' ')[0]), ['f1.ts:1', 'f2.ts:2', 'f3.ts:3', 'f4.ts:4', 'f5.ts:5']);
   assert.match(text, /^    … và 2 dòng nữa$/m);
   assert.match(text, /^    \(commit abc1234567\):0   `x{80}`$/m);
   assert.equal((text.match(/… và/g) ?? []).length, 1);
-  assert.match(text, /KẾT LUẬN: WARN — 0 FAIL · 0 WARN · 8 cảnh báo regex/);
+  assert.match(text, /KẾT LUẬN: WARN — 0 FAIL · 0 WARN · 8 nghi ngờ/);
+});
+
+test('nhóm theo mã luật: Vì/→ in một lần, mỗi vị trí một dòng, lý do riêng khác thì in dưới vị trí', () => {
+  const p = { ...clean, jobs: [
+    { id: 'N-20__1', code: 'N-20', name: 'Khoá i18n', level: 'FAIL', file: 'EN.json', fix: 'Đặt khoá camelCase.', reason: 'lý do luật' },
+    { id: 'N-20__2', code: 'N-20', name: 'Khoá i18n', level: 'FAIL', file: 'VN.json', fix: 'Đặt khoá camelCase.', reason: 'lý do luật' },
+  ] };
+  const r = {
+    'N-20__1': { code: 'N-20', verdict: 'FAIL', findings: [{ file: 'EN.json', line: 1, excerpt: 'a', why: 'snake' }, { file: 'EN.json', line: 2, excerpt: 'b', why: 'snake' }], needs_context: [] },
+    'N-20__2': { code: 'N-20', verdict: 'FAIL', findings: [{ file: 'VN.json', line: 3, excerpt: 'c', why: 'khác' }], needs_context: [] },
+  };
+  const { text } = renderReport(p, { ...opts, results: r });
+  assert.match(text, /^FAIL\n  N-20  Khoá i18n  \(3 chỗ\)\n    Vì: snake\n    → Đặt khoá camelCase\.\n    EN\.json:1   `a`\n    EN\.json:2   `b`\n    VN\.json:3   `c`\n      Vì: khác$/m);
+  assert.equal((text.match(/→ Đặt khoá/g) ?? []).length, 1);
+  assert.match(text, /\| FAIL +\| N-20 +\| Khoá i18n +\| +3 \|/);
+});
+
+test('bảng tóm tắt: không in khi không có FAIL/WARN/regex', () => {
+  assert.doesNotMatch(renderReport({ ...clean, jobs: [] }, { ...opts, results: {} }).text, /\| Mức/);
 });
