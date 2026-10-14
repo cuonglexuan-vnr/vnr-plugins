@@ -62,28 +62,28 @@ Publish sau khi merge thay đổi trong `plugins/` hoặc `.claude-plugin/market
 > **Lưu ý:** publish bản 1.1.0 đổi tên marketplace thành `vnr-marketplace` với mọi người dùng DevHub. Kiểm trước trên một
 > máy DevHub (Sync, rồi `claude plugin marketplace list` và `/plugin`) rồi mới thông báo.
 
-Yêu cầu: Node.js 18 trở lên và token registry có quyền `repository:write` trên kho `vnr-ai`
-(tên kho trên registry khác tên marketplace, cố ý giữ nguyên).
+Yêu cầu: Node.js 18 trở lên và token registry có quyền `repository:write` trên kho `vnr-marketplace`
+(trùng tên marketplace).
 
-```powershell
-npm install
-$env:AK_TOKEN = '<registry token>'
-npm run publish:registry
+Lần đầu: cài [Task](https://taskfile.dev) (`winget install Task.Task` / `brew install go-task`), chạy `npm install`,
+rồi chép `.env.example` thành `.env` và điền `AK_TOKEN` (`.env` đã nằm trong `.gitignore`). Từ đó mỗi lần publish:
+
+```sh
+task publish
 ```
 
-```bash
-npm install
-AK_TOKEN='<registry token>' npm run publish:registry
-```
+`task publish` chạy `npm test` trước rồi mới `npm run publish:registry`, với biến môi trường nạp từ `.env`
+(`Taskfile.yml`). Không dùng Task thì đặt `AK_TOKEN` trong môi trường (`$env:AK_TOKEN = '<registry token>'`) và gọi
+thẳng `npm run publish:registry`.
 
 Script chỉ nén `.claude-plugin/`, `plugins/` và `README.md` (phẳng, ở gốc zip) rồi tải lên:
 
 ```text
-https://registry.vnresource.net/api/v1/repositories/vnr-ai/download/marketplace.zip
+https://sa-hrm.vnrlocal.com:9091/api/v1/repositories/vnr-marketplace/download/marketplace.zip
 ```
 
 DevHub nhận bản mới ở lần **Sync** kế tiếp trong Settings › Marketplaces. Biến môi trường tuỳ chọn:
-`AK_REPO_BASE` (kho khác) và `AK_ARTIFACT` (tên tệp khác). Chạy `npm test` để kiểm tra bộ dựng zip.
+`AK_REPO_BASE` (kho khác) và `AK_ARTIFACT` (tên tệp khác), đặt trong `.env` hay môi trường đều được. `task test` (hoặc `npm test`) kiểm tra bộ dựng zip.
 
 ## Tệp giới thiệu cho DevHub
 

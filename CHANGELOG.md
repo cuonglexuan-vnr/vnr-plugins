@@ -17,6 +17,9 @@ Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Số phiên bản
 
 ### Thay đổi
 - `npm test` phủ thêm `plugins/vnr-swe/skills/vnr-review/scripts/*.test.mjs`.
+- `Taskfile.yml`: `task publish` (= `npm test` + `npm run publish:registry`) nạp `AK_TOKEN` / `AK_REPO_BASE` / `AK_ARTIFACT`
+  từ `.env` ở gốc repo (mẫu: `.env.example`).
+- Registry mặc định chuyển sang `https://sa-hrm.vnrlocal.com:9091/api/v1/repositories/vnr-marketplace`, kho đổi `vnr-ai` → `vnr-marketplace` (`publish-to-registry.mjs`, `README.md`).
 - `plugins/vnr-swe/README.md`: hàng skill `vnr-review`, hai agent mới; `devhub.catalog.json`: changelog 1.1.0.
 
 ### Ghi chú
