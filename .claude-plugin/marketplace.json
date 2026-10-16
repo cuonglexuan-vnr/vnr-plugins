@@ -1,20 +1,24 @@
 {
   "name": "vnr-marketplace",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "Bộ plugin Claude Code của VNR",
   "owner": {
     "name": "VNR"
   },
+  "allowCrossMarketplaceDependenciesOn": ["claude-plugins-official"],
   "plugins": [
     {
       "name": "vnr-swe",
-      "description": "Quy trình phát triển phần mềm theo đặc tả (Spec-Driven Development) cho dev HRM",
-      "version": "1.1.0",
+      "description": "Hai lệnh cho dev HRM: /vnr-dev làm một PBI từ đầu đến cuối trên nền superpowers, /vnr-review review code trước khi push",
+      "version": "2.0.0",
       "author": {
         "name": "VNR"
       },
       "source": "./plugins/vnr-swe",
-      "category": "development"
+      "category": "development",
+      "dependencies": [
+        { "name": "superpowers", "marketplace": "claude-plugins-official" }
+      ]
     },
     {
       "name": "vnr-sa",

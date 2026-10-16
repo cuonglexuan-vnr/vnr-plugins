@@ -1,6 +1,6 @@
 # Cài đặt plugin VNR cho Claude Code
 
-Marketplace `vnr-marketplace` phân phối hai plugin: `vnr-swe` (quy trình phát triển theo đặc tả cho dev HRM) và `vnr-sa`
+Marketplace `vnr-marketplace` phân phối hai plugin: `vnr-swe` (hai lệnh cho dev HRM: `/vnr-dev` làm PBI trên nền superpowers, `/vnr-review` review trước khi push) và `vnr-sa`
 (bộ công cụ cho Solution Architect). Lệnh `vnr-bootstrap` đăng ký marketplace với Claude Code rồi cài plugin;
 plugin chạy từ kho plugin của Claude, **không** chép tệp nào vào dự án của bạn.
 
@@ -16,6 +16,9 @@ Chạy trong thư mục dự án (phạm vi cài đặt mặc định là `proje
 ```powershell
 npx github:cuonglexuan-vnr/vnr-plugins init vnr-swe
 ```
+
+`vnr-swe` 2.0 cần plugin `superpowers` (marketplace `claude-plugins-official`). Cài qua DevHub thì DevHub cài cả hai; cài tay thì
+chạy `claude plugin install superpowers@claude-plugins-official` trước, hoặc để marketplace tự kéo nhờ `allowCrossMarketplaceDependenciesOn`.
 
 Cài `vnr-sa` thay vì `vnr-swe`: thay tên plugin ở cuối lệnh.
 

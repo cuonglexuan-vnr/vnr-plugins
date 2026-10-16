@@ -2,21 +2,26 @@
   "$schema": "https://registry.vnresource.net/schemas/devhub.catalog.schema.json",
   "schemaVersion": 1,
   "icon": "🧭",
-  "tags": ["sdd", "pipeline", "dotnet", "angular"],
+  "tags": ["hrm", "sdlc", "review", "superpowers", "dotnet", "angular"],
   "examples": [
-    "/vnr-auto-pipeline: chạy từ User Story đến báo cáo cuối, dừng lại để bạn duyệt ở các bước quan trọng",
-    "/vnr-clarify: Claude hỏi lại tối đa 5 điểm chưa rõ trong đặc tả",
-    "/vnr-wiki: tìm ngữ cảnh nghiệp vụ trong wiki dự án"
+    "/vnr-dev 7916: làm PBI 7916 từ đầu đến cuối — hỏi làm rõ, duyệt plan, AI code + build + test + review",
+    "/vnr-dev tôi muốn thêm cột ngày sinh vào grid nhân viên",
+    "/vnr-dev sửa bug: lưu nhân viên báo 500 khi bỏ trống email",
+    "/vnr-review: review phần code chưa push theo bộ luật SA team"
   ],
   "providesTable": [
-    { "area": "Đặc tả", "description": "Dựng khung, làm rõ và phân tích User Story của BA trước khi viết code" },
-    { "area": "Lập kế hoạch", "description": "plan.md, data-model.md và API contract từ đặc tả đã duyệt" },
-    { "area": "Chia task", "description": "tasks.md sắp theo thứ tự phụ thuộc, mỗi bước ghi rõ đường dẫn tệp" },
-    { "area": "Triển khai", "description": "Thực hiện BE → FE → Mobile, có build gate giữa các phạm vi" },
-    { "area": "Review", "description": "Agent review code, kiến trúc và bảo mật với gate PASS/WARN/FAIL" },
-    { "area": "Báo cáo", "description": "final-report.md và user-guide.md tiếng Việt cho từng tính năng" }
+    { "area": "Làm PBI", "description": "/vnr-dev: brainstorm ngắn → spec → plan (SE duyệt) → AI code theo TDD, build/test, để nhánh + staged cho SE commit" },
+    { "area": "Review", "description": "/vnr-review: FAIL / WARN / PASS theo docs/review/rules của vnr.hrm.wiki, báo cáo tiếng Việt, chạy một lần ở cuối /vnr-dev" },
+    { "area": "Không cấu hình", "description": "Tự nhận ra vnr.hrm.wiki hay repo FE/BE, nhánh develop hay projects/<customer>/dev" },
+    { "area": "Wiki", "description": "DevHub ghi khối HRM Wiki vào CLAUDE.md máy SE để AI đọc docs/wiki trước khi plan/code" }
   ],
   "changelog": [
+    { "version": "2.0.0", "publishedAt": "2026-10-16", "notes": [
+      "Gỡ toàn bộ quy trình spec-kit (20 skill, 14 agent, hook, template); /vnr-auto-pipeline không còn — gõ /vnr-dev",
+      "Thêm /vnr-dev trên nền superpowers (cài kèm): một lệnh làm PBI từ đầu đến cuối, tự chạy /vnr-review ở cuối",
+      "Báo cáo /vnr-review gọn hơn: KẾT LUẬN ở dòng đầu, bỏ bảng tóm tắt",
+      "Hợp đồng devhub.claude-md.json: DevHub ghi khối HRM Wiki vào CLAUDE.md máy SE"
+    ] },
     { "version": "1.1.0", "publishedAt": "2026-10-14", "notes": [
       "Thêm skill vnr-review: review phần code thay đổi trước khi push theo bộ luật docs/review/ của workspace (FAIL / WARN / PASS)",
       "Thêm agent vnr-rule-checker và vnr-rule-verifier"

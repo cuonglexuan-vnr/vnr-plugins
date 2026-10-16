@@ -1,0 +1,14 @@
+{
+  "$schema": "https://registry.vnresource.net/schemas/devhub.claude-md.schema.json",
+  "schemaVersion": 1,
+  "pluginId": "vnr-swe",
+  "description": "Các khối DevHub ghi vào CLAUDE.md của máy SE khi cài/cập nhật plugin và gỡ khi uninstall. Mỗi khối nằm giữa <!-- BEGIN:<id> --> và <!-- END:<id> -->; DevHub thay thế trọn khối theo id, không nối thêm.",
+  "blocks": [
+    {
+      "id": "hrm-wiki-rules",
+      "scope": "user",
+      "source": "./claude-md/hrm-wiki-rules.md",
+      "description": "Hình dạng workspace vnr.hrm.wiki, hai lệnh /vnr-dev và /vnr-review, nguyên tắc wiki trước code"
+    }
+  ]
+}

@@ -3,6 +3,37 @@
 Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Số phiên bản là `version` của `.claude-plugin/marketplace.json`
 (phiên bản gửi lên registry); phiên bản từng plugin ghi trong ngoặc. Mục mới nhất ở trên.
 
+## [2.0.0] — chưa phát hành (nhánh `feat/slim-vnr-swe`, PBI #8089)
+
+### Gỡ (breaking)
+- **vnr-swe 2.0.0**: gỡ toàn bộ quy trình spec-kit — 20 skill (`vnr-specify`, `vnr-clarify`, `vnr-plan`, `vnr-tasks`, `vnr-implement`,
+  `vnr-analyze`, `vnr-checklist`, `vnr-constitution`, `vnr-customize`, `vnr-auto-pipeline`, `vnr-arch-review`, `vnr-qc-assistant`,
+  `vnr-run-e2e`, `vnr-run-testcases`, `vnr-mobile-implement`, `vnr-mobile-auto-test`, `vnr-wiki`, `vnr-wiki-add`, `vnr-wiki-init`,
+  `vnr-wiki-sync`), 14 agent, `templates/`, `memory/constitution.md`, `scripts/` (`resolve-context.mjs`, `okf-validate.mjs`, PowerShell),
+  hook `PreToolUse` nạp wiki, `extensions.yml`, `output-styles/`, `settings.json`, `.lsp.json`, `init-options.json`.
+- Lệnh `/vnr-auto-pipeline` không còn: gõ `/vnr-dev` (mô tả của skill nêu tên cũ để Claude tự điều hướng).
+- Không hỗ trợ Mobile (Flutter) trong 2.0. Cơ chế bảo trì wiki (raw → wiki) sẽ thiết kế lại ở PBI riêng.
+
+### Thêm
+- **Skill `vnr-dev`** (`skills/vnr-dev/`): một lệnh làm PBI từ đầu đến cuối trên nền `superpowers` — intake (PBI id qua MCP `tfs`,
+  file spec BA, câu mô tả, `resume`), brainstorm → `work/<id>/spec.md` (SE duyệt), `writing-plans` → `plan.md` (SE duyệt khi ≥ 4 task
+  hoặc đụng path risky), build không trông (SDD / executing-plans + TDD), gate build/test, `finishing` giữ nhánh + staged, rồi tự chạy
+  `/vnr-review` một lần. Không commit/push. `workspace.md` nhận diện `vnr.hrm.wiki` hay repo đơn, nhánh `develop` / `projects/<customer>/dev`.
+- `devhub.claude-md.json` + `claude-md/hrm-wiki-rules.md`: hợp đồng để DevHub ghi khối `<!-- BEGIN:hrm-wiki-rules -->` vào CLAUDE.md
+  user-level của máy SE khi cài, gỡ khi uninstall.
+- `marketplace.json`: `allowCrossMarketplaceDependenciesOn: ["claude-plugins-official"]`; entry `vnr-swe` khai dependency
+  `superpowers@claude-plugins-official` (cài plugin tự kéo superpowers; cần cài superpowers trước nếu allowlist không áp dụng).
+
+### Thay đổi
+- **`/vnr-review` báo cáo gọn hơn**: dòng `KẾT LUẬN` là dòng đầu tiên của mỗi repo, bỏ bảng tóm tắt (mục FAIL/WARN đã nhóm theo mã luật
+  kèm số chỗ). Cách chấm không đổi; cùng diff cho cùng `VERDICT` và cùng vị trí.
+- `agents/AGENTS.md` của plugin bị gỡ (validator coi mọi `.md` trong `agents/` là một agent).
+- `README.md`, `AGENTS.md`, `devhub.catalog.json` của `vnr-swe` viết lại cho hai lệnh; `docs/glossary.md` thêm `work folder`, `lane`.
+
+### Ghi chú
+- Máy SE cần `superpowers` (DevHub cài kèm) và Node ≥ 22.5 (script review).
+- Repo `vnr.hrm.wiki` (nhánh `feat/wiki-claude-md`): `CLAUDE.md` viết lại tiếng Việt, `.claude/rules/{fe,be}-wiki.md` thay hook, `work/` gitignored.
+
 ## [1.2.0] — chưa phát hành (nhánh `feat/review-skill`)
 
 ### Thêm

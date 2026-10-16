@@ -10,14 +10,13 @@ Khi tệp này, `AGENTS.md` và mã nguồn nói khác nhau: nguồn cụ thể 
 Nguồn của marketplace Claude Code `vnr-marketplace`, phân phối hai plugin **chỉ gồm nội dung** (markdown + vài script Node/PowerShell/Python,
 không biên dịch):
 
-- `plugins/vnr-swe/` — pipeline Spec-Driven Development cho dev HRM. Một User Story của BA đi qua:
-  `plan → plan review (HITL) → tasks → testcases → implement (gate: build) → code review → arch + sec review (gate: review) → e2e stubs → report`
-  (thứ tự thật nằm ở `plugins/vnr-swe/skills/vnr-auto-pipeline/workflow.yml`). Nguyên tắc: không code khi chưa có spec,
-  không merge khi chưa qua gate; agent làm, người quyết ở checkpoint.
+- `plugins/vnr-swe/` — hai lệnh cho dev HRM: `/vnr-dev` (một lệnh làm PBI từ đầu đến cuối trên nền plugin `superpowers`:
+  brainstorm → spec → plan (SE duyệt) → build không trông → gate → `/vnr-review`) và `/vnr-review` (review diff chưa push theo bộ luật
+  `docs/review/` của workspace). Nguyên tắc: SE chỉ ngồi cùng AI ở hỏi làm rõ và duyệt plan; phần còn lại AI tự làm; không commit/push.
 - `plugins/vnr-sa/` — công cụ cho Solution Architect (`vnr-md2docx`, `vnr-tfs`).
 
-Mã HRM (.NET, Angular, Flutter) và quy tắc kiến trúc theo stack **không** nằm ở đây: chúng thuộc dự án cài plugin, đọc qua
-`docs/wiki/manifest.json` của dự án đó bằng `plugins/vnr-swe/scripts/resolve-context.mjs`. Đừng viết quy tắc stack cứng vào plugin.
+Mã HRM (.NET, Angular) và quy tắc kiến trúc theo stack **không** nằm ở đây: chúng thuộc workspace `vnr.hrm.wiki` (CLAUDE.md,
+`.claude/rules/`, `docs/wiki/`) mà SE mở Claude Code tại đó. Đừng viết quy tắc stack cứng vào plugin.
 
 ## Đọc AGENTS.md trước khi sửa
 

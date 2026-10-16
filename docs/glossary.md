@@ -27,5 +27,8 @@ tên skill/agent, thông báo log) luôn giữ tiếng Anh.
 | scope (project / user) | phạm vi cài đặt | `project` = theo dự án, `user` = theo máy người dùng |
 | template | template | giữ nguyên |
 | hook | hook | giữ nguyên |
-| constitution | constitution | giữ nguyên; `memory/constitution.md` |
 | verdict PASS / WARN / FAIL | kết quả PASS / WARN / FAIL | mã kết quả giữ nguyên |
+| work folder | thư mục làm việc | `work/<PBI-id>/` ở thư mục mở Claude (gốc workspace hoặc repo): spec BA, spec, plan, progress, review của `/vnr-dev`; không commit |
+| lane (Change / Bug) | lane | giữ nguyên; nhánh xử lý của `/vnr-dev`: Change = làm mới/sửa, Bug = sửa lỗi theo systematic-debugging |
+| superpowers | superpowers | giữ nguyên; plugin nền (`superpowers@claude-plugins-official`) mà `/vnr-dev` điều phối |
+| integration branch | nhánh tích hợp | `develop` hoặc `projects/<customer>/dev`; nhánh `<type>/<id>` cắt từ đây |
