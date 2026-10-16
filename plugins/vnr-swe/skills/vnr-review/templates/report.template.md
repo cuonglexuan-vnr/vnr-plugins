@@ -1,20 +1,13 @@
 Đây là khuôn đầu ra của `CLI report`. Orchestrator dán stdout NGUYÊN VĂN trong một khối ``` — không chuyển sang bullet, không gộp finding,
-không dịch/đổi từ (`vs`, `·`, `→`), không thêm cột, không vẽ lại bảng. Chỉ được thêm đúng một dòng sau khối: `Gõ "sửa theo báo cáo" để tôi sửa các finding FAIL/WARN.`
+không dịch/đổi từ (`vs`, `·`, `→`), không thêm cột, không thêm bảng. Chỉ được thêm đúng một dòng sau khối: `Gõ "sửa theo báo cáo" để tôi sửa các finding FAIL/WARN.`
 
 ## Khuôn (mục nào rỗng thì bỏ cả mục; thứ tự cố định)
 ```
 Tổng: <repo1> <FAIL|WARN|PASS> · <repo2> <…>          (chỉ khi review nhiều repo; sau đó là từng repo như dưới)
 
+KẾT LUẬN: <FAIL|WARN|PASS> — <a> FAIL · <b> WARN · <c> nghi ngờ · <d> cần ngữ cảnh
 Review  <repo> @ <nhánh>  (vs <baseline> · <N> file · <m>m<ss>s)
 Luật: <aspect> v<ver> · <aspect> v<ver>        (plugin vnr-swe <version>)
-
-KẾT LUẬN: <FAIL|WARN|PASS> — <a> FAIL · <b> WARN · <c> nghi ngờ · <d> cần ngữ cảnh
-
-| Mức      | Mã    | Luật                 | Số chỗ |        (bảng tóm tắt: một dòng mỗi mã luật, thứ tự FAIL → WARN → nghi ngờ;
-|----------|-------|----------------------|-------:|         bỏ cả bảng khi không có dòng nào)
-| FAIL     | <MÃ>  | <tên luật ≤ 60>      |    <n> |
-| WARN     | <MÃ>  | <tên luật>           |    <n> |
-| nghi ngờ | <MÃ>  | <tên luật>           |    <n> |
 
 FAIL                                  (rồi tới WARN, cùng khuôn)
   <MÃ>  <tên luật>  (<n> chỗ)         (nhóm theo mã luật: Vì và → in một lần cho cả nhóm)
@@ -41,17 +34,9 @@ VERDICT:<FAIL|WARN|PASS>
 
 ## Ví dụ (đầu ra thật của `renderReport`)
 ```
+KẾT LUẬN: FAIL — 3 FAIL · 1 WARN · 2 nghi ngờ · 1 cần ngữ cảnh
 Review  vnr.hrm.web @ feat/x  (vs origin/feat/x · 14 file · 2m50s)
 Luật: arch-fe v1 · name v1 · slop v2        (plugin vnr-swe 1.1.0)
-
-KẾT LUẬN: FAIL — 3 FAIL · 1 WARN · 2 nghi ngờ · 1 cần ngữ cảnh
-
-| Mức      | Mã         | Luật                                                        | Số chỗ |
-|----------|------------|-------------------------------------------------------------|-------:|
-| FAIL     | NAME-20    | Khoá i18n 4 cấp `{module}.{screen}.{function}.{element}` c… |      3 |
-| WARN     | ARCH-FE-04 | Thay đổi lib lõi đi PR riêng                                |      1 |
-| nghi ngờ | UIUX-28    | Thao tác hàng loạt gửi theo khoá đã chọn                    |      1 |
-| nghi ngờ | NAME-17    | Interface FE của miền nghiệp vụ có tiền tố `I`              |      1 |
 
 FAIL
   NAME-20  Khoá i18n 4 cấp `{module}.{screen}.{function}.{element}` camelCase  (3 chỗ)

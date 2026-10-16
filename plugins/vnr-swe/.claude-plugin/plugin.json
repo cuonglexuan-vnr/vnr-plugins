@@ -1,8 +1,8 @@
 {
-    "name": "vnr-swe",
-    "description": "A plugin to help with VNR requirements",
-    "version": "1.1.0",
-    "author": {
-    "name": "Vnr"
-    }
+  "name": "vnr-swe",
+  "displayName": "VNR SWE",
+  "version": "2.0.0",
+  "description": "Hai lệnh cho dev HRM: /vnr-dev làm một PBI từ đầu đến cuối trên nền superpowers, /vnr-review review code trước khi push theo bộ luật SA team",
+  "author": { "name": "VNR" },
+  "keywords": ["hrm", "sdlc", "review", "superpowers"]
 }

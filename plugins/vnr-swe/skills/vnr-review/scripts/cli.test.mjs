@@ -262,6 +262,7 @@ test('report nhiều repo: mỗi repo không có VERDICT riêng, chỉ một dò
     assert.match(r.stdout, /KẾT LUẬN: FAIL/); assert.match(r.stdout, /KẾT LUẬN: PASS/);
     assert.match(r.stdout, /\n\nVERDICT:FAIL\s*$/);
     assert.match(r.stdout, /^Tổng: (fe FAIL · be PASS|be PASS · fe FAIL)\n\n/, 'dòng Tổng ở đầu khi nhiều repo');
+    assert.match(r.stdout, /^Tổng: [^\n]+\n\nKẾT LUẬN: (FAIL|PASS)[^\n]*\nReview  /, 'mỗi khối repo bắt đầu bằng KẾT LUẬN');
     // Cả hai PASS → VERDICT:PASS duy nhất.
     rmSync(join(d, 'results'), { recursive: true }); writeFileSync(join(d, 'plan-fe.json'), JSON.stringify(miniPlan('fe')));
     const ok = run('report', '--state', d, '--ci');

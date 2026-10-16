@@ -1,23 +1,20 @@
 # plugins/vnr-swe
-
-Plugin SDD cho dev HRM. Nội dung markdown + script Node/PowerShell/Python, không biên dịch.
+Plugin cho dev HRM: hai lệnh (`/vnr-dev`, `/vnr-review`), nội dung markdown + script Node của `vnr-review`, không biên dịch. Nền `superpowers`.
 
 ## Key Files
 | Tệp | Vai trò |
 |---|---|
-| `.claude-plugin/plugin.json` | tên, version plugin (tăng khi đổi nội dung đóng gói) |
-| `README.md` | bảng skill/agent cho người dùng cuối — cập nhật khi thêm skill/agent |
-| `.mcp.json` | MCP `tfs`, `amis-task` (placeholder) |
-| `devhub.catalog.json` | thông tin giới thiệu plugin trong Tiện ích DevHub (icon, tags, examples, changelog) |
-| `extensions.yml` | gắn `vnr-wiki` / `vnr-wiki-sync` vào `before_plan`, `before_implement`, `after_implement` |
+| `.claude-plugin/plugin.json` | tên, version (2.x), mô tả; **không** khai dependency ở đây — dependency `superpowers` nằm ở entry trong `.claude-plugin/marketplace.json` gốc repo |
+| `README.md` | hướng dẫn SE cho hai lệnh — cập nhật khi đổi hành vi |
+| `.mcp.json` | MCP `tfs` (intake PBI của `/vnr-dev`), `amis-task` (placeholder) |
+| `devhub.catalog.json` | giới thiệu plugin trong Tiện ích DevHub (icon, tags, examples, changelog) |
 | `devhub.required-env.json` | contract DevHub (version-locked) |
-| `memory/constitution.md` | quy tắc gốc mọi agent tuân theo |
+| `devhub.claude-md.json` | contract DevHub: các khối ghi vào CLAUDE.md máy SE (`blocks[{id, scope: user\|project, source}]`), thay trọn khối giữa `<!-- BEGIN:<id> -->`/`<!-- END:<id> -->` |
 
 ## Subdirectories
 | Thư mục | Vai trò |
 |---|---|
-| `skills/` | một skill một thư mục `vnr-*/SKILL.md` (`vnr-review/` có AGENTS.md riêng); `vnr-review` = review diff trước khi push theo bộ luật ở `docs/review/` của workspace |
-| `agents/` | agent `vnr-<role>.md` (xem AGENTS.md trong đó); `vnr-rule-checker` / `vnr-rule-verifier` phục vụ `vnr-review` |
-| `scripts/` | script dùng chung (`okf-validate.mjs`, `resolve-context.mjs`); lớp máy của `vnr-review` nằm trong `skills/vnr-review/scripts/` |
-| `hooks/` | `hooks.json` PreToolUse (resolve-context) · `security-hooks.json` patterns |
-| `templates/` | mẫu đầu ra của pipeline |
+| `skills/vnr-dev/` | router làm PBI trên nền superpowers + `workspace.md` (nhận diện repo/nhánh/gate) — xem AGENTS.md trong đó |
+| `skills/vnr-review/` | review diff trước khi push theo bộ luật `docs/review/` của workspace — xem AGENTS.md trong đó |
+| `agents/` | agent của `vnr-review` (không có AGENTS.md riêng: validator coi mọi .md trong agents/ là agent) — `vnr-rule-checker.md` kiểm MỘT luật trên MỘT job, trả JSON; `vnr-rule-verifier.md` xác minh MỘT finding FAIL (confirmed \| unsure \| wrong); cả hai chỉ Read/Grep/Glob, model haiku |
+| `claude-md/` | thân các khối CLAUDE.md mà `devhub.claude-md.json` trỏ tới (`hrm-wiki-rules.md` ≤ 40 dòng) |

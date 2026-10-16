@@ -5,14 +5,14 @@
 ## Mục đích
 
 Repo nguồn của **Claude Code marketplace `vnr-marketplace`**, chứa hai plugin nội dung (markdown, không biên dịch):
-`vnr-swe` (quy trình Spec-Driven Development cho dev HRM) và `vnr-sa` (bộ công cụ cho Solution Architect).
+`vnr-swe` (hai lệnh `/vnr-dev` và `/vnr-review` cho dev HRM, trên nền superpowers) và `vnr-sa` (bộ công cụ cho Solution Architect).
 Người dùng cuối cài qua `vnr-bootstrap` (`npx github:cuonglexuan-vnr/vnr-plugins init vnr-swe`, hoặc
 `install-vnr-swe.ps1` / `.cmd`) — bootstrap gọi `claude plugin marketplace add` + `claude plugin install`, **không** chép
 tệp vào project. DevHub nhận marketplace dưới dạng một zip phẳng trên registry VNR
 (`https://sa-hrm.vnrlocal.com:9091/api/v1/repositories/vnr-marketplace/download/marketplace.zip`) — tên kho trên registry trùng tên marketplace.
 
-Không có ở đây: mã nguồn HRM (BE .NET, FE Angular, Flutter) mà các agent của `vnr-swe` thao tác — đó là repo của dự án
-cài plugin; quy tắc kiến trúc theo stack cũng nằm ở wiki của dự án đó (`docs/wiki/manifest.json`), không nằm trong plugin.
+Không có ở đây: mã nguồn HRM (BE .NET, FE Angular) mà `/vnr-dev` sửa — đó là các repo trong `src/` của workspace `vnr.hrm.wiki`;
+quy tắc kiến trúc theo stack nằm ở `CLAUDE.md`, `.claude/rules/` và `docs/wiki/` của workspace đó, không nằm trong plugin.
 
 ## Key Files
 
@@ -36,7 +36,7 @@ cài plugin; quy tắc kiến trúc theo stack cũng nằm ở wiki của dự �
 
 | Thư mục | Vai trò |
 |---|---|
-| `plugins/vnr-swe/` | Plugin SDD: `skills/` (`vnr-*`, mỗi skill một `SKILL.md`), `agents/` (16 agent), `memory/constitution.md`, `templates/`, `hooks/`, `scripts/`; `vnr-review` = review diff trước khi push theo `docs/review/` của workspace |
+| `plugins/vnr-swe/` | Plugin cho dev HRM: `skills/vnr-dev` (một lệnh làm PBI trên nền superpowers; `workspace.md` nhận diện repo/nhánh/gate), `skills/vnr-review` (review diff trước khi push theo `docs/review/` của workspace), `agents/` (2 agent của vnr-review), `claude-md/` + `devhub.claude-md.json` (khối CLAUDE.md DevHub ghi cho SE) |
 | `plugins/vnr-sa/` | Plugin SA: skill `vnr-md2docx` (Markdown → DOCX theo template VNR, Python) và `vnr-tfs` (PBI/Task TFS từ `config.yml` + template HTML) |
 | `docs/` | Tài liệu chính thức của repo (hiện: bảng thuật ngữ) |
 | `bin/` | Entry CLI của bootstrap |
@@ -59,11 +59,7 @@ cài plugin; quy tắc kiến trúc theo stack cũng nằm ở wiki của dự �
   `model`; skill trỏ tới agent bằng `$PLUGIN_DIR/agents/<agent>.md`.
 - Trong nội dung plugin, mọi đường dẫn tới tệp của plugin đi qua `$PLUGIN_DIR/…` (skill/agent) hoặc
   `${CLAUDE_PLUGIN_ROOT}/…` (hook) — plugin chạy từ plugin store của Claude, không nằm trong project người dùng.
-- Ngữ cảnh theo stack không hard-code trong plugin: agent gọi
-  `node "$PLUGIN_DIR/scripts/resolve-context.mjs" --phase <plan|implement|review> --paths "…"`; hook
-  `PreToolUse(Write|Edit|MultiEdit)` trong `hooks/hooks.json` gọi cùng script với `--hook`. Không có manifest wiki → no-op.
-- `plugins/vnr-swe/skills/vnr-auto-pipeline/workflow.yml` định nghĩa các phase của pipeline; `plugins/vnr-swe/extensions.yml` gắn `vnr-wiki` / `vnr-wiki-sync`
-  vào `before_plan`, `before_implement`, `after_implement`.
+- `vnr-dev` không hook, không script: mọi quy tắc nhận diện repo nằm ở `skills/vnr-dev/workspace.md`; ngữ cảnh stack đến từ CLAUDE.md và `.claude/rules/` của workspace `vnr.hrm.wiki` (không nằm trong plugin).
 
 ### Kiểm thử
 
@@ -71,12 +67,12 @@ cài plugin; quy tắc kiến trúc theo stack cũng nằm ở wiki của dự �
   `vnr-review`. Test dựng repo giả trong `os.tmpdir()` (`mkdtempSync`); test zip đọc lại zip bằng `adm-zip`.
 - Nội dung skill/agent không có test tự động; kiểm bằng cách cài marketplace cục bộ
   (`claude plugin marketplace add <đường dẫn repo>` rồi `claude plugin install <plugin>`) và chạy skill.
-- `plugins/vnr-swe/scripts/okf-validate.mjs` kiểm wiki của **dự án dùng plugin** (`--layer wiki|raw`), không kiểm repo này.
 
 ### Phụ thuộc
 
 - Dev: `adm-zip` (devDependency duy nhất). Runtime bootstrap: Node ≥ 18.18, `claude` CLI trong `PATH`.
 - `plugins/vnr-swe/.mcp.json`: MCP `tfs` (SSE, header PAT/org/project là placeholder) và `amis-task`;
   `devhub.required-env.json` khai `AMIS_USER_ID`, `USER_EMAIL` cho DevHub điền.
+- `vnr-swe` 2.x: plugin `superpowers@claude-plugins-official` (dependency ở entry marketplace).
 - `vnr-md2docx`: Python 3 + `python-docx` (`requirements.txt`).
 - Registry VNR (Artifact Keeper) để phân phối; DevHub đồng bộ qua Settings › Marketplaces.
