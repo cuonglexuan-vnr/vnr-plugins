@@ -4,7 +4,7 @@ description: >-
   Review trước khi push / kiểm tra code trước khi push: review phần code thay đổi (chưa push) của repo BE/FE trong workspace vnr.hrm.wiki theo bộ luật ở docs/review/.
   Báo cáo tiếng Việt gọn: FAIL / WARN / PASS + dòng VERDICT cho hook. Chạy 5–10 phút. Chế độ `check` cho owner bộ luật.
 argument-hint: "[fe|be|<tên-repo>] [--base <ref>] [--full] [--aspect a,b] [--ci] [--no-verify] [--out <file>] | check"
-compatibility: "Chạy tại gốc vnr.hrm.wiki (có docs/review/rules). Node ≥ 22."
+compatibility: "Chạy tại gốc vnr.hrm.wiki (có docs/review/rules). Node ≥ 22.5."
 user-invocable: true
 ---
 
@@ -43,7 +43,7 @@ Với mỗi `results` có `verdict: "FAIL"` và mỗi finding (chỉ số 0-base
 Ghi JSON trả về vào `<STATE>/verify/<repo>/<jobId>-<i>.json`; không có JSON → ghi `{"jobId":"<jobId>","index":<i>,"verdict":"unsure","note":"verifier không trả JSON"}`. Chạy song song tối đa `PARALLEL`.
 
 ## B7 — báo cáo
-Chạy `CLI report --state <STATE>` (+ `--ci` nếu có); phiên bản plugin và thời gian chạy do CLI tự lấy. Exit 1 = có FAIL (bình thường). Exit 4 = lỗi chạy → dán stderr và dừng. Dán nguyên văn stdout của CLI report trong khối ``` theo đúng khuôn `$PLUGIN_DIR/skills/vnr-review/templates/report.template.md` (không bullet, không gộp, không đổi từ, không vẽ lại bảng tóm tắt) vào câu trả lời cho SE (không chỉ hiện ở tool output) — không tóm tắt lại, không thêm lời bình. `--out <file>` → ghi thêm stdout đó vào file.
+Chạy `CLI report --state <STATE>` (+ `--ci` nếu có); phiên bản plugin và thời gian chạy do CLI tự lấy. Exit 1 = có FAIL (bình thường). Exit 4 = lỗi chạy → dán stderr và dừng. Dán nguyên văn stdout của CLI report trong khối ``` theo đúng khuôn `$PLUGIN_DIR/skills/vnr-review/templates/report.template.md` (không bullet, không gộp, không đổi từ, không thêm bảng tóm tắt) vào câu trả lời cho SE (không chỉ hiện ở tool output) — không tóm tắt lại, không thêm lời bình. `--out <file>` → ghi thêm stdout đó vào file.
 Sau báo cáo, nếu không `--ci`, thêm đúng một dòng: `Gõ "sửa theo báo cáo" để tôi sửa các finding FAIL/WARN.`
 
 ## Ràng buộc

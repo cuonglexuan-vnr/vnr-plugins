@@ -33,9 +33,9 @@ test('full report shape and verdict', () => {
   assert.equal(verdict, 'FAIL');
   assert.match(text, /^Review  vnr\.hrm\.web/m);
   assert.match(text, /Luật: arch-fe v1 · slop v2/);
-  assert.match(text, /KẾT LUẬN: FAIL — 1 FAIL · 2 WARN · 3 nghi ngờ · 1 cần ngữ cảnh/);
-  // Bảng tóm tắt ngay dưới KẾT LUẬN: FAIL → WARN → nghi ngờ, cột cuối căn phải.
-  assert.match(text, /KẾT LUẬN: FAIL[^\n]*\n\n\| Mức      \| Mã         \| Luật +\| Số chỗ \|\n\|----------\|------------\|-+\|-------:\|\n\| FAIL     \| SLOP-01    \| Dữ liệu mẫu[^|]*\| +1 \|\n\| WARN     \| ARCH-FE-04 \|[^\n]*\n\| WARN     \| FW-FE-12   \|[^\n]*\n\| nghi ngờ \| UIUX-07    \| Màu cứng +\| +2 \|\n\| nghi ngờ \| NAME-FE-03 \|[^\n]*\| +1 \|\n\nFAIL\n/);
+  assert.match(text, /^KẾT LUẬN: FAIL — 1 FAIL · 2 WARN · 3 nghi ngờ · 1 cần ngữ cảnh\nReview  /, 'KẾT LUẬN là dòng đầu, header ngay sau');
+  assert.doesNotMatch(text, /\| Mức/, 'không còn bảng tóm tắt');
+  assert.match(text, /\n\nFAIL\n  SLOP-01  /, 'mục FAIL nhóm theo mã luật vẫn còn');
   // Nhóm theo luật: tên + (N chỗ), Vì, →, rồi các vị trí.
   assert.match(text, /^FAIL\n  SLOP-01  Dữ liệu mẫu[^\n]*  \(1 chỗ\)\n    Vì: mock\n    → Thay nguồn tĩnh bằng adapter HTTP\.\n    apps\/x\/seed\.ts:349 /m);
   assert.match(text, /^WARN\n  ARCH-FE-04 [^\n]*\(1 chỗ\)\n(.*\n)*    libs\/ui\/x\.ts:18   `x`  \(chưa chắc\)$/m);
@@ -114,6 +114,13 @@ test('Vì sao: một dòng dưới mỗi mã nghi ngờ, bỏ khi lý do rỗng'
 const clean = { ...plan, regexWarnings: [], ignored: [], invalidIgnores: [], skippedJobs: [] };
 const opts = { elapsedMs: 1, pluginVersion: '1', ci: true };
 
+test('vị trí finding không đổi khi đổi cách trình bày (pin)', () => {
+  const verifications = [{ jobId: 'SLOP-01__1', index: 0, verdict: 'confirmed' }, { jobId: 'ARCH-FE-04__2', index: 0, verdict: 'unsure' }];
+  const { text } = renderReport(plan, { ...opts, results, verifications });
+  const locs = text.split('\n').filter(l => /^    \S+:\d+   `/.test(l)).map(l => l.trim().split(/\s+/)[0]);
+  assert.deepEqual(locs, ['apps/x/seed.ts:349', 'libs/ui/x.ts:18', 'apps/x/p.ts:61', 'apps/x/a.component.ts:41', 'apps/x/b.component.ts:9', 'libs/y/z.ts:12']);
+});
+
 test('finalLine: false bỏ dòng VERDICT cuối; mặc định có', () => {
   const p = { ...clean, jobs: [] };
   assert.doesNotMatch(renderReport(p, { ...opts, results: {}, finalLine: false }).text, /VERDICT:/);
@@ -121,7 +128,7 @@ test('finalLine: false bỏ dòng VERDICT cuối; mặc định có', () => {
 });
 
 test('PASS khớp chặt dòng KẾT LUẬN', () => {
-  assert.match(renderReport({ ...clean, jobs: [] }, { ...opts, results: {} }).text, /KẾT LUẬN: PASS\n/);
+  assert.match(renderReport({ ...clean, jobs: [] }, { ...opts, results: {} }).text, /^KẾT LUẬN: PASS\nReview  /);
 });
 
 test('job nhiều file: Cần ngữ cảnh hiện (N file), finding giữ file riêng', () => {
@@ -180,9 +187,9 @@ test('nhóm theo mã luật: Vì/→ in một lần, mỗi vị trí một dòng
   const { text } = renderReport(p, { ...opts, results: r });
   assert.match(text, /^FAIL\n  N-20  Khoá i18n  \(3 chỗ\)\n    Vì: snake\n    → Đặt khoá camelCase\.\n    EN\.json:1   `a`\n    EN\.json:2   `b`\n    VN\.json:3   `c`\n      Vì: khác$/m);
   assert.equal((text.match(/→ Đặt khoá/g) ?? []).length, 1);
-  assert.match(text, /\| FAIL +\| N-20 +\| Khoá i18n +\| +3 \|/);
 });
 
-test('bảng tóm tắt: không in khi không có FAIL/WARN/regex', () => {
-  assert.doesNotMatch(renderReport({ ...clean, jobs: [] }, { ...opts, results: {} }).text, /\| Mức/);
+test('không còn bảng tóm tắt dù có FAIL/WARN/nghi ngờ', () => {
+  const { text } = renderReport(plan, { ...opts, results, verifications: [] });
+  assert.doesNotMatch(text, /\| Mức|Số chỗ/);
 });

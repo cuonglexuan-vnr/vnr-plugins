@@ -10,16 +10,6 @@ const REGEX_HITS_PER_RULE = 5;
 const REGEX_EXCERPT = 80;
 // Độ dài tối đa của dòng lý do (Vì / Vì sao).
 const REASON_CHARS = 200;
-// Bảng tóm tắt: độ dài tối đa cột Luật.
-const TABLE_NAME_CHARS = 60;
-
-// Bảng kiểu markdown nhưng căn cột bằng khoảng trắng — đọc được cả trong khối ``` và file --out; cột cuối (số) căn phải.
-function renderTable(header, rows) {
-  const w = header.map((h, c) => Math.max(h.length, ...rows.map(r => r[c].length)));
-  const last = header.length - 1;
-  const line = cells => '| ' + cells.map((v, c) => (c === last ? v.padStart(w[c]) : v.padEnd(w[c]))).join(' | ') + ' |';
-  return [line(header), '|' + w.map((n, c) => (c === last ? '-'.repeat(n + 1) + ':' : '-'.repeat(n + 2))).join('|') + '|', ...rows.map(line)];
-}
 // Gom theo mã luật, giữ thứ tự gặp đầu tiên.
 const groupByCode = items => { const m = new Map(); for (const i of items) { if (!m.has(i.code)) m.set(i.code, []); m.get(i.code).push(i); } return m; };
 
@@ -53,23 +43,13 @@ export function renderReport(plan, { results = {}, verifications = [], elapsedMs
   const verdict = fail.length ? 'FAIL' : (warn.length || rw.length || needs.length) ? 'WARN' : 'PASS';
 
   const L = [];
+  const parts = [`${fail.length} FAIL`, `${warn.length} WARN`, `${rw.length} nghi ngờ`, `${needs.length} cần ngữ cảnh`];
+  // KẾT LUẬN là dòng đầu: reviewer đọc một dòng biết push được chưa; chi tiết nhóm theo mã luật ở các mục dưới (không bảng tóm tắt — trùng với mục chi tiết).
+  L.push(`KẾT LUẬN: ${verdict}${verdict === 'PASS' ? '' : ' — ' + parts.join(' · ')}`);
   const tail = ci ? '' : ` · ${fmtMs(elapsedMs)}`; // CI bỏ thời gian để đầu ra ổn định
   L.push(`Review  ${plan.repo.name} @ ${plan.branch ?? 'HEAD'}  (vs ${plan.baseline.from ?? plan.baseline.ref} · ${plan.fileCount} file${tail})`);
   L.push(`Luật: ${plan.ruleSets.map(s => `${s.aspect} v${s.version}`).join(' · ')}        (plugin vnr-swe ${pluginVersion})`);
   for (const e of plan.errors ?? []) L.push(`! ${e}`);
-  L.push('');
-  const parts = [`${fail.length} FAIL`, `${warn.length} WARN`, `${rw.length} nghi ngờ`, `${needs.length} cần ngữ cảnh`];
-  L.push(`KẾT LUẬN: ${verdict}${verdict === 'PASS' ? '' : ' — ' + parts.join(' · ')}`);
-  // Bảng tóm tắt ngay dưới KẾT LUẬN: SE nhìn vài giây biết có gì; chi tiết ở các mục dưới.
-  const rwByCode = new Map();
-  for (const w of rw) { if (!rwByCode.has(w.code)) rwByCode.set(w.code, { name: w.name, n: 0 }); rwByCode.get(w.code).n++; }
-  const rows = [
-    ...[...groupByCode(fail)].map(([code, g]) => ['FAIL', code, g[0].name, g.length]),
-    ...[...groupByCode(warn)].map(([code, g]) => ['WARN', code, g[0].name, g.length]),
-    ...[...rwByCode].map(([code, { name, n }]) => ['nghi ngờ', code, name, n]),
-  ];
-  const cell = s => (s.length > TABLE_NAME_CHARS ? clip(s, TABLE_NAME_CHARS - 1) + '…' : s);
-  if (rows.length) L.push('', ...renderTable(['Mức', 'Mã', 'Luật', 'Số chỗ'], rows.map(r => [r[0], r[1], cell(r[2]), String(r[3])])));
   // Mục FAIL/WARN nhóm theo luật: tên, Vì và → in một lần; mỗi vị trí một dòng (6 finding cùng luật: 9 dòng thay vì 24).
   const section = (title, items) => {
     if (!items.length) return;
