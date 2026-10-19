@@ -9,7 +9,7 @@ Plugin cho dev VNR: ba lệnh (`/vnr-dev`, `/vnr-review`, `/vnr-toi-muon`), nộ
 | `.mcp.json` | MCP `tfs` (intake PBI của `/vnr-dev`), `amis-task` (placeholder) |
 | `devhub.catalog.json` | giới thiệu plugin trong Tiện ích DevHub (icon, tags, examples, changelog) |
 | `devhub.required-env.json` | contract DevHub (version-locked) |
-| `devhub.claude-md.json` | contract DevHub: các khối ghi vào CLAUDE.md máy SE (`blocks[{id, scope: user\|project, source}]`), thay trọn khối giữa `<!-- BEGIN:<id> -->`/`<!-- END:<id> -->` |
+| `devhub.claude-md.json` | contract DevHub: các khối ghi vào CLAUDE.md máy SE (`blocks[{id, scope: user\|project, source}]`), thay trọn khối giữa `<!-- BEGIN:<id> -->`/`<!-- END:<id> -->`; DevHub ghi ở bước "Ngữ cảnh cho Claude" của Trang chủ, đọc từ bản marketplace đã sync (không cần cài), không gỡ khi uninstall, chỉ `scope: user` được hỗ trợ |
 
 ## Subdirectories
 | Thư mục | Vai trò |

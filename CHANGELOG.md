@@ -20,7 +20,8 @@ Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Số phiên bản
   hoặc đụng path risky), build không trông (SDD / executing-plans + TDD), gate build/test, `finishing` giữ nhánh + staged, rồi tự chạy
   `/vnr-review` một lần. Không commit/push. `workspace.md` nhận diện `vnr.hrm.wiki` hay repo đơn, nhánh `develop` / `projects/<customer>/dev`.
 - `devhub.claude-md.json` + `claude-md/hrm-wiki-rules.md`: hợp đồng để DevHub ghi khối `<!-- BEGIN:hrm-wiki-rules -->` vào CLAUDE.md
-  user-level của máy SE khi cài, gỡ khi uninstall.
+  user-level của máy SE ở bước "Ngữ cảnh cho Claude" của Trang chủ (đọc từ bản marketplace đã đồng bộ, không cần cài plugin; thay trọn
+  khối khi nội dung đổi; gỡ plugin không gỡ khối).
 - **Skill `vnr-toi-muon`** (`skills/vnr-toi-muon/`): bản độc lập của `/vnr-dev` cho **repo bất kỳ** — cùng lane Change/Bug, STOP 1/STOP 2, build không trông
   trên superpowers (TDD, gate so với test đỏ sẵn, stage theo Files, không commit), artefact ở `work/<id>/` tại gốc repo. `repo.md` nhận diện stack
   (nx, node, make/task/just, dotnet, python, go, rust) và nhánh gốc (`--base` > `projects/<x>/dev` > `develop` > `main` > `master`); không gọi `/vnr-review`.
