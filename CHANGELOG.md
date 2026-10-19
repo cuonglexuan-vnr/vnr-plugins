@@ -21,6 +21,9 @@ Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Số phiên bản
   `/vnr-review` một lần. Không commit/push. `workspace.md` nhận diện `vnr.hrm.wiki` hay repo đơn, nhánh `develop` / `projects/<customer>/dev`.
 - `devhub.claude-md.json` + `claude-md/hrm-wiki-rules.md`: hợp đồng để DevHub ghi khối `<!-- BEGIN:hrm-wiki-rules -->` vào CLAUDE.md
   user-level của máy SE khi cài, gỡ khi uninstall.
+- **Skill `vnr-toi-muon`** (`skills/vnr-toi-muon/`): bản độc lập của `/vnr-dev` cho **repo bất kỳ** — cùng lane Change/Bug, STOP 1/STOP 2, build không trông
+  trên superpowers (TDD, gate so với test đỏ sẵn, stage theo Files, không commit), artefact ở `work/<id>/` tại gốc repo. `repo.md` nhận diện stack
+  (nx, node, make/task/just, dotnet, python, go, rust) và nhánh gốc (`--base` > `projects/<x>/dev` > `develop` > `main` > `master`); không gọi `/vnr-review`.
 - `marketplace.json`: `allowCrossMarketplaceDependenciesOn: ["claude-plugins-official"]`; entry `vnr-swe` khai dependency
   `superpowers@claude-plugins-official` (cài plugin tự kéo superpowers; cần cài superpowers trước nếu allowlist không áp dụng).
 

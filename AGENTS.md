@@ -36,7 +36,7 @@ quy tắc kiến trúc theo stack nằm ở `CLAUDE.md`, `.claude/rules/` và `d
 
 | Thư mục | Vai trò |
 |---|---|
-| `plugins/vnr-swe/` | Plugin cho dev HRM: `skills/vnr-dev` (một lệnh làm PBI trên nền superpowers; `workspace.md` nhận diện repo/nhánh/gate), `skills/vnr-review` (review diff trước khi push theo `docs/review/` của workspace), `agents/` (2 agent của vnr-review), `claude-md/` + `devhub.claude-md.json` (khối CLAUDE.md DevHub ghi cho SE) |
+| `plugins/vnr-swe/` | Plugin cho dev HRM: `skills/vnr-dev` (một lệnh làm PBI trên nền superpowers; `workspace.md` nhận diện repo/nhánh/gate), `skills/vnr-review` (review diff trước khi push theo `docs/review/` của workspace), `skills/vnr-toi-muon` (cùng luồng cho repo bất kỳ, không vnr-review), `agents/` (2 agent của vnr-review), `claude-md/` + `devhub.claude-md.json` (khối CLAUDE.md DevHub ghi cho SE) |
 | `plugins/vnr-sa/` | Plugin SA: skill `vnr-md2docx` (Markdown → DOCX theo template VNR, Python) và `vnr-tfs` (PBI/Task TFS từ `config.yml` + template HTML) |
 | `docs/` | Tài liệu chính thức của repo (hiện: bảng thuật ngữ) |
 | `bin/` | Entry CLI của bootstrap |

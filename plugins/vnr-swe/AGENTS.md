@@ -1,5 +1,5 @@
 # plugins/vnr-swe
-Plugin cho dev HRM: hai lệnh (`/vnr-dev`, `/vnr-review`), nội dung markdown + script Node của `vnr-review`, không biên dịch. Nền `superpowers`.
+Plugin cho dev VNR: ba lệnh (`/vnr-dev`, `/vnr-review`, `/vnr-toi-muon`), nội dung markdown + script Node của `vnr-review`, không biên dịch. Nền `superpowers`.
 
 ## Key Files
 | Tệp | Vai trò |
@@ -15,6 +15,7 @@ Plugin cho dev HRM: hai lệnh (`/vnr-dev`, `/vnr-review`), nội dung markdown 
 | Thư mục | Vai trò |
 |---|---|
 | `skills/vnr-dev/` | router làm PBI trên nền superpowers + `workspace.md` (nhận diện repo/nhánh/gate) — xem AGENTS.md trong đó |
+| `skills/vnr-toi-muon/` | router làm PBI trong repo bất kỳ (bản sao độc lập của vnr-dev, không vnr-review) + `repo.md` (nhận diện stack/nhánh/gate) — xem AGENTS.md trong đó |
 | `skills/vnr-review/` | review diff trước khi push theo bộ luật `docs/review/` của workspace — xem AGENTS.md trong đó |
 | `agents/` | agent của `vnr-review` (không có AGENTS.md riêng: validator coi mọi .md trong agents/ là agent) — `vnr-rule-checker.md` kiểm MỘT luật trên MỘT job, trả JSON; `vnr-rule-verifier.md` xác minh MỘT finding FAIL (confirmed \| unsure \| wrong); cả hai chỉ Read/Grep/Glob, model haiku |
 | `claude-md/` | thân các khối CLAUDE.md mà `devhub.claude-md.json` trỏ tới (`hrm-wiki-rules.md` ≤ 40 dòng) |
