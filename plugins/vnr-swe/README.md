@@ -13,7 +13,8 @@ Nền: plugin [`superpowers`](https://github.com/obra/superpowers) (brainstormin
 
 ## Cài đặt (SE)
 
-1. **DevHub › Tiện ích › vnr-swe › Cài.** DevHub cài Claude Code, `superpowers`, `vnr-swe`, và ghi khối *HRM Wiki* vào CLAUDE.md của máy bạn.
+1. **DevHub › Trang chủ › Cài đặt tất cả.** DevHub cài Claude Code, `superpowers`, `vnr-swe` (scope user) và ghi khối *HRM Wiki* vào CLAUDE.md
+   của máy bạn (bước "Ngữ cảnh cho Claude"). Cài `vnr-swe` từ Tiện ích thì chưa có khối — về Trang chủ bấm bước đó. Khối được giữ lại khi gỡ plugin.
 2. Clone `vnr.hrm.wiki`; bên trong clone FE vào `src/vnr.hrm.web`, BE vào `src/vnr.hrm.solution` (đúng tên).
 3. Node ≥ 22.5 (`node --version`).
 

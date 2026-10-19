@@ -2,7 +2,7 @@
   "$schema": "https://registry.vnresource.net/schemas/devhub.claude-md.schema.json",
   "schemaVersion": 1,
   "pluginId": "vnr-swe",
-  "description": "Các khối DevHub ghi vào CLAUDE.md của máy SE khi cài/cập nhật plugin và gỡ khi uninstall. Mỗi khối nằm giữa <!-- BEGIN:<id> --> và <!-- END:<id> -->; DevHub thay thế trọn khối theo id, không nối thêm.",
+  "description": "Các khối DevHub ghi vào CLAUDE.md user-level của máy SE ở bước \"Ngữ cảnh cho Claude\" của Trang chủ (Cài đặt tất cả, hoặc bấm lại bước đó). DevHub đọc khối từ bản marketplace đã đồng bộ nên không cần cài plugin; cài từ Tiện ích không ghi khối; gỡ plugin không gỡ khối. Mỗi khối nằm giữa <!-- BEGIN:<id> --> và <!-- END:<id> -->; DevHub thay thế trọn khối theo id khi nội dung đổi, không nối thêm, không đụng gì ngoài hai marker.",
   "blocks": [
     {
       "id": "hrm-wiki-rules",

@@ -1,6 +1,6 @@
 # HRM Wiki
 
-Khối này do DevHub ghi khi cài plugin `vnr-swe`; đừng sửa tay (DevHub ghi đè khi cập nhật).
+Khối này do DevHub ghi ở bước "Ngữ cảnh cho Claude" của Trang chủ; đừng sửa tay (DevHub ghi đè khi chạy lại bước đó).
 
 Dự án HRM làm việc trong workspace `vnr.hrm.wiki`:
 
