@@ -2,6 +2,8 @@
 
 > Plugin Claude Code cho dev VNR: **ba lệnh**, phần còn lại AI tự làm.
 
+Hướng dẫn cho người dùng: https://sa-hrm.vnrlocal.com/docs/marketplace/user/vnr-swe/lam-pbi-voi-vnr-dev
+
 | Lệnh | Khi nào | Bạn làm gì |
 |---|---|---|
 | `/vnr-dev <PBI id \| mô tả \| file spec BA \| resume <id>>` | nhận một PBI, một yêu cầu hay một bug | trả lời vài câu làm rõ, duyệt spec, duyệt plan (khi lớn). AI code, build, test, review, để nhánh + staged cho bạn commit |
@@ -32,7 +34,7 @@ claude
 /vnr-dev resume 7916   # làm tiếp từ bước dang dở
 ```
 
-Luồng: hỏi làm rõ (ngắn, trắc nghiệm) → `work/<id>/spec.md` (bạn duyệt) → `work/<id>/plan.md` (bạn duyệt khi ≥ 4 task hoặc đụng
+Luồng: hỏi làm rõ (ngắn, trắc nghiệm) → `work/<id>/spec.md` (bạn duyệt) → `work/<id>/<id>-plan.md` (bạn duyệt khi ≥ 4 task hoặc đụng
 chỗ nguy hiểm) → AI tạo nhánh `<type>/<id>` từ `develop` (hoặc `projects/<customer>/dev`), code theo TDD, chạy build/test, chạy
 `/vnr-review`, dán báo cáo → bạn xem `git diff --cached <nhánh tích hợp>` trong repo đích và **commit tay**. AI không bao giờ commit/push/PR.
 
