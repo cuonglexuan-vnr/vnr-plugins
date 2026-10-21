@@ -16,7 +16,7 @@
     "/vnr-dev tôi muốn thêm cột ngày sinh vào grid nhân viên",
     "/vnr-dev sửa bug: lưu nhân viên báo 500 khi bỏ trống email",
     "/vnr-review: review phần code chưa push theo bộ luật SA team",
-    "/vnr-toi-muon tôi muốn thêm cột trạng thái vào bảng đơn hàng — làm việc trong repo bất kỳ, không cần workspace HRM"
+    "/vnr-toi-muon thêm cột trạng thái vào bảng đơn hàng — làm việc trong repo bất kỳ, không cần workspace HRM"
   ],
   "providesTable": [
     {

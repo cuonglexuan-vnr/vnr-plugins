@@ -48,7 +48,7 @@ hiểm): tạo `work/vnr-dev.md` theo mẫu trong `skills/vnr-dev/workspace.md`.
 ```
 cd <repo nào cũng được>     # mở ở gốc hoặc thư mục con đều được
 claude
-/vnr-toi-muon tôi muốn thêm cột trạng thái vào bảng đơn hàng
+/vnr-toi-muon thêm cột trạng thái vào bảng đơn hàng
 /vnr-toi-muon 7916                      # PBI id (cần MCP tfs)
 /vnr-toi-muon D:\spec\090_SPEC.md       # file spec
 /vnr-toi-muon sửa bug: export CSV lỗi khi tên có dấu
