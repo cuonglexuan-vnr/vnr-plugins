@@ -3,220 +3,147 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildPlan, DEFAULT_CONFIG } from './plan.mjs';
 
-const mkRule = (code, level, extra = {}) => ({ code, name: code, level, scope: ['apps/**/*.ts'], pathGates: [], regexGates: [/MOCK/u], regexHints: [], readMore: [], fix: 'sửa ' + code, noIgnore: false, model: null, block: 'B ' + code, blockForRepo: () => 'B ' + code, ...extra });
-const mkSet = (aspect, rules) => ({ ok: true, aspect, repo: 'fe', version: '1', appliesTo: ['apps/**/*.ts'], excludes: ['**/*.spec.ts'], section1: 'S1 ' + aspect, rules, warnings: [], errors: [] });
-const file = (p, texts) => ({ path: p, status: 'M', added: texts.map((t, i) => ({ n: i + 1, text: t })), hunks: ['@@ +1 @@'] });
-const base = { repo: { name: 'vnr.hrm.web', kind: 'fe', root: '/tmp/x' }, baseline: { ref: 'origin/x', how: 'upstream' }, siblings: {}, commitMessages: '', full: false, aspects: null, config: DEFAULT_CONFIG };
+const mkRule = (code, extra = {}) => ({ code, name: code, level: 'FAIL', scopeKind: 'files', scope: ['**/*.ts'], readMore: [], fix: '', noIgnore: false, model: null, proposed: false, block: 'B ' + code, blockForRepo: () => 'B ' + code, ...extra });
+const mkSet = (aspect, rules, extra = {}) => ({ aspect, title: null, version: '1', model: null, appliesTo: ['**/*.ts'], excludes: [], section1: 'S', rules, ...extra });
+const mkRules = sets => ({ sets, warnings: [], errors: [] });
+const file = (path, extra = {}) => ({ path, status: 'M', added: [], hunks: ['@@ -1 +1 @@\n+x'], ...extra });
+const diff = { files: [file('a.ts')], skipped: [] };
+const base = { repo: { name: 'vnr.hrm.web', kind: 'fe', root: '/tmp/x' }, baseline: { ref: 'origin/x', how: 'upstream' }, diff, siblings: {}, commitMessages: '', commits: [], branch: '', aspects: null, config: DEFAULT_CONFIG };
+const codes = n => Array.from({ length: n }, (_, i) => `X-${String(i + 1).padStart(2, '0')}`);
 
-test('FAIL rule with regex hit → job; WARN → regexWarnings; no hit → nothing', () => {
-  const rules = { sets: [mkSet('slop', [mkRule('SLOP-01', 'FAIL'), mkRule('SLOP-02', 'WARN'), mkRule('SLOP-03', 'FAIL', { regexGates: [/NOPE/u] })])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, rules, diff: { files: [file('apps/a.ts', ['const MOCK = 1'])], skipped: [] } });
-  assert.deepEqual(plan.jobs.map(j => j.code), ['SLOP-01']);
-  assert.equal(plan.jobs[0].section1, 'S1 slop'); assert.equal(plan.jobs[0].model, 'haiku');
-  assert.deepEqual(plan.regexWarnings.map(w => [w.code, w.n]), [['SLOP-02', 1]]);
+test('DEFAULT_CONFIG cố định; khoá cũ bị bỏ qua, không lỗi', () => {
+  assert.deepEqual(DEFAULT_CONFIG, { chunkSize: 20, cellBlockChars: 60_000, parallel: 8, skipProposed: true });
+  const plan = buildPlan({ ...base, rules: mkRules([mkSet('x', [mkRule('X-01')])]), config: { maxJobs: 30 } });
+  assert.deepEqual(plan.config, DEFAULT_CONFIG);
+  assert.equal(plan.cells.length, 1);
 });
 
-test('reason của luật đi vào job và regexWarnings', () => {
-  const rules = { sets: [mkSet('slop', [mkRule('SLOP-01', 'FAIL', { reason: 'lý do F' }), mkRule('SLOP-02', 'WARN', { reason: 'lý do W' })])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, rules, diff: { files: [file('apps/a.ts', ['MOCK'])], skipped: [] } });
-  assert.equal(plan.jobs[0].reason, 'lý do F');
-  assert.equal(plan.regexWarnings[0].reason, 'lý do W');
+test('chia ô theo số luật, FAIL trước (ổn định) rồi WARN', () => {
+  // 25 luật xen kẽ: 15 FAIL/FAIL+WARN + 10 WARN.
+  const rules = codes(25).map((c, i) => mkRule(c, { level: i % 5 < 3 ? (i % 2 ? 'FAIL+WARN' : 'FAIL') : 'WARN' }));
+  const fails = rules.filter(r => r.level !== 'WARN').map(r => r.code), warns = rules.filter(r => r.level === 'WARN').map(r => r.code);
+  assert.equal(fails.length, 15);
+  const plan = buildPlan({ ...base, rules: mkRules([mkSet('x', rules)]) });
+  assert.deepEqual(plan.cells.map(c => [c.id, c.fileId, c.chunk, c.chunkIndex, c.chunkCount]), [['fe/x/1', 'fe_x_1', '1/2', 1, 2], ['fe/x/2', 'fe_x_2', '2/2', 2, 2]]);
+  assert.deepEqual(plan.cells[0].codes, [...fails, ...warns.slice(0, 5)]);
+  assert.deepEqual(plan.cells[1].codes, warns.slice(5));
+  const c = plan.cells[0];
+  assert.equal(c.repo, 'vnr.hrm.web'); assert.equal(c.kind, 'fe'); assert.equal(c.aspect, 'x'); assert.equal(c.section1, 'S');
+  assert.deepEqual(c.rules[0], { code: 'X-01', name: 'X-01', level: 'FAIL', block: 'B X-01', fix: '', noIgnore: false });
+  assert.deepEqual(c.files, ['a.ts']); assert.deepEqual(c.hunks, [{ path: 'a.ts', text: '@@ -1 +1 @@\n+x' }]);
+  assert.deepEqual(c.readMore, { files: [], unresolved: [] }); assert.deepEqual(c.noIgnoreCodes, []);
+  assert.equal(c.truncated, undefined);
+  assert.deepEqual(plan.ruleSets, [{ aspect: 'x', title: null, version: '1', ruleCount: 25, inScope: 25, skippedProposed: 0 }]);
 });
 
-test('--full turns WARN hits into jobs; gate-less FAIL rule is one job (first in-scope file; spec excluded)', () => {
-  const rules = { sets: [mkSet('slop', [mkRule('SLOP-02', 'WARN'), mkRule('SLOP-05', 'FAIL', { regexGates: [] })])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, full: true, rules, diff: { files: [file('apps/a.ts', ['MOCK']), file('apps/b.spec.ts', ['MOCK'])], skipped: [] } });
-  assert.deepEqual(plan.jobs.map(j => j.code).sort(), ['SLOP-02', 'SLOP-05']);
-  assert.ok(plan.jobs.every(j => j.file === 'apps/a.ts'), 'spec file excluded');
+test('chia ô theo độ dài khối luật', () => {
+  const big = 'y'.repeat(25_000);
+  const plan = buildPlan({ ...base, rules: mkRules([mkSet('x', codes(3).map(c => mkRule(c, { block: big, blockForRepo: () => big })))]) });
+  assert.deepEqual(plan.cells.map(c => c.codes.length), [2, 1]);
+  const one = buildPlan({ ...base, config: { ...DEFAULT_CONFIG, cellBlockChars: 10 }, rules: mkRules([mkSet('x', codes(2).map(c => mkRule(c, { block: big, blockForRepo: () => big })))]) });
+  assert.deepEqual(one.cells.map(c => c.codes.length), [1, 1], 'luật vượt trần vẫn có ô riêng');
 });
 
-test('valid ignore removes the hit; ignore on noIgnore rule is invalid', () => {
-  const rules = { sets: [mkSet('sec', [mkRule('SEC-01', 'FAIL', { noIgnore: true }), mkRule('SEC-02', 'FAIL', { regexGates: [/FAKE/u] })])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, rules, diff: { files: [file('apps/a.ts', ['MOCK // review-ignore SEC-01: vì', 'FAKE // review-ignore SEC-02: vì'])], skipped: [] } });
-  assert.deepEqual(plan.jobs.map(j => j.code), ['SEC-01']);
-  assert.equal(plan.ignored.length, 1);
-  assert.equal(plan.invalidIgnores[0].code, 'SEC-01');
-  assert.equal(plan.invalidIgnores[0].why, 'luật không cho bỏ qua');
+test('hai file luật cùng aspect → một nhóm: id duy nhất, một dòng ruleSets, version gộp, title của file đầu', () => {
+  const a = mkSet('x', codes(15).map(c => mkRule(c)), { title: 'Nhóm X', version: '1', section1: 'S1' });
+  const b = mkSet('x', codes(25).slice(15).map(c => mkRule(c)), { title: 'Khác', version: '2', section1: 'S2' });
+  const plan = buildPlan({ ...base, rules: mkRules([a, b]) });
+  const ids = plan.cells.map(c => c.id);
+  assert.deepEqual(ids, ['fe/x/1', 'fe/x/2']); assert.equal(new Set(ids).size, ids.length);
+  assert.equal(plan.ruleSets.length, 1);
+  assert.deepEqual(plan.ruleSets[0], { aspect: 'x', title: 'Nhóm X', version: '1/2', ruleCount: 25, inScope: 25, skippedProposed: 0 });
+  assert.equal(plan.cells[0].title, 'Nhóm X'); assert.equal(plan.cells[0].section1, 'S1\n\nS2');
+  const v = buildPlan({ ...base, rules: mkRules([a, { ...b, version: '1' }]) });
+  assert.equal(v.ruleSets[0].version, '1', 'version trùng không lặp');
 });
 
-test('commit-message ignore only applies to its own path', () => {
-  const rules = { sets: [mkSet('sec', [mkRule('SEC-02', 'FAIL')])], warnings: [], errors: [] };
-  const diff = { files: [file('apps/a.ts', ['MOCK'])], skipped: [] };
-  const other = buildPlan({ ...base, commitMessages: 'review-ignore: SEC-02 apps/other.ts vì', rules, diff });
-  assert.deepEqual(other.jobs.map(j => j.code), ['SEC-02']);
-  assert.equal(other.ignored.length, 0);
-  const own = buildPlan({ ...base, commitMessages: 'review-ignore: SEC-02 apps/a.ts vì', rules, diff });
-  assert.equal(own.jobs.length, 0);
-  assert.equal(own.ignored.length, 1);
+test('phạm vi theo set của chính luật: excludes của set này không áp cho set kia', () => {
+  const a = mkSet('x', [mkRule('X-01')], { excludes: ['a.ts'] }), b = mkSet('x', [mkRule('X-02')]);
+  assert.deepEqual(buildPlan({ ...base, rules: mkRules([a, b]) }).cells[0].codes, ['X-02']);
 });
 
-test('cap by priority then hits; skipped listed deterministically', () => {
-  const rules = { sets: [mkSet('uiux', [mkRule('UIUX-01', 'FAIL')]), mkSet('sec', [mkRule('SEC-01', 'FAIL')]), mkSet('name', [mkRule('NAME-01', 'FAIL')])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, config: { ...DEFAULT_CONFIG, maxJobs: 2 }, rules, diff: { files: [file('apps/a.ts', ['MOCK'])], skipped: [] } });
-  assert.deepEqual(plan.jobs.map(j => j.code), ['SEC-01', 'NAME-01']);
-  assert.deepEqual(plan.skippedJobs, [{ code: 'UIUX-01', file: 'apps/a.ts' }]);
+test('luật đề xuất bị bỏ (đếm skippedProposed); skipProposed:false thì giữ; RETIRED luôn bỏ', () => {
+  const set = mkSet('x', [mkRule('X-01'), mkRule('X-02', { proposed: true }), mkRule('X-03', { level: 'RETIRED' })]);
+  const plan = buildPlan({ ...base, rules: mkRules([set]) });
+  assert.deepEqual(plan.cells.map(c => c.codes), [['X-01']]);
+  assert.equal(plan.ruleSets[0].skippedProposed, 1); assert.equal(plan.ruleSets[0].inScope, 1);
+  const keep = buildPlan({ ...base, config: { ...DEFAULT_CONFIG, skipProposed: false }, rules: mkRules([set]) });
+  assert.deepEqual(keep.cells.map(c => c.codes), [['X-01', 'X-02']]);
+  assert.equal(keep.ruleSets[0].skippedProposed, 0);
 });
 
-test('--aspect filters sets; empty diff → no jobs', () => {
-  const rules = { sets: [mkSet('uiux', [mkRule('UIUX-01', 'FAIL')]), mkSet('sec', [mkRule('SEC-01', 'FAIL')])], warnings: [], errors: [] };
-  assert.deepEqual(buildPlan({ ...base, aspects: ['sec'], rules, diff: { files: [file('apps/a.ts', ['MOCK'])], skipped: [] } }).jobs.map(j => j.code), ['SEC-01']);
-  assert.equal(buildPlan({ ...base, rules, diff: { files: [], skipped: [] } }).jobs.length, 0);
+test('luật ngoài phạm vi vắng mặt; nhóm 0 luật trong phạm vi không có trong ruleSets', () => {
+  const plan = buildPlan({ ...base, rules: mkRules([mkSet('x', [mkRule('X-01'), mkRule('X-02', { scope: ['**/*.cs'] })]), mkSet('y', [mkRule('Y-01', { scope: ['**/*.cs'] })])]) });
+  assert.deepEqual(plan.cells.map(c => c.codes), [['X-01']]);
+  assert.deepEqual(plan.ruleSets.map(s => s.aspect), ['x']);
+  assert.equal(plan.ruleSets[0].ruleCount, 2);
 });
 
-test('file-level rule (path-gate only): inline marker on any line suppresses the job', () => {
-  const rules = { sets: [mkSet('sec', [mkRule('SEC-09', 'FAIL', { regexGates: [], pathGates: ['apps/a.ts'] })])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, rules, diff: { files: [file('apps/a.ts', ['x', 'y // review-ignore SEC-09: vì'])], skipped: [] } });
-  assert.equal(plan.jobs.length, 0);
-  assert.equal(plan.ignored.length, 1);
-  assert.equal(plan.ignored[0].code, 'SEC-09');
+test('file của ô = hợp các file trong phạm vi của luật trong ô, theo thứ tự diff', () => {
+  const d = { files: [file('b.html'), file('a.ts'), file('c.cs')], skipped: [] };
+  const set = mkSet('x', [mkRule('X-01'), mkRule('X-02', { scope: ['**/*.html'] })], { appliesTo: ['**/*.ts', '**/*.html'] });
+  const c = buildPlan({ ...base, diff: d, rules: mkRules([set]) }).cells[0];
+  assert.deepEqual(c.files, ['b.html', 'a.ts']); assert.deepEqual(c.hunks.map(h => h.path), ['b.html', 'a.ts']);
 });
 
-test('WARN rule with every regex hit ignored → no job, no warning, ignore listed', () => {
-  const rules = { sets: [mkSet('slop', [mkRule('SLOP-02', 'WARN')])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, rules, diff: { files: [file('apps/a.ts', ['MOCK // review-ignore SLOP-02: vì'])], skipped: [] } });
-  assert.equal(plan.jobs.length, 0);
-  assert.equal(plan.regexWarnings.length, 0);
-  assert.equal(plan.ignored.length, 1);
+test('luật tên nhánh: trong phạm vi khi có nhánh, file giả (branch); luật commit: (commit <sha>)', () => {
+  const set = mkSet('name', [mkRule('N-01', { scopeKind: 'branch', scope: [] })]);
+  const plan = buildPlan({ ...base, branch: 'feat/x', rules: mkRules([set]) });
+  assert.deepEqual(plan.cells[0].files, ['(branch)']); assert.match(plan.cells[0].hunks[0].text, /feat\/x/);
+  assert.equal(buildPlan({ ...base, branch: '', rules: mkRules([set]) }).cells.length, 0);
+  const cm = mkSet('name', [mkRule('N-02', { scopeKind: 'commit', scope: [] })]);
+  const commits = [{ sha: 'abc1234', subject: 'update stuff', body: 'chi tiết' }];
+  const c = buildPlan({ ...base, commits, rules: mkRules([cm]) }).cells[0];
+  assert.deepEqual(c.files, ['(commit abc1234)']);
+  assert.deepEqual(c.hunks, [{ path: '(commit abc1234)', text: '@@ commit abc1234 @@\n+update stuff\n+chi tiết' }]);
+  assert.equal(buildPlan({ ...base, commits: [], rules: mkRules([cm]) }).cells.length, 0);
 });
 
-// --- luật phạm vi commit/nhánh, luật FAIL không gate gộp một job, xếp hạng ---
-const sk = (kind, extra = {}) => mkRule('NAME-90', 'WARN', { scopeKind: kind, scope: [], regexGates: [/^(?!feat|fix)/u], ...extra });
-const commits = [{ sha: 'abc1234567', subject: 'update stuff', body: '' }, { sha: 'def', subject: 'fix(x): y', body: '' }];
-const aDiff = { files: [file('apps/a.ts', ['MOCK'])], skipped: [] };
-
-test('commit-scope WARN rule: one regex warning per matching commit, never runs on code files', () => {
-  const rules = { sets: [mkSet('name', [sk('commit')])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, rules, diff: aDiff, commits });
-  assert.equal(plan.jobs.length, 0);
-  assert.deepEqual(plan.regexWarnings.map(w => [w.code, w.file, w.n, w.text]), [['NAME-90', '(commit abc1234567)', 0, 'update stuff']]);
+test('model: luật > bộ luật > sonnet', () => {
+  const m = (rm, sm) => buildPlan({ ...base, rules: mkRules([mkSet('x', [mkRule('X-01', { model: rm })], { model: sm })]) }).cells[0].model;
+  assert.equal(m('opus', 'haiku'), 'opus'); assert.equal(m(null, 'haiku'), 'haiku'); assert.equal(m(null, null), 'sonnet');
 });
 
-test('commit-scope FAIL rule: one job (commit) listing matching commits', () => {
-  const rules = { sets: [mkSet('name', [sk('commit', { level: 'FAIL' })])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, rules, diff: aDiff, commits });
-  assert.equal(plan.jobs.length, 1);
-  const j = plan.jobs[0];
-  assert.equal(j.file, '(commit)'); assert.deepEqual(j.files, ['(commit abc1234567)']);
-  assert.match(j.hunks.join('\n'), /@@ commit abc1234567 @@\n\+update stuff/);
-  assert.deepEqual(j.hits, [{ n: 0, text: 'update stuff' }]); assert.deepEqual(j.readMore, { files: [], unresolved: [] });
+test('hunk theo thứ tự diff, trần 60 000 ký tự; file thật đầu luôn giữ, file sau giữ nếu còn vừa, không thì → truncated (không dây chuyền)', () => {
+  const sized = (p, n) => file(p, { hunks: ['z'.repeat(n)] });
+  const rules = mkRules([mkSet('x', [mkRule('X-01')])]);
+  const ok = buildPlan({ ...base, rules, diff: { files: [sized('c.ts', 50_000), sized('a.ts', 5_000), sized('b.ts', 5_000)], skipped: [] } }).cells[0];
+  assert.deepEqual(ok.hunks.map(h => h.path), ['c.ts', 'a.ts', 'b.ts']); assert.equal(ok.truncated, undefined);
+  const big = buildPlan({ ...base, rules, diff: { files: [sized('c.ts', 70_000), sized('a.ts', 5), sized('b.ts', 5)], skipped: [] } }).cells[0];
+  assert.deepEqual(big.hunks.map(h => h.path), ['c.ts']); assert.deepEqual(big.truncated, ['a.ts', 'b.ts']);
+  assert.deepEqual(big.files, ['c.ts', 'a.ts', 'b.ts']); assert.deepEqual(big.truncatedHunks, { 'a.ts': 'z'.repeat(5), 'b.ts': 'z'.repeat(5) });
+  const skip = buildPlan({ ...base, rules, diff: { files: [sized('c.ts', 50_000), sized('a.ts', 30_000), sized('b.ts', 2_000)], skipped: [] } }).cells[0];
+  assert.deepEqual(skip.hunks.map(h => h.path), ['c.ts', 'b.ts'], 'file nhỏ sau file bị cắt vẫn được giữ');
+  assert.deepEqual(skip.truncated, ['a.ts']); assert.deepEqual(skip.truncatedHunks, { 'a.ts': 'z'.repeat(30_000) });
+  assert.equal(ok.truncatedHunks, undefined);
 });
 
-test('commit-scope rule without gate → one job with ALL commits; body counts when subject does not match', () => {
-  const rules = { sets: [mkSet('name', [sk('commit', { level: 'FAIL', regexGates: [] })])], warnings: [], errors: [] };
-  assert.equal(buildPlan({ ...base, rules, diff: aDiff, commits }).jobs[0].files.length, 2);
-  const r2 = { sets: [mkSet('name', [sk('commit', { regexGates: [/PBI/u] })])], warnings: [], errors: [] };
-  const w = buildPlan({ ...base, rules: r2, diff: aDiff, commits: [{ sha: 'a1', subject: 'feat: x', body: 'PBI #1' }] }).regexWarnings;
-  assert.deepEqual(w.map(x => x.file), ['(commit a1)']);
+test('commit/branch không tính vào trần hunk; file thật đầu vẫn luôn giữ', () => {
+  const set = mkSet('x', [mkRule('X-01'), mkRule('X-02', { scopeKind: 'commit', scope: [] })]);
+  const commits = [{ sha: 'abc1234', subject: 's', body: 'b'.repeat(70_000) }];
+  const sized = (p, n) => file(p, { hunks: ['z'.repeat(n)] });
+  const c = buildPlan({ ...base, commits, rules: mkRules([set]), diff: { files: [sized('c.ts', 55_000), sized('a.ts', 5_000)], skipped: [] } }).cells[0];
+  assert.deepEqual(c.hunks.map(h => h.path), ['(commit abc1234)', 'c.ts', 'a.ts']); assert.equal(c.truncated, undefined);
 });
 
-test('branch-scope rule: warning only when the branch name matches the regex', () => {
-  const rules = { sets: [mkSet('name', [sk('branch', { regexGates: [/^(?!br\.)/u] })])], warnings: [], errors: [] };
-  const w = buildPlan({ ...base, rules, diff: aDiff, branch: 'feature/x' }).regexWarnings;
-  assert.deepEqual(w.map(x => [x.file, x.text]), [['(branch)', 'feature/x']]);
-  assert.equal(buildPlan({ ...base, rules, diff: aDiff, branch: 'br.dev/u/t' }).regexWarnings.length, 0);
-  const f = { sets: [mkSet('name', [sk('branch', { level: 'FAIL', regexGates: [/^(?!br.)/u] })])], warnings: [], errors: [] };
-  const j = buildPlan({ ...base, rules: f, diff: aDiff, branch: 'feature/x' }).jobs[0];
-  assert.equal(j.file, '(branch)'); assert.deepEqual(j.files, ['(branch)']);
+test('marker review-ignore: hợp lệ → ignored; trên luật không cho bỏ qua → invalidIgnores, luật vẫn trong ô', () => {
+  const set = mkSet('sec', [mkRule('SEC-01', { noIgnore: true }), mkRule('SEC-02')]);
+  const added = [{ n: 1, text: 'x // review-ignore SEC-01: vì' }, { n: 2, text: 'y // review-ignore SEC-02: vì' }];
+  const plan = buildPlan({ ...base, rules: mkRules([set]), diff: { files: [file('a.ts', { added })], skipped: [] } });
+  assert.equal(plan.ignored.length, 1); assert.equal(plan.ignored[0].code, 'SEC-02');
+  assert.equal(plan.invalidIgnores.length, 1); assert.equal(plan.invalidIgnores[0].code, 'SEC-01'); assert.equal(plan.invalidIgnores[0].why, 'luật không cho bỏ qua');
+  assert.deepEqual(plan.cells[0].codes, ['SEC-01', 'SEC-02']); assert.deepEqual(plan.cells[0].noIgnoreCodes, ['SEC-01']);
+  const bad = buildPlan({ ...base, rules: mkRules([set]), diff: { files: [file('a.ts', { added: [{ n: 1, text: '// review-ignore SEC-02' }] })], skipped: [] } });
+  assert.equal(bad.invalidIgnores.length, 1); assert.equal(bad.ignored.length, 0);
 });
 
-const threeFiles = { files: ['apps/a.ts', 'apps/b.ts', 'apps/c.ts'].map(p => file(p, ['x'])), skipped: [] };
-
-test('gate-less FAIL rule → ONE job over all in-scope files', () => {
-  const rules = { sets: [mkSet('arch-fe', [mkRule('ARCH-FE-01', 'FAIL', { regexGates: [] })])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, rules, diff: threeFiles });
-  assert.equal(plan.jobs.length, 1);
-  const j = plan.jobs[0];
-  assert.deepEqual(j.files, ['apps/a.ts', 'apps/b.ts', 'apps/c.ts']); assert.equal(j.file, 'apps/a.ts');
-  for (const p of j.files) assert.ok(j.hunks.includes(`### ${p}`));
-  assert.deepEqual(j.hits, []);
-});
-
-test('ranking: gated rule with hits outranks gate-less rule of a higher-priority aspect', () => {
-  const rules = { sets: [mkSet('arch-fe', [mkRule('ARCH-FE-01', 'FAIL', { regexGates: [] })]), mkSet('slop', [mkRule('SLOP-01', 'FAIL')])], warnings: [], errors: [] };
-  const diff = { files: [file('apps/a.ts', ['MOCK', 'MOCK'])], skipped: [] };
-  assert.deepEqual(buildPlan({ ...base, rules, diff }).jobs.map(j => j.code), ['SLOP-01', 'ARCH-FE-01']);
-});
-
-test('per-file ignore drops one file from the gate-less job', () => {
-  const rules = { sets: [mkSet('arch-fe', [mkRule('ARCH-FE-01', 'FAIL', { regexGates: [] })])], warnings: [], errors: [] };
-  const diff = { files: [file('apps/a.ts', ['x // review-ignore ARCH-FE-01: vì']), file('apps/b.ts', ['x'])], skipped: [] };
-  const plan = buildPlan({ ...base, rules, diff });
-  assert.deepEqual(plan.jobs[0].files, ['apps/b.ts']); assert.equal(plan.ignored.length, 1);
-  const all = { files: [file('apps/a.ts', ['x // review-ignore ARCH-FE-01: vì'])], skipped: [] };
-  assert.equal(buildPlan({ ...base, rules, diff: all }).jobs.length, 0);
-});
-
-test('path-gate rộng + regex-gate không khớp: một job cho cả luật, xếp sau luật có hit', () => {
-  const rules = { sets: [mkSet('arch-fe', [mkRule('ARCH-FE-01', 'FAIL', { pathGates: ['apps/**/*.ts'], regexGates: [/NOPE/u] })]), mkSet('slop', [mkRule('SLOP-01', 'FAIL')])], warnings: [], errors: [] };
-  const diff = { files: [file('apps/a.ts', ['MOCK']), file('apps/b.ts', ['x']), file('apps/c.ts', ['x'])], skipped: [] };
-  const jobs = buildPlan({ ...base, rules, diff }).jobs;
-  assert.deepEqual(jobs.map(j => [j.code, j.files.length]), [['SLOP-01', 1], ['ARCH-FE-01', 3]]);
-});
-
-test('noIgnore của luật đi vào job', () => {
-  const rules = { sets: [mkSet('sec', [mkRule('SEC-01', 'FAIL', { noIgnore: true }), mkRule('SEC-02', 'FAIL', { regexGates: [/FAKE/u] })])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, rules, diff: { files: [file('apps/a.ts', ['MOCK FAKE'])], skipped: [] } });
-  assert.deepEqual(plan.jobs.map(j => [j.code, j.noIgnore]), [['SEC-01', true], ['SEC-02', false]]);
-});
-
-test('job gộp: hunk vượt trần 60 000 ký tự → file cuối bị cắt, chuyển vào readMore.files + truncated', () => {
-  const rules = { sets: [mkSet('arch-fe', [mkRule('ARCH-FE-01', 'FAIL', { regexGates: [] })])], warnings: [], errors: [] };
-  const big = p => ({ ...file(p, ['x']), hunks: ['y'.repeat(30000)] });
-  const plan = buildPlan({ ...base, rules, diff: { files: ['apps/a.ts', 'apps/b.ts', 'apps/c.ts'].map(big), skipped: [] } });
-  const j = plan.jobs[0];
-  assert.deepEqual(j.files, ['apps/a.ts', 'apps/b.ts', 'apps/c.ts']);
-  assert.deepEqual(j.truncated, ['apps/c.ts']);
-  assert.ok(j.hunks.includes('### apps/b.ts') && !j.hunks.includes('### apps/c.ts'));
-  assert.ok(j.readMore.files.includes('apps/c.ts'));
-  // Không vượt trần → không có truncated.
-  const ok = buildPlan({ ...base, rules, diff: threeFiles }).jobs[0];
-  assert.deepEqual(ok.truncated ?? [], []);
-});
-
-test('maxJobsPerRule: luật trúng 7 file → 4 job đơn (nhiều hit nhất) + 1 job gộp 3 file', () => {
-  const rules = { sets: [mkSet('arch-be', [mkRule('ARCH-01', 'FAIL')])], warnings: [], errors: [] };
-  const hitsPer = [1, 5, 2, 4, 3, 1, 1];                                                       // a0..a6; hit nhiều nhất: a1, a3, a4, a2
-  const files = hitsPer.map((n, i) => file(`apps/a${i}.ts`, Array(n).fill('MOCK')));
-  const plan = buildPlan({ ...base, config: { ...DEFAULT_CONFIG, maxJobsPerRule: 4, maxJobs: 30 }, rules, diff: { files, skipped: [] } });
-  const jobs = plan.jobs.filter(j => j.code === 'ARCH-01');
-  assert.equal(jobs.length, 5);
-  assert.deepEqual(jobs.filter(j => j.files.length === 1).map(j => j.file).sort(), ['apps/a1.ts', 'apps/a2.ts', 'apps/a3.ts', 'apps/a4.ts']);
-  const merged = jobs.find(j => j.files.length > 1);
-  assert.deepEqual(merged.files, ['apps/a0.ts', 'apps/a5.ts', 'apps/a6.ts']);
-  assert.equal(merged.hits.length, 3);
-  assert.deepEqual(merged.hunks.filter(h => h.startsWith('### ')), merged.files.map(f => `### ${f}`));
-  assert.equal(plan.config.maxJobsPerRule, 4);
-});
-
-test('maxJobsPerRule: 0 → mọi file trúng gộp một job; ≤ giới hạn thì giữ job đơn', () => {
-  const rules = { sets: [mkSet('arch-be', [mkRule('ARCH-01', 'FAIL')])], warnings: [], errors: [] };
-  const files = [0, 1, 2].map(i => file(`apps/a${i}.ts`, ['MOCK']));
-  const zero = buildPlan({ ...base, config: { ...DEFAULT_CONFIG, maxJobsPerRule: 0 }, rules, diff: { files, skipped: [] } });
-  assert.equal(zero.jobs.length, 1); assert.equal(zero.jobs[0].files.length, 3);
-  const three = buildPlan({ ...base, config: { ...DEFAULT_CONFIG, maxJobsPerRule: 3 }, rules, diff: { files, skipped: [] } });
-  assert.equal(three.jobs.length, 3); assert.ok(three.jobs.every(j => j.files.length === 1));
-});
-
-test('job gộp do fan-out là hasHits: xếp trước luật không gate, và áp trần 60 000 ký tự', () => {
-  const big = p => ({ ...file(p, ['MOCK']), hunks: ['x'.repeat(40_000)] });
-  const rules = { sets: [mkSet('sec', [mkRule('SEC-09', 'FAIL', { regexGates: [] })]), mkSet('arch-be', [mkRule('ARCH-01', 'FAIL')])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, config: { ...DEFAULT_CONFIG, maxJobsPerRule: 0 }, rules, diff: { files: [big('apps/a.ts'), big('apps/b.ts')], skipped: [] } });
-  assert.deepEqual(plan.jobs.map(j => j.code), ['ARCH-01', 'SEC-09']);
-  assert.deepEqual(plan.jobs[0].truncated, ['apps/b.ts']);
-  assert.ok(plan.jobs[0].readMore.files.includes('apps/b.ts'));
-});
-
-test('reserve: khía cạnh sec không bao giờ bị trần cắt', () => {
-  const rules = { sets: [mkSet('arch-be', [mkRule('A-01', 'FAIL'), mkRule('A-02', 'FAIL'), mkRule('A-03', 'FAIL'), mkRule('A-04', 'FAIL')]), mkSet('sec', [mkRule('SEC-01', 'FAIL', { regexGates: [] })])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, config: { ...DEFAULT_CONFIG, maxJobs: 3 }, rules, diff: { files: [file('apps/a.ts', ['MOCK'])], skipped: [] } });
-  assert.deepEqual(plan.jobs.map(j => j.code), ['A-01', 'A-02', 'SEC-01']);
-  assert.deepEqual(plan.skippedJobs.map(s => s.code), ['A-03', 'A-04']);
-  assert.deepEqual(plan.config.reserve, ['sec']);
-});
-
-test('reserve: ứng viên được giữ vượt maxJobs vẫn giữ hết, phần còn lại vào skippedJobs', () => {
-  const rules = { sets: [mkSet('sec', [mkRule('SEC-01', 'FAIL'), mkRule('SEC-02', 'FAIL'), mkRule('SEC-03', 'FAIL')]), mkSet('name', [mkRule('N-01', 'FAIL')])], warnings: [], errors: [] };
-  const plan = buildPlan({ ...base, config: { ...DEFAULT_CONFIG, maxJobs: 2 }, rules, diff: { files: [file('apps/a.ts', ['MOCK'])], skipped: [] } });
-  assert.deepEqual(plan.jobs.map(j => j.code), ['SEC-01', 'SEC-02', 'SEC-03']);
-  assert.deepEqual(plan.skippedJobs.map(s => s.code), ['N-01']);
+test('lọc --aspect; số file, untracked, branch, file bị bỏ qua', () => {
+  const rules = mkRules([mkSet('uiux', [mkRule('U-01')]), mkSet('sec', [mkRule('SEC-01')])]);
+  const d = { files: [file('a.ts'), file('n.ts', { status: 'U' })], skipped: [{ path: 'big.bin' }] };
+  const plan = buildPlan({ ...base, aspects: ['sec'], branch: 'feat/x', rules, diff: d });
+  assert.deepEqual(plan.cells.map(c => c.aspect), ['sec']); assert.deepEqual(plan.ruleSets.map(s => s.aspect), ['sec']);
+  assert.equal(plan.fileCount, 2); assert.equal(plan.untrackedCount, 1); assert.equal(plan.branch, 'feat/x');
+  assert.deepEqual(plan.skippedFiles, [{ path: 'big.bin' }]);
+  assert.deepEqual(plan.repo, { name: 'vnr.hrm.web', kind: 'fe', root: '/tmp/x' });
+  assert.equal(buildPlan({ ...base, rules, diff: { files: [], skipped: [] } }).cells.length, 0);
 });

@@ -61,7 +61,7 @@ export function generateIndex(sets) {
   for (const g of groupByAspect(sets)) {
     const [s] = g, versions = [...new Set(g.map(x => x.version))].join('/');
     const total = g.reduce((n, x) => n + x.rules.length, 0);
-    L.push(`## ${s.aspect} — ${s.title} (v${versions}, repo: ${s.repo}, ${total} luật${g.length > 1 ? `, ${g.length} file` : ''})`, '', '| Mã | Tên | Mức | Phạm vi |', '|---|---|---|---|');
+    L.push(`## ${s.aspect} — ${s.title ?? ''} (v${versions}, repo: ${s.repo}, ${total} luật${g.length > 1 ? `, ${g.length} file` : ''})`, '', '| Mã | Tên | Mức | Phạm vi |', '|---|---|---|---|');
     for (const r of g.flatMap(x => x.rules)) L.push(`| \`${r.code}\` | ${r.name} | ${r.level} | ${r.scope.map(g => `\`${g}\``).join(', ')} |`);
     L.push('');
   }

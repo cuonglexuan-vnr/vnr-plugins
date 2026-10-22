@@ -3,193 +3,288 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderReport } from './report.mjs';
 
-const plan = {
-  repo: { name: 'vnr.hrm.web', kind: 'fe' }, baseline: { ref: 'origin/feat/x', how: 'upstream' }, fileCount: 14, skippedFiles: [],
-  ruleSets: [{ aspect: 'arch-fe', version: '1', ruleCount: 29 }, { aspect: 'slop', version: '2', ruleCount: 12 }],
-  jobs: [
-    { id: 'SLOP-01__1', code: 'SLOP-01', name: 'Dữ liệu mẫu không nối vào luồng chạy thật', level: 'FAIL', file: 'apps/x/seed.ts', fix: 'Thay nguồn tĩnh bằng adapter HTTP.' },
-    { id: 'ARCH-FE-04__2', code: 'ARCH-FE-04', name: 'Thay đổi lib lõi đi PR riêng', level: 'FAIL', file: 'libs/ui/x.ts', fix: 'Tách PR.' },
-    { id: 'FW-FE-12__3', code: 'FW-FE-12', name: 'Gọi API qua core service', level: 'FAIL+WARN', file: 'apps/x/p.ts', fix: 'Dùng SupertoolApiClient.' },
-    { id: 'SLOP-10__4', code: 'SLOP-10', name: 'X', level: 'FAIL', file: 'apps/x/e.ts', fix: 'f' },
-  ],
-  regexWarnings: [
-    { code: 'UIUX-07', name: 'Màu cứng', file: 'apps/x/b.component.ts', n: 9, text: 'color: #fff' },
-    { code: 'UIUX-07', name: 'Màu cứng', file: 'apps/x/a.component.ts', n: 41, text: 'color: #000' },
-    { code: 'NAME-FE-03', name: 'Tên file', file: 'libs/y/z.ts', n: 12, text: 'export class foo' },
-  ],
-  ignored: [{ code: 'SEC-03', path: 'apps/x/dev-proxy.ts', line: 9, reason: 'chỉ dùng cho env dev' }],
-  invalidIgnores: [{ code: 'SEC-01', path: 'apps/x/a.ts', line: 2, why: 'luật không cho bỏ qua' }],
-  skippedJobs: [{ code: 'UIUX-01', file: 'apps/z.ts' }], warnings: [], errors: [],
+const ROOT = 'D:\\ws\\src\\vnr.hrm.web';
+const EN = 'apps/supertool/public/assets/i18n/EN.json';
+const PANEL = 'libs/ui-framework/src/property-panel/property-panel.component.ts';
+const HOST = 'apps/supertool/src/app/core/verdi-widget/supertool-verdi-host-actions.ts';
+
+const rule = (code, level, fix = `Sửa ${code}.`) => ({ code, name: `Tên luật ${code}`, level, block: `### ${code}`, fix, noIgnore: false });
+const mkCell = (kind, aspect, i, rules, files, extra = {}) => ({
+  id: `${kind}/${aspect}/${i}`, fileId: `${kind}_${aspect}_${i}`, repo: extra.repo ?? 'vnr.hrm.web', kind, aspect, title: aspect.toUpperCase(),
+  chunk: `${i}/1`, codes: rules.map(r => r.code), rules, files, hunks: [], ...extra,
+});
+// ruleSets suy ra từ các ô (một nhóm mỗi aspect), như buildPlan.
+const mkPlan = ({ name = 'vnr.hrm.web', kind = 'fe', root = ROOT, cells, ...rest }) => {
+  const ruleSets = [...Map.groupBy(cells, c => c.aspect)].map(([aspect, cs]) => ({ aspect, title: cs[0].title, version: '1', ruleCount: 9, inScope: cs.reduce((n, c) => n + c.codes.length, 0), skippedProposed: 0 }));
+  return { repo: { name, kind, root }, branch: 'feat/x', sha7: 'a1b2c3d', fileCount: 12, untrackedCount: 0, cells, ruleSets, ignored: [], invalidIgnores: [], ...rest };
 };
-const results = {
-  'SLOP-01__1': { code: 'SLOP-01', verdict: 'FAIL', findings: [{ file: 'apps/x/seed.ts', line: 349, excerpt: "export const WF_MODULES = ['a']", why: 'mock' }], needs_context: [] },
-  'ARCH-FE-04__2': { code: 'ARCH-FE-04', verdict: 'FAIL', findings: [{ file: 'libs/ui/x.ts', line: 18, excerpt: 'x', why: 'y' }], needs_context: [] },
-  'FW-FE-12__3': { code: 'FW-FE-12', verdict: 'WARN', findings: [{ file: 'apps/x/p.ts', line: 61, excerpt: 'this.http.get', why: 'z' }], needs_context: [] },
-  'SLOP-10__4': { code: 'SLOP-10', verdict: 'NEEDS_CONTEXT', findings: [], needs_context: ['thiếu {be}/…/UserController.cs'] },
+// Kết quả hợp lệ cho cả ô: mỗi mã một dòng checked, findings theo mã.
+const ok = (cell, byCode = {}) => ({ cell: cell.id, rules: cell.codes.map(code => ({ code, status: 'checked', findings: byCode[code] ?? [] })) });
+const render = (plans, results, verifications = {}, opts = {}) =>
+  renderReport({ plans, ledger: { cells: [] }, results, verifications, elapsedMs: 160_000, pluginVersion: '2.0.0', ...opts });
+const lines = text => text.split('\n').filter(Boolean);
+
+// Ví dụ §7 của spec (BE): DATA-20 xác nhận FAIL, SLOP-11 (2 vị trí) và NAME-08 là WARN; 55 luật / 6 nhóm, 7 file bị cắt.
+const SQL = 'SQL/PostgreSQL/Migration/script_seed_p071_job_relation_chart.sql';
+const BUILDER = 'Src/Modules/Hre/Vnr.Hrm.Hre.Application/JobRelationChart/JobRelationChartBuilder.cs';
+const CTRL = 'Src/Modules/Hre/Vnr.Hrm.Hre.Api/Controllers/JobRelationChartController.cs';
+const BIG = Array.from({ length: 7 }, (_, i) => `Src/Generated/Big${i + 1}.cs`);
+const fillers = (prefix, n) => Array.from({ length: n }, (_, i) => rule(`${prefix}-${String(i + 50).padStart(2, '0')}`, 'WARN'));
+const beFiles = [SQL, BUILDER, CTRL, ...BIG];
+const beCells = [
+  mkCell('be', 'data', 1, [rule('DATA-20', 'FAIL'), ...fillers('DATA', 8)], beFiles, { truncated: BIG }),
+  mkCell('be', 'slop', 1, [rule('SLOP-11', 'WARN'), ...fillers('SLOP', 8)], beFiles),
+  mkCell('be', 'name', 1, [rule('NAME-08', 'WARN'), ...fillers('NAME', 8)], beFiles),
+  ...['arch', 'sec', 'fw'].map((a, i) => mkCell('be', a, 1, fillers(a.toUpperCase(), i ? 9 : 10), beFiles)),
+];
+const s7Plan = mkPlan({ name: 'vnr.hrm.solution', kind: 'be', root: 'D:\\ws\\src\\vnr.hrm.solution', branch: 'feat/job-relation-chart', sha7: 'adbec63', fileCount: 58, untrackedCount: 2, cells: beCells });
+const s7Results = {
+  ...Object.fromEntries(beCells.slice(3).map(c => [c.fileId, ok(c)])),
+  be_data_1: ok(beCells[0], { 'DATA-20': [{ file: SQL, line: 1, level: 'FAIL', issue: 'Script seed INSERT thẳng, không kiểm tra bản ghi đã có: chạy lại migration sẽ nhân đôi dữ liệu cấu hình', fix: 'bọc mỗi INSERT bằng `WHERE NOT EXISTS` theo khoá nghiệp vụ' }] }),
+  be_slop_1: ok(beCells[1], { 'SLOP-11': [7, 31].map(line => ({ file: BUILDER, line, issue: 'Comment lặp lại đúng tên hàm, không nói thêm điều gì', fix: 'xoá comment, hoặc ghi lý do thay vì mô tả' })) }),
+  be_name_1: ok(beCells[2], { 'NAME-08': [{ file: CTRL, line: 12, issue: 'Tên action <GetData> không nói dữ liệu gì', fix: 'đổi thành `GetJobRelationChart`' }] }),
 };
+const s7 = { plans: [s7Plan], results: { 'vnr.hrm.solution': s7Results }, verifications: { 'vnr.hrm.solution': { 'be_data_1-DATA-20-0': { verdict: 'confirmed' } } } };
 
-test('full report shape and verdict', () => {
-  const { text, verdict } = renderReport(plan, { results, verifications: [{ jobId: 'SLOP-01__1', index: 0, verdict: 'confirmed' }, { jobId: 'ARCH-FE-04__2', index: 0, verdict: 'unsure' }], elapsedMs: 170000, pluginVersion: '1.1.0', ci: false });
-  assert.equal(verdict, 'FAIL');
-  assert.match(text, /^Review  vnr\.hrm\.web/m);
-  assert.match(text, /Luật: arch-fe v1 · slop v2/);
-  assert.match(text, /^KẾT LUẬN: FAIL — 1 FAIL · 2 WARN · 3 nghi ngờ · 1 cần ngữ cảnh\nReview  /, 'KẾT LUẬN là dòng đầu, header ngay sau');
-  assert.doesNotMatch(text, /\| Mức/, 'không còn bảng tóm tắt');
-  assert.match(text, /\n\nFAIL\n  SLOP-01  /, 'mục FAIL nhóm theo mã luật vẫn còn');
-  // Nhóm theo luật: tên + (N chỗ), Vì, →, rồi các vị trí.
-  assert.match(text, /^FAIL\n  SLOP-01  Dữ liệu mẫu[^\n]*  \(1 chỗ\)\n    Vì: mock\n    → Thay nguồn tĩnh bằng adapter HTTP\.\n    apps\/x\/seed\.ts:349 /m);
-  assert.match(text, /^WARN\n  ARCH-FE-04 [^\n]*\(1 chỗ\)\n(.*\n)*    libs\/ui\/x\.ts:18   `x`  \(chưa chắc\)$/m);
-  assert.match(text, /^Nghi ngờ \(3\) — chưa kiểm sâu; \/vnr-review --full để kiểm\n  UIUX-07  Màu cứng  \(2\)\n    apps\/x\/a\.component\.ts:41   `color: #000`\n    apps\/x\/b\.component\.ts:9   `color: #fff`\n  NAME-FE-03  Tên file  \(1\)\n    libs\/y\/z\.ts:12   `export class foo`$/m);
-  assert.match(text, /Cần ngữ cảnh \(1\)\s+SLOP-10 .*UserController/);
-  assert.match(text, /Bỏ qua có lý do \(1\)\s+SEC-03 apps\/x\/dev-proxy\.ts:9  "chỉ dùng cho env dev"/);
-  assert.match(text, /Marker không hợp lệ \(1\)\s+SEC-01 .*luật không cho bỏ qua/);
-  assert.match(text, /Chưa kiểm \(1\)\s+UIUX-01 apps\/z\.ts/);
-  assert.match(text, /\nVERDICT:FAIL$/);
-  assert.match(text, /2m50s/);
+// NAME-20 (6 vị trí) và FW-FE-33 xác nhận FAIL, UIUX-28 là WARN.
+const name1 = mkCell('fe', 'name', 1, [rule('NAME-20', 'FAIL'), rule('NAME-05', 'WARN')], [EN]);
+const fw1 = mkCell('fe', 'fw', 1, [rule('FW-FE-33', 'FAIL+WARN')], [PANEL]);
+const ux1 = mkCell('fe', 'uiux', 1, [rule('UIUX-28', 'WARN')], [HOST]);
+const fixturePlan = mkPlan({ branch: 'feat/verdi-post-approve', cells: [name1, fw1, ux1], ignored: [{ code: 'NAME-05', path: EN, line: 3, reason: 'x' }] });
+const fixtureResults = {
+  [name1.fileId]: ok(name1, { 'NAME-20': [6270, 6271, 6272, 6273, 6274, 6275].map(line => ({ file: EN, line, issue: 'Khoá i18n đặt sai quy ước (6 khoá)', fix: 'đổi sang dạng `verdi.widget.postApprove.hint`' })) }),
+  [fw1.fileId]: ok(fw1, { 'FW-FE-33': [{ file: PANEL, line: 15, level: 'FAIL', issue: 'Lib dùng chung import thẳng ng-zorro', fix: 'khai ng-zorro là peer dependency của lib' }] }),
+  [ux1.fileId]: ok(ux1, { 'UIUX-28': [{ file: HOST, line: 90, issue: 'Chọn nhiều trang rồi bấm hàng loạt chỉ xử lý trang đang xem', fix: 'gửi danh sách khoá đã chọn' }] }),
+};
+const fixtureVerify = { 'fe_name_1-NAME-20-0': { verdict: 'confirmed' }, 'fe_fw_1-FW-FE-33-0': { verdict: 'confirmed' } };
+
+test('FAIL một repo: đúng khuôn §7 của spec (bảng tên file + thẻ đường dẫn đầy đủ + VERDICT)', () => {
+  const r = render(s7.plans, s7.results, s7.verifications, { elapsedMs: 114_000 });
+  assert.equal(r.text, [
+    '## vnr-review — FAIL (1 FAIL · 2 WARN) · vnr.hrm.solution @ feat/job-relation-chart (adbec63) · 58 file (2 chưa git add) · 1m54s',
+    '',
+    '| # | Kết quả | Luật | Vị trí |',
+    '|---|---|---|---|',
+    '| 1 | FAIL | DATA-20 | script_seed_p071_job_relation_chart.sql:1 |',
+    '| 2 | WARN | SLOP-11 | JobRelationChartBuilder.cs:7 (+1) |',
+    '| 3 | WARN | NAME-08 | JobRelationChartController.cs:12 |',
+    '',
+    '**#1 · FAIL · DATA-20**',
+    `- Vị trí: \`${SQL}:1\``,
+    '- Vấn đề: Script seed INSERT thẳng, không kiểm tra bản ghi đã có: chạy lại migration sẽ nhân đôi dữ liệu cấu hình',
+    '- Sửa: bọc mỗi INSERT bằng `WHERE NOT EXISTS` theo khoá nghiệp vụ',
+    '',
+    '**#2 · WARN · SLOP-11**',
+    `- Vị trí: \`${BUILDER}:7\` (+1)`,
+    '- Vấn đề: Comment lặp lại đúng tên hàm, không nói thêm điều gì',
+    '- Sửa: xoá comment, hoặc ghi lý do thay vì mô tả',
+    '',
+    '**#3 · WARN · NAME-08**',
+    `- Vị trí: \`${CTRL}:12\``,
+    '- Vấn đề: Tên action &lt;GetData> không nói dữ liệu gì',
+    '- Sửa: đổi thành `GetJobRelationChart`',
+    '',
+    '**FAIL**: phải sửa trước khi push · **WARN**: nên xem; cố ý giữ thì ghi chú bỏ qua (xem user-guide)',
+    '',
+    'Đã kiểm 55 luật, đủ 6/6 nhóm · 0 chỗ bỏ qua theo ghi chú · 7 file quá lớn chưa đọc hết · vnr-review 2.0.0',
+    '',
+    'VERDICT:FAIL',
+  ].join('\n'));
+  assert.equal(r.verdict, 'FAIL'); assert.equal(r.incomplete, false); assert.deepEqual(r.coverage, { done: 55, total: 55 });
 });
 
-test('wrong verification drops finding; no findings → PASS; missing result → cần ngữ cảnh', () => {
-  const p = { ...plan, jobs: [plan.jobs[0], plan.jobs[3]], regexWarnings: [], ignored: [], invalidIgnores: [], skippedJobs: [] };
-  const r1 = renderReport(p, { results: { 'SLOP-01__1': results['SLOP-01__1'] }, verifications: [{ jobId: 'SLOP-01__1', index: 0, verdict: 'wrong' }], elapsedMs: 1000, pluginVersion: '1', ci: true });
-  assert.equal(r1.verdict, 'WARN', 'missing SLOP-10 result → cần ngữ cảnh → WARN');
-  assert.match(r1.text, /không có kết quả/);
-  assert.doesNotMatch(r1.text, /^FAIL$/m);
-  const r2 = renderReport({ ...p, jobs: [] }, { results: {}, verifications: [], elapsedMs: 1, pluginVersion: '1', ci: true });
-  assert.equal(r2.verdict, 'PASS'); assert.match(r2.text, /KẾT LUẬN: PASS/); assert.match(r2.text, /VERDICT:PASS$/);
-  assert.doesNotMatch(r2.text, /\d+m\d+s/, 'ci omits elapsed');
+test('FE: bảng chỉ tên file, thẻ đủ đường dẫn; VERDICT luôn là dòng cuối dù không --ci', () => {
+  const r = render([fixturePlan], { 'vnr.hrm.web': fixtureResults }, { 'vnr.hrm.web': fixtureVerify });
+  assert.match(r.text, /^\| 1 \| FAIL \| NAME-20 \| EN\.json:6270 \(\+5\) \|$/m);
+  assert.match(r.text, /^\| 2 \| FAIL \| FW-FE-33 \| property-panel\.component\.ts:15 \|$/m);
+  assert.ok(r.text.includes(`**#1 · FAIL · NAME-20**\n- Vị trí: \`${EN}:6270\` (+5)\n- Vấn đề: Khoá i18n đặt sai quy ước (6 khoá)\n- Sửa: đổi sang dạng \`verdi.widget.postApprove.hint\`\n\n**#2 · FAIL · FW-FE-33**`));
+  assert.match(r.text, /vnr-review 2\.0\.0\n\nVERDICT:FAIL$/);
+  assert.doesNotMatch(r.text, /COVERAGE=|RULES=/, 'không --ci → không COVERAGE/RULES');
 });
 
-test('ci: true bỏ thời gian nhưng giữ header và VERDICT', () => {
-  const { text } = renderReport(plan, { results, verifications: [], elapsedMs: 170000, pluginVersion: '1.1.0', ci: true });
-  assert.doesNotMatch(text, /2m50s/);
-  assert.match(text, /^Review  vnr\.hrm\.web/m);
-  assert.match(text, /\nVERDICT:(FAIL|WARN|PASS)$/);
+test('verify: confirmed → FAIL, wrong → bỏ dòng, thiếu → WARN; finding ngoài diff → WARN dù luật FAIL', () => {
+  const res = { 'vnr.hrm.web': fixtureResults };
+  const wrong = render([fixturePlan], res, { 'vnr.hrm.web': { ...fixtureVerify, 'fe_name_1-NAME-20-0': { verdict: 'wrong' } } });
+  assert.doesNotMatch(wrong.text, /NAME-20/); assert.match(wrong.text, /\| FAIL \| FW-FE-33 /);
+  const none = render([fixturePlan], res, {});
+  assert.equal(none.verdict, 'WARN');
+  assert.match(none.text, /\| WARN \| NAME-20 \|/); assert.doesNotMatch(none.text, /FAIL \| [A-Z]/);
+  const out = { ...fixtureResults, [fw1.fileId]: ok(fw1, { 'FW-FE-33': [{ file: 'libs/other.ts', line: 3, issue: 'i', fix: 'f' }] }) };
+  const r = render([fixturePlan], { 'vnr.hrm.web': out }, { 'vnr.hrm.web': fixtureVerify });
+  assert.match(r.text, /\| WARN \| FW-FE-33 \| other\.ts:3 \|/); assert.match(r.text, /- Vị trí: `libs\/other\.ts:3`/);
 });
 
-test('NEEDS_CONTEXT có danh sách → mỗi mục đúng một dòng, không thêm "không quyết được"', () => {
-  const p = { ...plan, jobs: [plan.jobs[3]], regexWarnings: [], ignored: [], invalidIgnores: [], skippedJobs: [] };
-  const r = { 'SLOP-10__4': { code: 'SLOP-10', verdict: 'NEEDS_CONTEXT', findings: [], needs_context: ['thiếu a.cs', 'thiếu b.cs'] } };
-  const { text } = renderReport(p, { results: r, verifications: [], elapsedMs: 1, pluginVersion: '1', ci: true });
-  assert.match(text, /Cần ngữ cảnh \(2\)/);
-  assert.equal(text.split('\n').filter(l => /SLOP-10 apps\/x\/e\.ts — thiếu/.test(l)).length, 2);
-  assert.doesNotMatch(text, /không quyết được/);
+test('một mã: FAIL lẫn WARN gộp một dòng mức FAIL, vị trí đầu là vị trí FAIL', () => {
+  const c = mkCell('fe', 'slop', 1, [rule('SLOP-01', 'FAIL')], ['apps/a.ts', 'apps/b.ts']);
+  const res = { [c.fileId]: ok(c, { 'SLOP-01': [{ file: 'apps/a.ts', line: 1, issue: 'chưa xác nhận' }, { file: 'apps/b.ts', line: 2, issue: 'đã xác nhận' }] }) };
+  const r = render([mkPlan({ cells: [c] })], { 'vnr.hrm.web': res }, { 'vnr.hrm.web': { 'fe_slop_1-SLOP-01-1': { verdict: 'confirmed' } } });
+  assert.match(r.text, /^\| 1 \| FAIL \| SLOP-01 \| b\.ts:2 \(\+1\) \|$/m);
+  assert.match(r.text, /^\*\*#1 · FAIL · SLOP-01\*\*\n- Vị trí: `apps\/b\.ts:2` \(\+1\)\n- Vấn đề: đã xác nhận\n/m);
+  assert.match(r.text, /^## vnr-review — FAIL \(1 FAIL · 0 WARN\) · /);
 });
 
-test('finding của job commit và job nhiều file', () => {
-  const p = {
-    ...plan, regexWarnings: [], ignored: [], invalidIgnores: [], skippedJobs: [],
-    jobs: [
-      { id: 'NAME-01__1', code: 'NAME-01', name: 'Commit', level: 'FAIL', file: '(commit)', files: ['(commit abc1234567)'], fix: '' },
-      { id: 'ARCH-FE-01__2', code: 'ARCH-FE-01', name: 'Đa file', level: 'FAIL', file: 'a.ts', files: ['a.ts', 'b.ts'], fix: '' },
-    ],
-  };
-  const r = { 'NAME-01__1': { code: 'NAME-01', verdict: 'FAIL', findings: [{ file: '(commit abc1234567)', line: 0, excerpt: 'update stuff', why: 'x' }], needs_context: [] },
-    'ARCH-FE-01__2': { code: 'ARCH-FE-01', verdict: 'FAIL', findings: [{ file: 'b.ts', line: 3, excerpt: 'y', why: 'x' }, { line: 4, excerpt: 'z', why: 'x' }], needs_context: [] } };
-  const { text } = renderReport(p, { results: r, verifications: [], elapsedMs: 1, pluginVersion: '1', ci: true });
-  assert.match(text, /^    \(commit abc1234567\):0   `update stuff`$/m);
-  assert.match(text, /^    b\.ts:3   `y`$/m);
-  assert.match(text, /^    a\.ts:4   `z`$/m);
+test('chuẩn hoá dòng: file thiếu, path tuyệt đối Windows, dòng null/0, issue/fix thiếu, cắt 400, |, xuống dòng, (commit)/(branch)', () => {
+  const c = mkCell('fe', 'slop', 1, [rule('A-01', 'WARN', 'Gợi ý | của luật'), rule('B-02', 'WARN'), rule('C-03', 'WARN'), rule('D-04', 'WARN'), rule('E-05', 'WARN'), rule('F-06', 'WARN')], ['apps/a.ts', '(commit abc1234)', '(branch)']);
+  const long = 'x'.repeat(500);
+  const res = { [c.fileId]: ok(c, {
+    'A-01': [{ line: 4, issue: 'a | b\nc   d' }],
+    'B-02': [{ file: `${ROOT}\\apps\\a.ts`, line: 0, issue: long, fix: long }],
+    'C-03': [{ file: `${ROOT}\\apps\\sub\\zz.ts`, line: null, fix: 'f' }],
+    'D-04': [{ file: '(commit abc1234)', line: 3, issue: 'commit sai quy ước', fix: 'đặt lại' }],
+    'E-05': [{ file: './apps/a.ts', line: 7, issue: '```js\nx\n```', fix: 'f' }],
+    'F-06': [{ file: '(branch)', issue: 'tên nhánh sai', fix: 'đổi tên' }],
+  }) };
+  const t = render([mkPlan({ cells: [c] })], { 'vnr.hrm.web': res }).text;
+  const card = code => t.slice(t.indexOf(` · ${code}**`)).split('\n\n')[0].split('\n').slice(1);
+  assert.match(t, /^\| \d+ \| WARN \| A-01 \| \(không rõ file\) \|$/m);
+  assert.deepEqual(card('A-01'), ['- Vị trí: (không rõ file)', '- Vấn đề: a | b c d', '- Sửa: Gợi ý | của luật'], 'ngoài bảng không thoát |');
+  assert.match(t, /^\| \d+ \| WARN \| B-02 \| a\.ts \|$/m, 'path Windows → tách theo /, chỉ tên file; dòng 0 → không :dòng');
+  const [, issue, fix] = card('B-02');
+  assert.equal(issue, `- Vấn đề: ${'x'.repeat(399)}…`); assert.equal(fix, `- Sửa: ${'x'.repeat(399)}…`);
+  assert.equal(card('B-02')[0], '- Vị trí: `apps/a.ts`');
+  assert.match(t, /^\| \d+ \| WARN \| C-03 \| zz\.ts \|$/m);
+  assert.deepEqual(card('C-03'), ['- Vị trí: `apps/sub/zz.ts`', '- Vấn đề: Tên luật C-03', '- Sửa: f']);
+  assert.match(t, /^\| \d+ \| WARN \| D-04 \| \(commit abc1234\) \|$/m, 'pseudo-file giữ nguyên, không :dòng');
+  assert.equal(card('D-04')[0], '- Vị trí: (commit abc1234)');
+  assert.match(t, /^\| \d+ \| WARN \| F-06 \| \(branch\) \|$/m); assert.equal(card('F-06')[0], '- Vị trí: (branch)');
+  assert.match(t, /^\| \d+ \| WARN \| E-05 \| a\.ts:7 \|$/m);
+  assert.doesNotMatch(t, /```/);
 });
 
-test('Vì: dùng why của checker, không có thì rơi về lý do của luật', () => {
-  const p = { ...plan, jobs: [{ ...plan.jobs[0], reason: 'lý do luật' }, { ...plan.jobs[1], reason: 'lý do luật 2' }, { ...plan.jobs[2] }], regexWarnings: [], ignored: [], invalidIgnores: [], skippedJobs: [] };
-  const r = { ...results, 'ARCH-FE-04__2': { code: 'ARCH-FE-04', verdict: 'FAIL', findings: [{ file: 'libs/ui/x.ts', line: 18, excerpt: 'x' }], needs_context: [] } };
-  const { text } = renderReport(p, { results: r, elapsedMs: 1, pluginVersion: '1', ci: true });
-  assert.match(text, /\(1 chỗ\)\n    Vì: mock\n    → Thay nguồn[^\n]*\n    apps\/x\/seed\.ts:349   `export const WF_MODULES = \['a'\]`/);
-  assert.match(text, /\(1 chỗ\)\n    Vì: lý do luật 2\n    → Tách PR\.\n    libs\/ui\/x\.ts:18   `x`/);
-  assert.match(text, /\(1 chỗ\)\n    Vì: z\n    → Dùng SupertoolApiClient\.\n    apps\/x\/p\.ts:61   `this\.http\.get`/);
-  const noWhy = renderReport({ ...p, jobs: [p.jobs[2]] }, { results: { 'FW-FE-12__3': { code: 'FW-FE-12', verdict: 'WARN', findings: [{ file: 'a', line: 1, excerpt: 'e' }] } }, elapsedMs: 1, pluginVersion: '1', ci: true }).text;
-  assert.doesNotMatch(noWhy, /Vì:/);
+test('không có fix (cả finding lẫn luật) → thẻ không có dòng "Sửa"', () => {
+  const c = mkCell('fe', 'slop', 1, [rule('SLOP-01', 'WARN', '')], ['apps/a.ts']);
+  const res = { [c.fileId]: ok(c, { 'SLOP-01': [{ file: 'apps/a.ts', line: 1, issue: 'Dữ liệu mẫu' }] }) };
+  const t = render([mkPlan({ cells: [c] })], { 'vnr.hrm.web': res }).text;
+  assert.match(t, /^\| 1 \| WARN \| SLOP-01 \| a\.ts:1 \|$/m);
+  assert.match(t, /^- Vấn đề: Dữ liệu mẫu\n\n\*\*FAIL\*\*: /m);
+  assert.doesNotMatch(t, /- Sửa:/);
 });
 
-test('Vì sao: một dòng dưới mỗi mã nghi ngờ, bỏ khi lý do rỗng', () => {
-  const w = (code, n, reason) => ({ code, name: 'N', file: `f${n}.ts`, n, text: 't', reason });
-  const p = { ...clean, jobs: [], regexWarnings: [w('A-1', 1, 'lý do A'), w('A-1', 2, 'lý do A'), w('B-1', 3, '')] };
-  const { text } = renderReport(p, { ...opts, results: {} });
-  assert.equal((text.match(/Vì sao:/g) ?? []).length, 1);
-  assert.match(text, /  A-1  N  \(2\)\n    Vì sao: lý do A\n    f1\.ts:1/);
-  assert.match(text, /  B-1  N  \(1\)\n    f3\.ts:3/);
+test('thứ tự: FAIL trước, trong mức theo số vị trí giảm dần rồi mã; ≤ 10 dòng rồi dòng "+n dòng khác"', () => {
+  const codes = Array.from({ length: 13 }, (_, i) => `W-${String(i + 1).padStart(2, '0')}`);
+  const c = mkCell('fe', 'slop', 1, [rule('F-02', 'FAIL'), rule('F-01', 'FAIL'), ...codes.map(x => rule(x, 'WARN'))], ['apps/a.ts']);
+  const at = n => Array.from({ length: n }, (_, i) => ({ file: 'apps/a.ts', line: i + 1, issue: 'i', fix: 'f' }));
+  const byCode = { 'F-01': at(1), 'F-02': at(1), ...Object.fromEntries(codes.map(x => [x, at(1)])), 'W-13': at(3) };
+  const r = render([mkPlan({ cells: [c] })], { 'vnr.hrm.web': { [c.fileId]: ok(c, byCode) } }, { 'vnr.hrm.web': { 'fe_slop_1-F-01-0': { verdict: 'confirmed' }, 'fe_slop_1-F-02-0': { verdict: 'confirmed' } } });
+  const order = r.text.split('\n').filter(l => /^\| \d+ \|/.test(l)).map(l => l.split(' | ').slice(0, 3));
+  assert.deepEqual(order.map(o => o[2]), ['F-01', 'F-02', 'W-13', 'W-01', 'W-02', 'W-03', 'W-04', 'W-05', 'W-06', 'W-07']);
+  assert.deepEqual(order.map(o => o[0]), Array.from({ length: 10 }, (_, i) => `| ${i + 1}`), 'cột # đánh số 1..10 theo thứ tự hiển thị');
+  assert.deepEqual(order.map(o => o[1]), ['FAIL', 'FAIL', ...Array(8).fill('WARN')], 'cột Kết quả chữ thường, không in đậm');
+  assert.match(r.text, /^_\(\+5 dòng khác: W-08, W-09, W-10, W-11, W-12\)_$/m);
+  const cards = r.text.split('\n').filter(l => /^\*\*#\d+ · /.test(l));
+  assert.deepEqual(cards.map(l => l.match(/^\*\*#(\d+) · (\w+) · (\S+)\*\*$/).slice(1).join(' ')), order.map((o, i) => `${i + 1} ${o[1]} ${o[2]}`), 'thẻ cùng số, mức, mã với dòng bảng; ≤ 10');
+  assert.ok(r.text.indexOf('**#10 · ') < r.text.indexOf('_(+5 dòng khác'), '"+n dòng khác" sau các thẻ');
+  assert.ok(r.text.indexOf('_(+5 dòng khác') < r.text.indexOf('**FAIL**: phải sửa'));
+  assert.match(r.text, /^## vnr-review — FAIL \(2 FAIL · 13 WARN\)/);
 });
 
-const clean = { ...plan, regexWarnings: [], ignored: [], invalidIgnores: [], skippedJobs: [] };
-const opts = { elapsedMs: 1, pluginVersion: '1', ci: true };
-
-test('vị trí finding không đổi khi đổi cách trình bày (pin)', () => {
-  const verifications = [{ jobId: 'SLOP-01__1', index: 0, verdict: 'confirmed' }, { jobId: 'ARCH-FE-04__2', index: 0, verdict: 'unsure' }];
-  const { text } = renderReport(plan, { ...opts, results, verifications });
-  const locs = text.split('\n').filter(l => /^    \S+:\d+   `/.test(l)).map(l => l.trim().split(/\s+/)[0]);
-  assert.deepEqual(locs, ['apps/x/seed.ts:349', 'libs/ui/x.ts:18', 'apps/x/p.ts:61', 'apps/x/a.component.ts:41', 'apps/x/b.component.ts:9', 'libs/y/z.ts:12']);
+test('chưa kiểm hết: ⚠ cho từng nhóm thiếu, verdict WARN, --ci in COVERAGE', () => {
+  const a1 = mkCell('be', 'arch', 1, [rule('ARCH-01', 'FAIL'), rule('ARCH-02', 'WARN')], ['a.cs']);
+  const a2 = mkCell('be', 'arch', 2, [rule('ARCH-03', 'WARN')], ['a.cs']);
+  const n1 = mkCell('be', 'name', 1, [rule('NAME-01', 'WARN')], ['a.cs']);
+  const p = mkPlan({ name: 'vnr.hrm.api', kind: 'be', cells: [a1, a2, n1] });
+  p.ruleSets[0].title = null;
+  const res = { 'vnr.hrm.api': { [a1.fileId]: ok(a1), [n1.fileId]: ok(n1), [a2.fileId]: { rules: [] } } };
+  const r = render([p], res);
+  assert.equal(r.verdict, 'WARN'); assert.equal(r.incomplete, true); assert.deepEqual(r.coverage, { done: 3, total: 4 });
+  assert.deepEqual(lines(r.text).slice(1), [
+    '⚠ Chưa kiểm hết: nhóm "arch" còn 1 luật chưa xem. Gõ /vnr-review be để chạy lại.',
+    'Đã kiểm 3 luật, đủ 1/2 nhóm · 0 chỗ bỏ qua theo ghi chú · vnr-review 2.0.0',
+    'VERDICT:WARN',
+  ]);
+  assert.match(r.text, /để chạy lại\.\n\nĐã kiểm 3 luật/, 'mỗi dòng chân là một đoạn riêng');
+  assert.match(r.text, /^## vnr-review — WARN · vnr\.hrm\.api @ feat\/x \(a1b2c3d\) · 12 file · 2m40s$/m);
+  const ci = render([p], res, {}, { ci: true });
+  assert.deepEqual(lines(ci.text).slice(-3), ['VERDICT:WARN', 'COVERAGE=3/4', 'RULES=arch v1 · name v1']);
 });
 
-test('finalLine: false bỏ dòng VERDICT cuối; mặc định có', () => {
-  const p = { ...clean, jobs: [] };
-  assert.doesNotMatch(renderReport(p, { ...opts, results: {}, finalLine: false }).text, /VERDICT:/);
-  assert.match(renderReport(p, { ...opts, results: {} }).text, /\nVERDICT:PASS$/);
+test('PASS: tiêu đề + dòng chân + VERDICT; chưa git add; ghi chú bỏ qua bị từ chối; file quá lớn', () => {
+  const c = mkCell('fe', 'slop', 1, [rule('SLOP-01', 'FAIL'), rule('SLOP-02', 'WARN')], ['apps/a.ts', 'apps/b.ts'], { truncated: ['apps/b.ts'] });
+  const p = mkPlan({ cells: [c], untrackedCount: 2, invalidIgnores: [{ code: 'SEC-01' }, { code: 'SEC-01' }, { code: 'SEC-02' }] });
+  const r = render([p], { 'vnr.hrm.web': { [c.fileId]: ok(c) } });
+  assert.equal(r.verdict, 'PASS');
+  assert.deepEqual(lines(r.text), [
+    '## vnr-review — PASS · vnr.hrm.web @ feat/x (a1b2c3d) · 12 file (2 chưa git add) · 2m40s',
+    'Đã kiểm 2 luật, đủ 1/1 nhóm · 0 chỗ bỏ qua theo ghi chú · 3 ghi chú bỏ qua không được chấp nhận (SEC-01, SEC-02) · 1 file quá lớn chưa đọc hết · vnr-review 2.0.0',
+    'VERDICT:PASS',
+  ]);
+  assert.doesNotMatch(r.text, /\| # \||\*\*#|\*\*FAIL\*\*:/, 'PASS: không bảng, không thẻ, không chú giải');
 });
 
-test('PASS khớp chặt dòng KẾT LUẬN', () => {
-  assert.match(renderReport({ ...clean, jobs: [] }, { ...opts, results: {} }).text, /^KẾT LUẬN: PASS\nReview  /);
+test('không có luật nào trong phạm vi', () => {
+  const r = render([mkPlan({ cells: [], fileCount: 3 })], { 'vnr.hrm.web': {} });
+  assert.equal(r.verdict, 'PASS'); assert.equal(r.incomplete, false); assert.deepEqual(r.coverage, { done: 0, total: 0 });
+  assert.deepEqual(lines(r.text).slice(1), ['Không có luật nào áp dụng cho 3 file thay đổi · vnr-review 2.0.0', 'VERDICT:PASS']);
 });
 
-test('job nhiều file: Cần ngữ cảnh hiện (N file), finding giữ file riêng', () => {
-  const p = { ...clean, jobs: [{ id: 'A__1', code: 'A-01', name: 'n', level: 'FAIL', file: 'a.ts', files: ['a.ts', 'b.ts', 'c.ts'], fix: '' }] };
-  const miss = renderReport(p, { ...opts, results: {} }).text;
-  assert.match(miss, /A-01 \(3 file\) — không có kết quả/); assert.doesNotMatch(miss, /A-01 a\.ts/);
-  const ctx = renderReport(p, { ...opts, results: { A__1: { verdict: 'NEEDS_CONTEXT', findings: [], needs_context: ['thiếu x'] } } }).text;
-  assert.match(ctx, /A-01 \(3 file\) — thiếu x/);
+test('nhiều repo: một tiêu đề (xấu nhất), ### mỗi repo, repo PASS một dòng; --ci RULES theo repo', () => {
+  const be = mkCell('be', 'arch', 1, [rule('ARCH-01', 'WARN'), rule('ARCH-02', 'WARN')], ['a.cs'], { repo: 'vnr.hrm.api' });
+  const api = mkPlan({ name: 'vnr.hrm.api', kind: 'be', root: 'D:\\ws\\src\\vnr.hrm.api', cells: [be], sha7: 'b2c3d4e', fileCount: 8 });
+  const results = { 'vnr.hrm.web': fixtureResults, 'vnr.hrm.api': { [be.fileId]: ok(be) } };
+  const r = render([fixturePlan, api], results, { 'vnr.hrm.web': fixtureVerify });
+  assert.equal(r.verdict, 'FAIL'); assert.deepEqual(r.coverage, { done: 6, total: 6 });
+  const t = r.text.split('\n');
+  assert.equal(t[0], '## vnr-review — FAIL · vnr.hrm.web FAIL (2 FAIL · 1 WARN) · vnr.hrm.api PASS · 20 file · 2m40s');
+  assert.equal(t[2], '### vnr.hrm.web (a1b2c3d)');
+  assert.equal(t[4], '| # | Kết quả | Luật | Vị trí |');
+  assert.deepEqual(t.slice(-3), ['### vnr.hrm.api — PASS · đã kiểm 2 luật', '', 'VERDICT:FAIL']);
+  assert.equal(t.filter(l => l.startsWith('VERDICT:')).length, 1, 'một dòng VERDICT sau mọi mục repo');
+  assert.equal(t.filter(l => l.startsWith('## ')).length, 1);
+  const ci = render([fixturePlan, api], results, { 'vnr.hrm.web': fixtureVerify }, { ci: true });
+  assert.match(ci.text, /^## vnr-review — FAIL · vnr\.hrm\.web FAIL \(2 FAIL · 1 WARN\) · vnr\.hrm\.api PASS · 20 file$/m);
+  assert.deepEqual(lines(ci.text).slice(-4), ['VERDICT:FAIL', 'COVERAGE=6/6', 'RULES=vnr.hrm.web name v1 · fw v1 · uiux v1', 'RULES=vnr.hrm.api arch v1']);
+  // Cột # đánh lại từ 1 trong mỗi mục repo.
+  const both = render([fixturePlan, api], { ...results, 'vnr.hrm.api': { [be.fileId]: ok(be, { 'ARCH-01': [{ file: 'a.cs', line: 1, issue: 'i', fix: 'f' }] }) } }, { 'vnr.hrm.web': fixtureVerify });
+  assert.deepEqual(both.text.split('\n').filter(l => /^\| \d+ \|/.test(l)).map(l => l.split(' | ')[0]), ['| 1', '| 2', '| 3', '| 1']);
+  assert.deepEqual(both.text.split('\n').filter(l => /^\*\*#\d+/.test(l)).map(l => l.split(' · ')[0]), ['**#1', '**#2', '**#3', '**#1'], 'thẻ đánh số lại theo repo');
 });
 
-test('verdict FAIL/WARN không kèm finding → cần ngữ cảnh; PASS kèm finding → WARN', () => {
-  const job = { id: 'A__1', code: 'A-01', name: 'n', level: 'FAIL', file: 'a.ts', files: ['a.ts'], fix: '' };
-  const p = { ...clean, jobs: [job] };
-  for (const v of ['FAIL', 'WARN']) {
-    const r = renderReport(p, { ...opts, results: { A__1: { verdict: v, findings: [], needs_context: [] } } });
-    assert.equal(r.verdict, 'WARN'); assert.match(r.text, new RegExp(`verdict ${v} không kèm finding — kết quả không nhất quán`));
-    assert.doesNotMatch(r.text, /^FAIL$/m);
+test('--ci: không thời gian; VERDICT/COVERAGE/RULES cuối', () => {
+  const r = render([fixturePlan], { 'vnr.hrm.web': fixtureResults }, { 'vnr.hrm.web': fixtureVerify }, { ci: true });
+  assert.match(r.text, /^## vnr-review — FAIL \(2 FAIL · 1 WARN\) · vnr\.hrm\.web @ feat\/verdi-post-approve \(a1b2c3d\) · 12 file$/m);
+  assert.doesNotMatch(r.text, /\dm\d\ds/);
+  assert.deepEqual(lines(r.text).slice(-3), ['VERDICT:FAIL', 'COVERAGE=4/4', 'RULES=name v1 · fw v1 · uiux v1']);
+});
+
+test('mã lạ trong kết quả → warnings (không vào báo cáo)', () => {
+  const c = mkCell('fe', 'slop', 1, [rule('SLOP-01', 'WARN')], ['apps/a.ts']);
+  const json = { rules: [{ code: 'SLOP-01', status: 'checked', findings: [] }, { code: 'XX-99', findings: [{ file: 'apps/a.ts', line: 1 }] }] };
+  const r = render([mkPlan({ cells: [c] })], { 'vnr.hrm.web': { [c.fileId]: json } });
+  assert.equal(r.verdict, 'PASS'); assert.equal(r.warnings.length, 1); assert.match(r.warnings[0], /XX-99/);
+  assert.doesNotMatch(r.text, /XX-99/);
+});
+
+test('không fence, không chữ "ô" đứng riêng trong mọi đầu ra', () => {
+  const a1 = mkCell('fe', 'arch', 1, [rule('ARCH-01', 'WARN')], ['a.ts']);
+  const outs = [
+    render([fixturePlan], { 'vnr.hrm.web': fixtureResults }, { 'vnr.hrm.web': fixtureVerify }),
+    render(s7.plans, s7.results, s7.verifications),
+    render([mkPlan({ cells: [a1] })], { 'vnr.hrm.web': {} }, {}, { ci: true }),
+    render([mkPlan({ cells: [] })], { 'vnr.hrm.web': {} }),
+  ];
+  for (const { text } of outs) {
+    assert.doesNotMatch(text, /```/);
+    assert.doesNotMatch(text, /(^|[\s(])ô([\s)/.,]|$)/mu);
   }
-  const r = renderReport(p, { ...opts, results: { A__1: { verdict: 'PASS', findings: [{ file: 'a.ts', line: 1, excerpt: 'x', why: 'y' }], needs_context: [] } } });
-  assert.equal(r.verdict, 'WARN'); assert.match(r.text, /^WARN\n  A-01 [^\n]*\(1 chỗ\)/m);
 });
 
-test('clip ghi chú needs_context (200) và lý do bỏ qua (100)', () => {
-  const job = { id: 'A__1', code: 'A-01', name: 'n', level: 'FAIL', file: 'a.ts', files: ['a.ts'], fix: '' };
-  const p = { ...clean, jobs: [job], ignored: [{ code: 'S-1', path: 'x.ts', line: 1, reason: 'r'.repeat(300) }] };
-  const { text } = renderReport(p, { ...opts, results: { A__1: { verdict: 'NEEDS_CONTEXT', findings: [], needs_context: ['n'.repeat(500)] } } });
-  assert.ok(!/n{201}/.test(text) && /n{200}/.test(text)); assert.ok(!/r{101}/.test(text) && /r{100}/.test(text));
+test('level của finding: FAIL+WARN khớp "WARN khi" → WARN, không verify, không bị bỏ; khớp "FAIL khi" + confirmed → FAIL; luật FAIL thiếu level → FAIL', () => {
+  const c = mkCell('fe', 'uiux', 1, [rule('UIUX-03', 'FAIL+WARN'), rule('F-01', 'FAIL')], ['apps/a.ts']);
+  const at = (code, extra) => ({ [code]: [{ file: 'apps/a.ts', line: 1, issue: 'i', fix: 'f', ...extra }] });
+  const rr = (byCode, v) => render([mkPlan({ cells: [c] })], { 'vnr.hrm.web': { [c.fileId]: ok(c, byCode) } }, { 'vnr.hrm.web': v });
+  for (const verdict of ['confirmed', 'wrong']) {
+    const w = rr(at('UIUX-03', { level: 'WARN' }), { 'fe_uiux_1-UIUX-03-0': { verdict } });
+    assert.match(w.text, /^\| \d+ \| WARN \| UIUX-03 \|/m, verdict); assert.equal(w.verdict, 'WARN');
+  }
+  assert.match(rr(at('UIUX-03', {}), { 'fe_uiux_1-UIUX-03-0': { verdict: 'confirmed' } }).text, /WARN \| UIUX-03/, 'thiếu level → WARN');
+  assert.match(rr(at('UIUX-03', { level: 'FAIL' }), { 'fe_uiux_1-UIUX-03-0': { verdict: 'confirmed' } }).text, /FAIL \| UIUX-03/);
+  assert.match(rr(at('F-01', {}), { 'fe_uiux_1-F-01-0': { verdict: 'confirmed' } }).text, /FAIL \| F-01/);
 });
 
-test('nghi ngờ: tối đa 5 dòng/luật, cắt excerpt 80, giữ thứ tự mã, mục commit in (commit …):0', () => {
-  const hit = (n, text = 't') => ({ code: 'W-1', name: 'Luật', file: `f${n}.ts`, n, text });
-  const p = {
-    ...clean, jobs: [],
-    regexWarnings: [...[7, 6, 5, 4, 3, 2, 1].map(n => hit(n)), { code: 'W-0', name: 'Commit', file: '(commit abc1234567)', n: 0, text: 'x'.repeat(200) }],
-  };
-  const { text } = renderReport(p, { ...opts, results: {} });
-  assert.match(text, /Nghi ngờ \(8\)/);
-  assert.ok(text.indexOf('W-1  Luật  (7)') < text.indexOf('W-0  Commit  (1)'), 'first-seen order');
-  const lines = text.split('\n').filter(l => /^    f\d\.ts:\d/.test(l));
-  assert.deepEqual(lines.map(l => l.trim().split(' ')[0]), ['f1.ts:1', 'f2.ts:2', 'f3.ts:3', 'f4.ts:4', 'f5.ts:5']);
-  assert.match(text, /^    … và 2 dòng nữa$/m);
-  assert.match(text, /^    \(commit abc1234567\):0   `x{80}`$/m);
-  assert.equal((text.match(/… và/g) ?? []).length, 1);
-  assert.match(text, /KẾT LUẬN: WARN — 0 FAIL · 0 WARN · 8 nghi ngờ/);
-});
-
-test('nhóm theo mã luật: Vì/→ in một lần, mỗi vị trí một dòng, lý do riêng khác thì in dưới vị trí', () => {
-  const p = { ...clean, jobs: [
-    { id: 'N-20__1', code: 'N-20', name: 'Khoá i18n', level: 'FAIL', file: 'EN.json', fix: 'Đặt khoá camelCase.', reason: 'lý do luật' },
-    { id: 'N-20__2', code: 'N-20', name: 'Khoá i18n', level: 'FAIL', file: 'VN.json', fix: 'Đặt khoá camelCase.', reason: 'lý do luật' },
-  ] };
-  const r = {
-    'N-20__1': { code: 'N-20', verdict: 'FAIL', findings: [{ file: 'EN.json', line: 1, excerpt: 'a', why: 'snake' }, { file: 'EN.json', line: 2, excerpt: 'b', why: 'snake' }], needs_context: [] },
-    'N-20__2': { code: 'N-20', verdict: 'FAIL', findings: [{ file: 'VN.json', line: 3, excerpt: 'c', why: 'khác' }], needs_context: [] },
-  };
-  const { text } = renderReport(p, { ...opts, results: r });
-  assert.match(text, /^FAIL\n  N-20  Khoá i18n  \(3 chỗ\)\n    Vì: snake\n    → Đặt khoá camelCase\.\n    EN\.json:1   `a`\n    EN\.json:2   `b`\n    VN\.json:3   `c`\n      Vì: khác$/m);
-  assert.equal((text.match(/→ Đặt khoá/g) ?? []).length, 1);
-});
-
-test('không còn bảng tóm tắt dù có FAIL/WARN/nghi ngờ', () => {
-  const { text } = renderReport(plan, { ...opts, results, verifications: [] });
-  assert.doesNotMatch(text, /\| Mức|Số chỗ/);
+test('md: < ngoài backtick (thẻ cũng như bảng) thoát thành &lt; (thẻ HTML không biến mất khi render); trong backtick giữ nguyên', () => {
+  const c = mkCell('fe', 'uiux', 1, [rule('UIUX-01', 'WARN')], ['apps/a.html']);
+  const res = { [c.fileId]: ok(c, { 'UIUX-01': [{ file: 'apps/a.html', line: 2, issue: 'Dùng <nz-select> thay `<select>`', fix: 'đổi <a> thành <button>' }] }) };
+  const t = render([mkPlan({ cells: [c] })], { 'vnr.hrm.web': res }).text;
+  assert.match(t, /^- Vấn đề: Dùng &lt;nz-select> thay `<select>`$/m);
+  assert.match(t, /^- Sửa: đổi &lt;a> thành &lt;button>$/m);
 });

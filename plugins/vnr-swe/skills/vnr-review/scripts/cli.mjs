@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-// plugins/vnr-swe/skills/vnr-review/scripts/cli.mjs — entry cho SKILL.md: plan · report · check. `--help` bằng tiếng Anh (quy ước CLI).
+// plugins/vnr-swe/skills/vnr-review/scripts/cli.mjs — entry cho SKILL.md: plan · ledger · verify-jobs · report · check. `--help` bằng tiếng Anh (quy ước CLI).
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync, statSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path, { join, resolve } from 'node:path';
 import os from 'node:os';
 import { findRepos, baseline, collectDiff, git } from './diff.mjs';
 import { loadRules } from './rules.mjs';
-import { buildPlan, DEFAULT_CONFIG } from './plan.mjs';
+import { buildPlan, DEFAULT_CONFIG, hunkRanges } from './plan.mjs';
+import { buildLedger, resultOk, normalizeResult, nextDispatch } from './ledger.mjs';
 import { renderReport } from './report.mjs';
 import { checkRules, writeOutputs } from './check.mjs';
 
@@ -18,16 +19,27 @@ const realOr = p => { try { return realpathSync(p); } catch { return p; } };
 const PLUGIN_JSON = fileURLToPath(new URL('../../../.claude-plugin/plugin.json', import.meta.url));
 // Các tuỳ chọn bắt buộc có giá trị chuỗi — cờ trần là lỗi cú pháp.
 const VALUE_OPTS = ['ws', 'repo', 'base', 'aspect', 'state', 'plugin-version', 'elapsed-ms'];
+// Lệnh đọc state: mọi lỗi đầu vào là "lỗi chạy" (exit 4), không phải lỗi cú pháp.
+const STATE_CMDS = ['ledger', 'verify-jobs', 'report'];
+// Lời báo cho SE (không nhắc --ws: cờ đó chỉ dành cho người bảo trì, có trong --help).
+const WRONG_FOLDER = 'Không thấy docs/review/rules. Mở terminal tại thư mục vnr.hrm.wiki (nơi có docs/ và src/) rồi gõ lại /vnr-review.';
+const NOTHING_CHANGED = 'Không có thay đổi so với code đã push.';
+// Cảnh báo biên dịch regex-gate từ rules.mjs: v2 không dùng gate nữa, `check` vẫn nhắc cho người viết luật.
+const isGateWarning = w => /— bỏ gate$/.test(w);
 
 const HELP = `vnr-review CLI (machine layer of the /vnr-review skill)
 Requires Node >= ${MIN_NODE}.
 
-  plan   [--ws <dir>] [--repo fe|be|<name>] [--base <ref>] [--full] [--aspect a,b] [--state <dir>]
-  report --state <dir> [--ci] [--plugin-version <v>] [--elapsed-ms <n>]   (defaults: plugin.json version, time since plan)
-  check  [--ws <dir>]
+  plan        [--ws <dir>] [--repo fe|be|<name>] [--base <ref>] [--aspect a,b] [--state <dir>]
+  ledger      --state <dir>   next review wave: "RETRY <repo> <fileId> <model> <attempt>" lines, then "PENDING=<n> FAILED=<n>"
+  verify-jobs --state <dir>   one job per (cell, rule, file) with FAIL-level findings: "VERIFY <repo> <key> <model>" lines, then "VERIFY=<n>"
+  report      --state <dir> [--ci] [--plugin-version <v>] [--elapsed-ms <n>]   (defaults: plugin.json version, time since plan)
+  check       [--ws <dir>]
 
 Exit codes: plan 0 ok / 1 usage, missing rules dir, bad config.json or all repos failed / 2 nothing changed
-            report 0 PASS|WARN / 1 FAIL / 4 run error (bad or missing --state, no plan-*.json, corrupt plan-*.json)
+            ledger 0 ok / 4 bad or missing --state, unreadable ledger.json
+            verify-jobs 0 ok / 4 bad or missing --state, unreadable ledger.json
+            report 0 PASS|WARN / 1 FAIL / 4 run error or (--ci) incomplete coverage
             check 0 ok / 1 problems
             any command: 3 unsupported Node version`;
 
@@ -43,59 +55,46 @@ function args(argv) {
   return o;
 }
 
-// Prompt đầy đủ cho một subagent — skill chỉ đọc một file job và chuyển nguyên văn.
-export function buildPrompt(job) {
-  const hunks = job.hunks.join('\n');
-  const files = job.files ?? [job.file];
-  const isCommit = job.file === '(commit)', isBranch = job.file === '(branch)';
-  const list = files.map(f => `- ${f}`).join('\n');
-  const heading = isBranch ? 'tên nhánh' : `${files.length} ${isCommit ? 'commit chưa push' : 'file'}\n${list}`;
-  // Một file/commit: ví dụ dùng đúng nhãn đó; nhiều mục: placeholder để mỗi finding tự ghi file của nó.
-  const example = files.length === 1 ? files[0] : isCommit ? '<commit chứa vi phạm>' : '<file chứa vi phạm>';
-  const noHits = isCommit || isBranch ? '(không có gate — xem toàn bộ nội dung)' : '(không có dòng khớp regex — xem toàn bộ hunk)';
-  const hits = job.hits.length ? job.hits.map(h => `${h.n}: ${h.text}`).join('\n') : noHits;
-  const truncated = job.truncated?.length ? `\n\nCác file sau không kèm hunk (quá dài) — đọc khi cần:\n${job.truncated.map(f => `- ${f}`).join('\n')}` : '';
-  const ignoreRule = job.noIgnore ? 'Luật này KHÔNG cho bỏ qua — marker review-ignore không có hiệu lực.' : 'Chỉ marker `review-ignore <MÃ>: <lý do>` (có lý do) mới có hiệu lực.';
-  const readable = job.readMore.files.length ? job.readMore.files.map(f => `- ${f}`).join('\n') : '(không có)';
-  const unresolved = job.readMore.unresolved.length ? `\nMục "Cần đọc thêm" không giải ra file nào (trả NEEDS_CONTEXT nếu điều kiện cần chúng): ${job.readMore.unresolved.join(' · ')}` : '';
-  return `Bạn là reviewer. Chỉ áp dụng ĐÚNG MỘT luật dưới đây, không thêm luật từ trí nhớ. Chỉ FAIL khi điều kiện "FAIL khi" NHÌN THẤY trong hunk hoặc file được phép đọc. Không chắc → NEEDS_CONTEXT, không đoán. ${ignoreRule}
-
-## Từ điển khía cạnh ${job.aspect}
-${job.section1}
-
-## Luật
-${job.block}
-
-## Thay đổi cần xét — ${heading}
-Dòng khớp gate:
-${hits}
-
-Hunk:
-${hunks}${truncated}
-
-## File được phép đọc thêm (đường dẫn tương đối từ gốc repo; ../ = repo anh em)
-${readable}${unresolved}
-
-## Trả về — CHỈ một khối JSON, không giải thích thêm
-{"code":"${job.code}","verdict":"FAIL|WARN|PASS|NEEDS_CONTEXT","findings":[{"file":"${example}","line":<số>,"excerpt":"<≤100 ký tự>","why":"<≤2 câu tiếng Việt>"}],"needs_context":["<điều kiện không quyết được + thiếu gì>"]}
-"file": đường dẫn ĐÚNG của file (hoặc "(commit <sha>)" / "(branch)") chứa vi phạm — mỗi finding ghi file của chính nó.`;
+// Prompt của một ô — subagent đọc nguyên file jobs/<repo>/<fileId>.prompt.md.
+export function buildPrompt(cell, plan) {
+  const root = plan.repo.root;
+  const siblings = Object.entries(plan.siblings ?? {}).map(([kind, r]) => `${kind}: ${r}`).join(' · ') || '(không có)';
+  const n = cell.rules.length;
+  return [
+    `Bạn là reviewer. Áp dụng ĐÚNG ${n} luật dưới đây (nhóm ${cell.aspect} — ${cell.title ?? cell.aspect}), không thêm luật từ trí nhớ.`,
+    `Repo: ${root}. Mọi đường dẫn dưới đây là tương đối với thư mục đó — ghép ${root} khi Read/Grep/Glob (Glob: path = ${root}). Repo anh em: ${siblings}. KHÔNG sửa file.`,
+    'Đọc theo thứ tự: hunk → file trong "Nên đọc thêm" → tối đa 12 Read khác. Chỉ FAIL khi điều kiện "FAIL khi" NHÌN THẤY trong code; không chắc → không báo.',
+    'Mỗi finding ghi `level`: FAIL nếu khớp "FAIL khi", WARN nếu khớp "WARN khi"; luật mức WARN → luôn WARN.',
+    `Bỏ qua dòng có \`review-ignore <MÃ>: <lý do>\` (có lý do) — TRỪ các luật: ${cell.noIgnoreCodes.join(', ') || '(không có)'}.`,
+    `## Từ điển nhóm ${cell.aspect}`,
+    cell.section1,
+    `## Luật (${n})`,
+    cell.rules.map(r => r.block).join('\n\n---\n\n'),
+    `## Thay đổi cần xét — ${cell.files.length} file (chỉ phần thay đổi; mở file để xem đầy đủ)`,
+    ...cell.hunks.map(h => `### ${h.path}\n${h.text}`),
+    ...(cell.truncated?.length ? ['Các file sau quá dài nên không kèm hunk — Read trực tiếp, chỉ các dòng đã đổi:',
+      ...cell.truncated.map(p => { const r = hunkRanges(cell.truncatedHunks?.[p]); return `- ${p}${r.length ? `: dòng ${r.join(', ')}` : ''}`; })] : []),
+    `## Nên đọc thêm: ${cell.readMore.files.join(', ') || '(không có)'}`,
+    `## Trả về — CHỈ một khối JSON, ĐÚNG MỘT dòng cho MỖI mã: ${cell.codes.join(', ')}`,
+    `{"cell":"${cell.id}","rules":[{"code":"<MÃ>","status":"checked|n/a","note":"<bắt buộc khi n/a>","findings":[{"file":"<path tương đối>","level":"FAIL|WARN","line":<số dòng sau thay đổi>,"excerpt":"<≤100 ký tự>","issue":"<1 câu: chuyện gì sai, người đọc PR chưa đọc luật hiểu ngay>","fix":"<1 câu: làm gì; được nêu tên hàm/lệnh/field cần dùng>"}]}]}`,
+  ].join('\n');
 }
 
 // Xoá kết quả của lần chạy trước trong state dir có sẵn — repo cũ không được lọt vào `report`.
-// Chỉ xoá khi thư mục trông như state cũ (có plan-*.json hoặc jobs/ results/ verify-jobs/ verify/); ngược lại để nguyên.
+// Chỉ xoá những gì `plan` và các bước sau sinh ra; tệp khác trong thư mục để nguyên.
 function cleanState(state) {
   if (!existsSync(state)) return;
   const entries = readdirSync(state);
-  const plans = entries.filter(f => /^plan-.*\.json$/.test(f));
+  const files = entries.filter(f => /^plan-.*\.json$/.test(f) || f === 'ledger.json' || f === 'started.json');
   const dirs = ['jobs', 'results', 'verify-jobs', 'verify'].filter(d => entries.includes(d));
-  for (const f of plans) rmSync(join(state, f), { force: true });
+  for (const f of files) rmSync(join(state, f), { force: true });
   for (const d of dirs) rmSync(join(state, d), { recursive: true, force: true });
 }
 
 function cmdPlan(o) {
   const ws = resolve(o.ws ?? process.cwd());
   const rulesDir = join(ws, 'docs', 'review', 'rules');
-  if (!existsSync(rulesDir)) { console.error(`Không thấy ${rulesDir} — chạy từ gốc vnr.hrm.wiki hoặc truyền --ws`); return 1; }
+  if (!existsSync(rulesDir)) { console.error(WRONG_FOLDER); return 1; }
   const cfgPath = join(ws, 'docs', 'review', 'config.json');
   let config = DEFAULT_CONFIG;
   if (existsSync(cfgPath)) {
@@ -114,14 +113,13 @@ function cmdPlan(o) {
   mkdirSync(state, { recursive: true });
   // Mốc bắt đầu để `report` tự tính thời gian chạy.
   writeFileSync(join(state, 'started.json'), JSON.stringify({ startedAt: new Date().toISOString() }));
-  let total = 0, changed = 0, errored = 0;
+  const plans = []; let errored = 0;
   for (const repo of repos) {
     try {
       const b = baseline(repo.root, { override: o.base });
       if (!b.ref) { console.log(`${repo.name}: không xác định được baseline (không upstream, không develop) — bỏ qua`); continue; }
       const diff = collectDiff(repo.root, b.ref);
-      if (!diff.files.length) { console.log(`${repo.name}: không có thay đổi so với ${b.ref}`); continue; }
-      changed++;
+      if (!diff.files.length) continue;   // repo không đổi: không có plan, không có trong báo cáo
       const rules = loadRules(rulesDir, { repo: repo.kind });
       const siblings = Object.fromEntries(allRepos.filter(r => r !== repo).map(r => [r.kind, r.root]));
       const commitMessages = git(repo.root, ['log', `${b.ref}..HEAD`, '--format=%B'], { allowFail: true });
@@ -129,34 +127,34 @@ function cmdPlan(o) {
       const commits = git(repo.root, ['log', `${b.ref}..HEAD`, '--format=%h%x1f%s%x1f%b%x1e'], { allowFail: true }).split('\x1e').map(r => r.replace(/^\n/, '')).filter(r => r.trim())
         .map(r => { const [sha, subject, body = ''] = r.split('\x1f'); return { sha: sha.trim().slice(0, 10), subject: subject.trim(), body: body.trim() }; });
       const branch = git(repo.root, ['rev-parse', '--abbrev-ref', 'HEAD']).trim();
-      const plan = buildPlan({ repo, baseline: b, diff, rules, config, siblings, commitMessages, commits, branch, full: !!o.full, aspects: o.aspect ? String(o.aspect).split(',') : null });
-      plan.branch = branch;
+      const plan = buildPlan({ repo, baseline: b, diff, rules, config, siblings, commitMessages, commits, branch, aspects: o.aspect ? String(o.aspect).split(',') : null });
+      plan.sha7 = git(repo.root, ['rev-parse', '--short=7', 'HEAD']).trim();
       plan.siblings = siblings;
       writeFileSync(join(state, `plan-${repo.name}.json`), JSON.stringify(plan, null, 1));
       const jobsDir = join(state, 'jobs', repo.name); mkdirSync(jobsDir, { recursive: true });
-      const vJobsDir = join(state, 'verify-jobs', repo.name); mkdirSync(vJobsDir, { recursive: true });
-      for (const job of plan.jobs) {
-        writeFileSync(join(jobsDir, `${job.id}.json`), JSON.stringify({ ...job, prompt: buildPrompt(job) }, null, 1));
-        // Mẫu cho verifier: orchestrator chỉ ghi file nhỏ {template, jobId, index, finding} trỏ tới đây, không chép lại block/hunks.
-        writeFileSync(join(vJobsDir, `${job.id}.template.json`), JSON.stringify({ jobId: job.id, repoRoot: repo.root, block: job.block, hunks: job.hunks, readMoreFiles: job.readMore.files }, null, 1));
+      for (const cell of plan.cells) {
+        writeFileSync(join(jobsDir, `${cell.fileId}.json`), JSON.stringify(cell, null, 1));
+        writeFileSync(join(jobsDir, `${cell.fileId}.prompt.md`), buildPrompt(cell, plan));
       }
-      // Mục lục cho orchestrator: repo + danh sách job/model; không phải mở plan-*.json hay từng file job.
-      writeFileSync(join(jobsDir, 'index.json'), JSON.stringify({
-        repo: repo.name, repoRoot: repo.root, branch, baseline: { ref: b.ref, how: b.how },
-        jobs: plan.jobs.map(j => ({ id: j.id, code: j.code, model: j.model, file: j.file, files: j.files, noIgnore: j.noIgnore })),
-      }, null, 1));
-      total += plan.jobs.length;
-      console.log(`${repo.name} @ ${plan.branch} (vs ${b.from ?? b.ref}, ${b.how}) · ${diff.files.length} file · ${plan.jobs.length} job LLM · ${plan.regexWarnings.length} nghi ngờ · ${plan.skippedJobs.length} chưa kiểm · luật: ${plan.ruleSets.map(s => `${s.aspect} v${s.version}`).join(', ')}`);
-      for (const e of plan.errors) console.log(`  ! ${e}`);
+      plans.push(plan);
+      const inScope = plan.ruleSets.reduce((s, r) => s + r.inScope, 0);
+      const proposed = plan.ruleSets.reduce((s, r) => s + r.skippedProposed, 0);
+      console.log(`${repo.name} @ ${branch} (vs ${b.from ?? b.ref}, ${b.how}) · ${diff.files.length} file · ${plan.ruleSets.length} nhóm · ${inScope} luật trong phạm vi · ${plan.cells.length} lượt review${proposed ? ` · bỏ qua ${proposed} luật đề xuất` : ''}`);
+      for (const e of [...plan.errors, ...plan.warnings.filter(w => !isGateWarning(w))]) console.log(`  ! ${e}`);
     } catch (e) { errored++; console.error(`${repo.name}: lỗi git — ${e.message}`); }
   }
   if (errored === repos.length) return 1;
-  if (!changed) { console.log('Không có thay đổi so với remote trong repo nào.'); return 2; }
-  console.log(['STATE=' + state, 'PARALLEL=' + config.parallel, 'JOBS=' + total].join('\n'));
+  if (!plans.length) { console.log(NOTHING_CHANGED); return 2; }
+  let ledger;
+  try { ledger = buildLedger(plans); } catch (e) { console.error(`plan: ${e.message}`); return 1; }
+  writeFileSync(join(state, 'ledger.json'), JSON.stringify(ledger, null, 1));
+  console.log(['STATE=' + state, 'PARALLEL=' + config.parallel, 'CELLS=' + ledger.cells.length].join('\n'));
   return 0;
 }
 
-// File hỏng bị bỏ qua (báo stderr); job tương ứng hiện là "không có kết quả" thay vì làm hỏng cả báo cáo.
+const readJson = file => { try { return JSON.parse(readFileSync(file, 'utf8')); } catch { return null; } };
+
+// File hỏng bị bỏ qua (báo stderr); mục tương ứng hiện là "chưa có kết quả" thay vì làm hỏng cả báo cáo.
 function readJsonDir(dir) {
   const out = {};
   if (!existsSync(dir)) return out;
@@ -167,7 +165,56 @@ function readJsonDir(dir) {
   return out;
 }
 
-const readJson = file => { try { return JSON.parse(readFileSync(file, 'utf8')); } catch { return null; } };
+// State cho ledger/verify-jobs; null (đã báo stderr) khi thiếu --state hoặc ledger.json hỏng.
+function loadLedger(o) {
+  if (typeof o.state !== 'string') { console.error('Thiếu --state <dir>'); return null; }
+  const state = resolve(o.state), file = join(state, 'ledger.json');
+  const ledger = readJson(file);
+  if (!Array.isArray(ledger?.cells)) { console.error(`Không đọc được ${file} — chạy \`plan\` trước`); return null; }
+  return { state, ledger };
+}
+const jobOf = (state, cell) => readJson(join(state, 'jobs', cell.repo, `${cell.fileId}.json`));
+
+// Một đợt: ô chưa có kết quả hợp lệ được giao (lại); ô hết lượt thành FAILED. Skill chỉ gọi lại sau khi cả đợt đã trả.
+function cmdLedger(o) {
+  const s = loadLedger(o); if (!s) return 4;
+  const { state, ledger } = s;
+  const r = nextDispatch(ledger, cell => resultOk(cell, readJson(join(state, cell.resultFile))));
+  writeFileSync(join(state, 'ledger.json'), JSON.stringify(r.ledger, null, 1));
+  for (const c of r.retry) console.log(`RETRY ${c.repo} ${c.fileId} ${jobOf(state, c)?.model ?? 'sonnet'} ${c.attempts}`);
+  console.log(`PENDING=${r.retry.length} FAILED=${r.failed.length}`);
+  return 0;
+}
+
+// Một job verify cho mỗi (ô, mã, file trong diff của ô) gom mọi finding mức FAIL (findingLevel); finding WARN hoặc ngoài diff không verify (report hiện WARN).
+// `hunk` = hunk thật của file: trong `hunks`, hoặc `truncatedHunks` khi file bị cắt khỏi prompt.
+// Sinh lại từ đầu mỗi lần gọi; verify/ (câu trả lời của verifier) không bị đụng.
+function cmdVerifyJobs(o) {
+  const s = loadLedger(o); if (!s) return 4;
+  const { state, ledger } = s;
+  const out = join(state, 'verify-jobs');
+  rmSync(out, { recursive: true, force: true });
+  const roots = {}; let n = 0;
+  for (const entry of ledger.cells) {
+    const json = readJson(join(state, entry.resultFile));
+    const cell = resultOk(entry, json) && jobOf(state, entry);
+    if (!cell) continue;
+    roots[cell.repo] ??= readJson(join(state, `plan-${cell.repo}.json`))?.repo?.root ?? '';
+    // file của finding đã quy về đúng mục trong cell.files (bỏ repoRoot, ./, \ ; hoa/thường trên win32).
+    for (const [code, row] of normalizeResult(cell, json, roots[cell.repo]).rows) {
+      const rule = cell.rules.find(r => r.code === code);
+      for (const [file, findings] of Map.groupBy(row.findings.filter(f => f.level === 'FAIL' && cell.files.includes(f.file)), f => f.file)) {
+        const key = `${cell.fileId}-${code}-${cell.files.indexOf(file)}`;
+        const hunk = cell.hunks.find(h => h.path === file)?.text ?? cell.truncatedHunks?.[file] ?? '';
+        mkdirSync(join(out, cell.repo), { recursive: true });
+        writeFileSync(join(out, cell.repo, `${key}.json`), JSON.stringify({ repoRoot: roots[cell.repo], cell: cell.id, code, file, block: rule.block, hunk, findings, key }, null, 1));
+        console.log(`VERIFY ${cell.repo} ${key} ${cell.model}`); n++;
+      }
+    }
+  }
+  console.log(`VERIFY=${n}`);
+  return 0;
+}
 
 function cmdReport(o) {
   try { return reportImpl(o); }
@@ -179,30 +226,31 @@ function reportImpl(o) {
   const state = resolve(o.state);
   if (!existsSync(state)) { console.error(`Không thấy state dir ${state} — chạy \`plan\` trước`); return 4; }
   const planFiles = readdirSync(state).filter(f => /^plan-.*\.json$/.test(f));
+  if (!planFiles.length) { console.error(`Không có plan-*.json trong ${state} — chạy \`plan\` trước`); return 4; }
+  const plans = planFiles.map(f => JSON.parse(readFileSync(join(state, f), 'utf8'))).filter(p => p.fileCount > 0);
+  const ledger = readJson(join(state, 'ledger.json')) ?? { cells: [] };
+  const results = {}, verifications = {};
+  for (const p of plans) {
+    results[p.repo.name] = readJsonDir(join(state, 'results', p.repo.name));
+    verifications[p.repo.name] = readJsonDir(join(state, 'verify', p.repo.name));
+  }
   const startedAt = Date.parse(readJson(join(state, 'started.json'))?.startedAt);
   const elapsedMs = o['elapsed-ms'] !== undefined ? Number(o['elapsed-ms']) : Number.isNaN(startedAt) ? 0 : Math.max(0, Date.now() - startedAt);
   const pluginVersion = o['plugin-version'] ?? readJson(PLUGIN_JSON)?.version ?? '?';
-  // Nhiều repo: mỗi repo bỏ dòng VERDICT riêng, cuối cùng một dòng VERDICT chung (xấu nhất).
-  const finalLine = planFiles.length < 2;
-  let anyFail = false, worst = 'PASS'; const outs = [], perRepo = [];
-  for (const f of planFiles) {
-    const plan = JSON.parse(readFileSync(join(state, f), 'utf8'));
-    const results = readJsonDir(join(state, 'results', plan.repo.name));
-    const verifications = Object.values(readJsonDir(join(state, 'verify', plan.repo.name))).flat();
-    const { text, verdict } = renderReport(plan, { results, verifications, elapsedMs, pluginVersion, ci: !!o.ci, finalLine });
-    outs.push(text); perRepo.push(`${plan.repo.name} ${verdict}`); if (verdict === 'FAIL') anyFail = true;
-    if (verdict === 'FAIL' || (verdict === 'WARN' && worst === 'PASS')) worst = verdict;
-  }
-  if (!outs.length) { console.error(`Không có plan-*.json trong ${state} — chạy \`plan\` trước`); return 4; }
-  // Nhiều repo: dòng Tổng ở đầu để SE thấy kết quả từng repo trước khi cuộn.
-  console.log(finalLine ? outs[0] : `Tổng: ${perRepo.join(' · ')}\n\n${outs.join('\n\n')}\n\nVERDICT:${worst}`);
-  return anyFail ? 1 : 0;
+  // Phiên bản bộ luật cho người bảo trì (stderr, không vào báo cáo dán PR).
+  for (const p of plans) console.error(`rules: ${plans.length > 1 ? `${p.repo.name} ` : ''}${(p.ruleSets ?? []).map(s => `${s.aspect} v${s.version}`).join(' · ') || '(không có)'}`);
+  const { text, verdict, incomplete, coverage, warnings = [] } = renderReport({ plans, ledger, results, verifications, elapsedMs, pluginVersion, ci: !!o.ci });
+  for (const w of warnings) console.error(w);   // mã lạ trong kết quả: cho người bảo trì, không vào báo cáo
+  console.log(text);
+  // CI: chưa kiểm hết là lỗi chạy — cổng không được cho qua dù chưa thấy FAIL.
+  if (o.ci && incomplete) { console.error(`Chưa kiểm hết (${coverage?.done ?? '?'}/${coverage?.total ?? '?'} luật) — chạy lại /vnr-review.`); return 4; }
+  return verdict === 'FAIL' ? 1 : 0;
 }
 
 function cmdCheck(o) {
   const ws = resolve(o.ws ?? process.cwd());
   const rulesDir = join(ws, 'docs', 'review', 'rules');
-  if (!existsSync(rulesDir)) { console.error(`Không thấy ${rulesDir} — chạy từ gốc vnr.hrm.wiki hoặc truyền --ws`); return 1; }
+  if (!existsSync(rulesDir)) { console.error(WRONG_FOLDER); return 1; }
   const r = checkRules(rulesDir);
   console.log(r.lines.join('\n'));
   if (!r.ok) { console.log('\n✗ Có lỗi chặn — không sinh INDEX/digest.'); return 1; }
@@ -211,6 +259,8 @@ function cmdCheck(o) {
   return 0;
 }
 
+const COMMANDS = { plan: cmdPlan, ledger: cmdLedger, 'verify-jobs': cmdVerifyJobs, report: cmdReport, check: cmdCheck };
+
 // Chỉ chạy khi được gọi trực tiếp — test import buildPrompt không kích hoạt CLI.
 // Realpath cả hai phía: gọi qua symlink/junction, kể cả khi Node chạy với --preserve-symlinks-main.
 if (process.argv[1] && norm(realOr(resolve(process.argv[1]))) === norm(realOr(fileURLToPath(import.meta.url)))) {
@@ -218,7 +268,6 @@ if (process.argv[1] && norm(realOr(resolve(process.argv[1]))) === norm(realOr(fi
   const o = args(process.argv.slice(2)); const cmd = o._[0];
   if (!cmd || o.help) { console.log(HELP); process.exit(0); }
   const bare = VALUE_OPTS.find(k => k in o && typeof o[k] !== 'string');
-  if (bare) { console.error(`--${bare} cần một giá trị`); process.exit(cmd === 'report' ? 4 : 1); }
-  const code = cmd === 'plan' ? cmdPlan(o) : cmd === 'report' ? cmdReport(o) : cmd === 'check' ? cmdCheck(o) : (console.error(HELP), 1);
-  process.exit(code);
+  if (bare) { console.error(`--${bare} cần một giá trị`); process.exit(STATE_CMDS.includes(cmd) ? 4 : 1); }
+  process.exit(COMMANDS[cmd] ? COMMANDS[cmd](o) : (console.error(HELP), 1));
 }

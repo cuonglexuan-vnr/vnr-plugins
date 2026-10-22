@@ -4,10 +4,10 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import os from 'node:os';
-import { matchGlob, inScope, runGates, wantsComments, findIgnores, resolveReadMore } from './gate.mjs';
+import { matchGlob, inScope, findIgnores, resolveReadMore } from './gate.mjs';
 
 const set = { appliesTo: ['apps/**/*.ts', 'libs/**/*.ts'], excludes: ['**/*.spec.ts'] };
-const rule = { code: 'SLOP-01', level: 'FAIL', scope: ['apps/**/*.ts'], pathGates: [], regexGates: [/MOCK/u], noIgnore: false };
+const rule = { code: 'SLOP-01', level: 'FAIL', scope: ['apps/**/*.ts'], noIgnore: false };
 
 test('matchGlob anchors at root and is case-sensitive', () => {
   assert.ok(matchGlob('apps/x/y.ts', 'apps/**/*.ts'));
@@ -22,15 +22,6 @@ test('inScope = applies_to ∧ ¬excludes ∧ Phạm vi', () => {
   assert.ok(inScope('apps/a.ts', set, rule));
   assert.ok(!inScope('apps/a.spec.ts', set, rule));
   assert.ok(!inScope('libs/a.ts', set, rule), 'in applies_to but not in rule scope');
-});
-
-test('runGates: regex on added lines only; path-gate against whole diff', () => {
-  const file = { path: 'apps/a.ts', added: [{ n: 3, text: 'const MOCK = 1' }, { n: 9, text: 'ok' }] };
-  const r = runGates(rule, file, ['apps/a.ts']);
-  assert.deepEqual(r, { hasGate: true, pathHit: false, regexHits: [{ n: 3, text: 'const MOCK = 1' }] });
-  const pg = { ...rule, regexGates: [], pathGates: ['libs/ui-framework/**'] };
-  assert.equal(runGates(pg, file, ['apps/a.ts', 'libs/ui-framework/x.ts']).pathHit, true);
-  assert.equal(runGates({ ...rule, regexGates: [], pathGates: [] }, file, []).hasGate, false);
 });
 
 test('findIgnores parses comment styles, requires a reason, honours noIgnore via caller', () => {
@@ -94,29 +85,4 @@ test('resolveReadMore: pattern neo thư mục, thoát gốc → unresolved, "$" 
     assert.deepEqual(r.unresolved, ['../outside/*.ts']);
     assert.deepEqual(resolveReadMore(['**/b.ts'], ctx).files, ['other/apps/x/b.ts']);
   } finally { rmSync(ws, { recursive: true, force: true }); }
-});
-
-test('runGates che comment trước khi chạy regex; hit giữ nguyên văn dòng gốc', () => {
-  const hit = text => runGates(rule, { path: 'a.ts', added: [{ n: 1, text }] }, []).regexHits.length;
-  assert.equal(hit('const x = 1; // MOCK'), 0, '// comment');
-  assert.equal(hit('/* MOCK */'), 0, '/* */ một dòng');
-  assert.equal(hit(' * MOCK dữ liệu mẫu'), 0, 'dòng tiếp của block comment');
-  assert.equal(hit('*/ MOCK'), 0);
-  assert.equal(hit('<!-- MOCK -->'), 0, 'html comment');
-  assert.equal(hit('const MOCK = 1; // ok'), 1, 'trong code vẫn khớp');
-  assert.equal(hit('/* c */ MOCK'), 1, 'sau comment đóng vẫn là code');
-  assert.equal(hit('const u = "https://MOCK.example";'), 1, 'URL không phải comment');
-  assert.deepEqual(runGates(rule, { path: 'a.ts', added: [{ n: 1, text: 'MOCK // c' }] }, []).regexHits, [{ n: 1, text: 'MOCK // c' }]);
-});
-
-test('runGates: regex muốn comment thấy dòng gốc; regex chỉ nhắc comment trong lookahead phủ định vẫn thấy dòng đã che', () => {
-  const hit = (re, text) => runGates({ ...rule, regexGates: [re] }, { path: 'a.ts', added: [{ n: 1, text }] }, []).regexHits.length;
-  const want = /(?:\/\/|<!--).*ĐÍNH CHÍNH/u;
-  assert.equal(hit(want, '// ĐÍNH CHÍNH: sửa lại'), 1);
-  assert.equal(hit(want, 'const x = 1;'), 0);
-  const neg = /^(?!\s*\/\/).*Guid\.NewGuid\(\)/u;
-  assert.equal(hit(neg, '// Guid.NewGuid()'), 0);
-  assert.equal(hit(neg, 'var id = Guid.NewGuid();'), 1);
-  assert.equal(hit(neg, 'var id = Guid.NewGuid(); // ok'), 1);
-  assert.equal(wantsComments(want), true); assert.equal(wantsComments(neg), false);
 });
