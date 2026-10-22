@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "vnr-swe",
-      "description": "Hai lệnh cho dev HRM: /vnr-dev làm một PBI từ đầu đến cuối trên nền superpowers, /vnr-review review code trước khi push",
+      "description": "Lệnh cho dev HRM: /vnr-dev làm một PBI từ đầu đến cuối trên nền superpowers, /vnr-review review code trước khi push, /vnr-commit và /vnr-pr commit + PR theo quy ước team",
       "version": "2.0.0",
       "author": {
         "name": "VNR"

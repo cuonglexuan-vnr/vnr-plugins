@@ -16,7 +16,9 @@
     "/vnr-dev tôi muốn thêm cột ngày sinh vào grid nhân viên",
     "/vnr-dev sửa bug: lưu nhân viên báo 500 khi bỏ trống email",
     "/vnr-review: review phần code chưa push theo bộ luật SA team",
-    "/vnr-toi-muon thêm cột trạng thái vào bảng đơn hàng — làm việc trong repo bất kỳ, không cần workspace HRM"
+    "/vnr-toi-muon thêm cột trạng thái vào bảng đơn hàng — làm việc trong repo bất kỳ, không cần workspace HRM",
+    "commit: AI stage + viết message theo quy ước team + commit, không hỏi",
+    "tạo PR: push + mở PR trên TFS, tiêu đề tiếng Anh, mô tả tiếng Việt"
   ],
   "providesTable": [
     {
@@ -38,6 +40,10 @@
     {
       "area": "Repo bất kỳ",
       "description": "/vnr-toi-muon: cùng luồng /vnr-dev cho mọi repo (nx, node, dotnet, python, go, rust); không cần vnr.hrm.wiki, không review theo bộ luật"
+    },
+    {
+      "area": "Commit & PR",
+      "description": "/vnr-commit, /vnr-pr: Conventional Commits tiếng Anh, thân và mô tả PR tiếng Việt, work item từ tên nhánh; chỉ cần nói \"commit\" / \"tạo PR\"; SA ghi đè quy ước ở docs/review/git-conventions.md"
     }
   ],
   "changelog": [
@@ -47,9 +53,13 @@
       "notes": [
         "Gỡ toàn bộ quy trình spec-kit (20 skill, 14 agent, hook, template); /vnr-auto-pipeline không còn — gõ /vnr-dev",
         "Thêm /vnr-dev trên nền superpowers (cài kèm): một lệnh làm PBI từ đầu đến cuối, tự chạy /vnr-review ở cuối",
-        "Báo cáo /vnr-review gọn hơn: KẾT LUẬN ở dòng đầu, bỏ bảng tóm tắt",
+        "Báo cáo /vnr-review là một bảng PASS / WARN / FAIL dán thẳng vào PR; mọi luật trong phạm vi đều qua AI",
         "Hợp đồng devhub.claude-md.json: DevHub ghi khối HRM Wiki vào CLAUDE.md máy SE",
-        "Thêm /vnr-toi-muon: làm PBI / sửa bug trong repo bất kỳ trên nền superpowers, tự nhận stack và nhánh gốc, artefact ở work/<id>/; không gọi /vnr-review"
+        "Thêm /vnr-toi-muon: làm PBI / sửa bug trong repo bất kỳ trên nền superpowers, tự nhận stack và nhánh gốc, artefact ở work/<id>/; không gọi /vnr-review",
+        "Thêm /vnr-commit: stage + commit theo quy ước team (Conventional Commits tiếng Anh, thân tiếng Việt, footer VNR W<tuần> #<id>), không hỏi, không push",
+        "Thêm /vnr-pr: push + mở PR trên TFS (tiêu đề tiếng Anh, mô tả tiếng Việt bốn mục); không MCP thì in text để dán",
+        "Khối CLAUDE.md: nói \"commit\" / \"tạo PR\" là Claude dùng đúng skill, không cần gõ lệnh",
+        "/vnr-dev, /vnr-toi-muon tạo nhánh <type>/<id>-<slug>"
       ]
     },
     {

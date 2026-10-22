@@ -5,6 +5,20 @@ Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Số phiên bản
 
 ## [2.0.0] — chưa phát hành (nhánh `feat/slim-vnr-swe`, PBI #8089)
 
+### Thêm (git conventions, 2026-10-22)
+- **Skill `vnr-commit`** (`skills/vnr-commit/`): nói "commit" là AI stage mọi thay đổi (trừ danh sách never-commit), viết message theo
+  quy ước team — Conventional Commits, tiêu đề tiếng Anh ≤ 72, thân tiếng Việt khi cần, footer `VNR W<tuần> #<id>` — và commit ngay;
+  không hỏi, không push. Lớp quy ước mặc định ở `skills/vnr-commit/convention.md`; `vnr.hrm.wiki/docs/review/git-conventions.md`
+  (SA team) ghi đè theo mục khi chạy trong workspace hoặc trong `src/<repo>`.
+- **Skill `vnr-pr`** (`skills/vnr-pr/`): nói "tạo PR" là AI push nhánh, viết tiêu đề tiếng Anh + mô tả tiếng Việt bốn mục
+  (Vì sao · Thay đổi · Kiểm tra · Work item), tạo PR qua MCP `tfs`; không MCP thì in text và link tạo PR để dán.
+- Khối CLAUDE.md mới `git-conventions` (`claude-md/git-conventions.md`, scope user, khối thứ hai trong `devhub.claude-md.json`): điều hướng
+  "commit" → `/vnr-commit`, "push / tạo PR" → `/vnr-pr` ở mọi repo + tóm tắt quy ước. Khối `hrm-wiki-rules` giữ nguyên.
+
+### Đổi (git conventions, 2026-10-22)
+- `/vnr-dev`, `/vnr-toi-muon`: nhánh `<type>/<id>-<slug>` (trước: `<type>/<id-or-slug>`), khớp luật NAME-28 v2 của `docs/review/rules/name.md`.
+- Câu "AI không bao giờ commit/push/PR" trong README thành "không khi bạn chưa bảo".
+
 ### Gỡ (breaking)
 - **vnr-swe 2.0.0**: gỡ toàn bộ quy trình spec-kit — 20 skill (`vnr-specify`, `vnr-clarify`, `vnr-plan`, `vnr-tasks`, `vnr-implement`,
   `vnr-analyze`, `vnr-checklist`, `vnr-constitution`, `vnr-customize`, `vnr-auto-pipeline`, `vnr-arch-review`, `vnr-qc-assistant`,
@@ -29,8 +43,12 @@ Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Số phiên bản
   `superpowers@claude-plugins-official` (cài plugin tự kéo superpowers; cần cài superpowers trước nếu allowlist không áp dụng).
 
 ### Thay đổi
-- **`/vnr-review` báo cáo gọn hơn**: dòng `KẾT LUẬN` là dòng đầu tiên của mỗi repo, bỏ bảng tóm tắt (mục FAIL/WARN đã nhóm theo mã luật
-  kèm số chỗ). Cách chấm không đổi; cùng diff cho cùng `VERDICT` và cùng vị trí.
+- **`/vnr-review` v2 (PBI #7916)**: báo cáo là một bảng PASS / WARN / FAIL (`# · Kết quả · Luật · Vị trí · Vấn đề → Sửa`, mỗi mã một dòng,
+  không code fence) dán thẳng vào mô tả PR; bỏ các mục Nghi ngờ / Cần ngữ cảnh / Chưa kiểm, dòng độ phủ `Đã kiểm <m> luật, đủ <n>/<n> nhóm`.
+  Mọi luật trong phạm vi đều qua AI theo nhóm luật (agent `sonnet`, sổ theo dõi `ledger` giao lại lượt thiếu kết quả); bỏ regex-gate,
+  `--full`, `--no-verify`; luật có `Trạng thái: đề xuất` bị bỏ qua. Cách chấm đổi: kết quả có thể khác nhẹ giữa hai lần chạy.
+  `--ci` chưa kiểm hết → exit 4.
+  - Số đo 2026-10-22 trên nhánh thật: BE 55 file 2m20s · FE 23 file ~7m30s (chạy song song với một lượt khác) · FE+BE 78 file 7m04s (15 lượt review, `parallel` 8); mục tiêu 2–10 phút.
 - `agents/AGENTS.md` của plugin bị gỡ (validator coi mọi `.md` trong `agents/` là một agent).
 - `README.md`, `AGENTS.md`, `devhub.catalog.json` của `vnr-swe` viết lại cho hai lệnh; `docs/glossary.md` thêm `work folder`, `lane`.
 

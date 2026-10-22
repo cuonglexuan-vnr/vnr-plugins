@@ -9,6 +9,12 @@
       "scope": "user",
       "source": "./claude-md/hrm-wiki-rules.md",
       "description": "Hình dạng workspace vnr.hrm.wiki, hai lệnh /vnr-dev và /vnr-review, nguyên tắc wiki trước code"
+    },
+    {
+      "id": "git-conventions",
+      "scope": "user",
+      "source": "./claude-md/git-conventions.md",
+      "description": "Điều hướng \"commit\" → /vnr-commit, \"tạo PR\" → /vnr-pr ở mọi repo, tóm tắt quy ước nhánh / commit / PR của team"
     }
   ]
 }
