@@ -23,6 +23,7 @@ hunk của các file thay đổi, danh sách "Nên đọc thêm", và khuôn JSO
    Mọi đường dẫn ghép với `repoRoot` (Glob: `path = repoRoot`).
    File prompt ghi "quá dài nên không kèm hunk": Read đúng các khoảng dòng ghi kèm (`offset`/`limit`), coi đó là hunk của file.
 4. Chỉ báo finding khi điều kiện của luật **nhìn thấy** trong code; không chắc → không báo. Không đoán, không thêm luật.
+   Mỗi chỗ vi phạm (file + dòng) là **một finding riêng**; không gộp chỗ khác vào câu `issue` ("cũng ở dòng …").
 5. Bỏ qua dòng có `review-ignore <MÃ>: <lý do>` (có lý do), trừ các mã mà prompt ghi là không cho bỏ qua.
 
 ## Mỗi mã một dòng

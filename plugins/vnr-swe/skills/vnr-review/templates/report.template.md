@@ -1,6 +1,6 @@
 Khuôn đầu ra của `CLI report` (markdown). Orchestrator dán stdout NGUYÊN VĂN vào câu trả lời cho SE, KHÔNG bọc trong code fence
 (để tiêu đề, bảng, thẻ hiện đúng markdown); không chuyển bảng sang bullet, không gộp/đổi dòng, không dịch hay đổi từ, không thêm bảng hay lời bình.
-Bảng chỉ có tên file; mỗi dòng bảng có một thẻ cùng số (`**#<n> · <FAIL|WARN> · <mã>**`) mang đường dẫn đầy đủ, Vấn đề, Sửa.
+Bảng chỉ có tên file; mỗi dòng bảng có một thẻ cùng số (`**#<n> · <FAIL|WARN> · <mã>**`) mang đường dẫn đầy đủ (nhiều chỗ thì liệt kê từng chỗ, tối đa 10), Vấn đề, Sửa.
 Dòng `VERDICT:<PASS|WARN|FAIL>` luôn là dòng cuối báo cáo (có hay không `--ci`) và được dán cùng; `--ci` có thêm `COVERAGE=` và `RULES=` sau nó.
 Không `--ci`: được thêm đúng một dòng sau báo cáo (sau `VERDICT:`), cách một dòng trống:
 Gõ "sửa theo báo cáo" để tôi sửa các mục FAIL (không commit).
@@ -16,13 +16,17 @@ Gõ "sửa theo báo cáo" để tôi sửa các mục FAIL (không commit).
 | 2 | WARN | SLOP-11 | JobRelationChartBuilder.cs:7 (+1) |
 | 3 | WARN | NAME-08 | JobRelationChartController.cs:12 |
 
+**FAIL**: phải sửa trước khi push · **WARN**: nên xem; cố ý giữ thì ghi chú bỏ qua (xem user-guide)
+
 **#1 · FAIL · DATA-20**
 - Vị trí: `SQL/PostgreSQL/Migration/script_seed_p071_job_relation_chart.sql:1`
 - Vấn đề: Script seed INSERT thẳng, không kiểm tra bản ghi đã có: chạy lại migration sẽ nhân đôi dữ liệu cấu hình
 - Sửa: bọc mỗi INSERT bằng `WHERE NOT EXISTS` theo khoá nghiệp vụ
 
 **#2 · WARN · SLOP-11**
-- Vị trí: `Src/Modules/Hre/Vnr.Hrm.Hre.Application/JobRelationChart/JobRelationChartBuilder.cs:7` (+1)
+- Vị trí (2 chỗ):
+  - `Src/Modules/Hre/Vnr.Hrm.Hre.Application/JobRelationChart/JobRelationChartBuilder.cs:7`
+  - `Src/Modules/Hre/Vnr.Hrm.Hre.Application/JobRelationChart/JobRelationChartBuilder.cs:31`
 - Vấn đề: Comment lặp lại đúng tên hàm, không nói thêm điều gì
 - Sửa: xoá comment, hoặc ghi lý do thay vì mô tả
 
@@ -30,8 +34,6 @@ Gõ "sửa theo báo cáo" để tôi sửa các mục FAIL (không commit).
 - Vị trí: `Src/Modules/Hre/Vnr.Hrm.Hre.Api/Controllers/JobRelationChartController.cs:12`
 - Vấn đề: Tên action &lt;GetData> không nói dữ liệu gì
 - Sửa: đổi thành `GetJobRelationChart`
-
-**FAIL**: phải sửa trước khi push · **WARN**: nên xem; cố ý giữ thì ghi chú bỏ qua (xem user-guide)
 
 Đã kiểm 55 luật, đủ 6/6 nhóm · 0 chỗ bỏ qua theo ghi chú · 7 file quá lớn chưa đọc hết · vnr-review 2.0.0
 
@@ -69,8 +71,16 @@ RULES=arch-be v1
 | 2 | FAIL | FW-FE-33 | property-panel.component.ts:15 |
 | 3 | WARN | UIUX-28 | supertool-verdi-host-actions.ts:90 |
 
+**FAIL**: phải sửa trước khi push · **WARN**: nên xem; cố ý giữ thì ghi chú bỏ qua (xem user-guide)
+
 **#1 · FAIL · NAME-20**
-- Vị trí: `apps/supertool/public/assets/i18n/EN.json:6270` (+5)
+- Vị trí (6 chỗ):
+  - `apps/supertool/public/assets/i18n/EN.json:6270`
+  - `apps/supertool/public/assets/i18n/EN.json:6271`
+  - `apps/supertool/public/assets/i18n/EN.json:6272`
+  - `apps/supertool/public/assets/i18n/EN.json:6273`
+  - `apps/supertool/public/assets/i18n/EN.json:6274`
+  - `apps/supertool/public/assets/i18n/EN.json:6275`
 - Vấn đề: Khoá i18n đặt sai quy ước (6 khoá)
 - Sửa: đổi sang dạng `verdi.widget.postApprove.hint`
 
@@ -83,8 +93,6 @@ RULES=arch-be v1
 - Vị trí: `apps/supertool/src/app/core/verdi-widget/supertool-verdi-host-actions.ts:90`
 - Vấn đề: Chọn nhiều trang rồi bấm hàng loạt chỉ xử lý trang đang xem
 - Sửa: gửi danh sách khoá đã chọn
-
-**FAIL**: phải sửa trước khi push · **WARN**: nên xem; cố ý giữ thì ghi chú bỏ qua (xem user-guide)
 
 Đã kiểm 4 luật, đủ 3/3 nhóm · 1 chỗ bỏ qua theo ghi chú · vnr-review 2.0.0
 

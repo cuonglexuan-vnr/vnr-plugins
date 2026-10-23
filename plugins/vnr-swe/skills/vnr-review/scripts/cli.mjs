@@ -77,6 +77,7 @@ export function buildPrompt(cell, plan) {
     `## Nên đọc thêm: ${cell.readMore.files.join(', ') || '(không có)'}`,
     `## Trả về — CHỈ một khối JSON, ĐÚNG MỘT dòng cho MỖI mã: ${cell.codes.join(', ')}`,
     `{"cell":"${cell.id}","rules":[{"code":"<MÃ>","status":"checked|n/a","note":"<bắt buộc khi n/a>","findings":[{"file":"<path tương đối>","level":"FAIL|WARN","line":<số dòng sau thay đổi>,"excerpt":"<≤100 ký tự>","issue":"<1 câu: chuyện gì sai, người đọc PR chưa đọc luật hiểu ngay>","fix":"<1 câu: làm gì; được nêu tên hàm/lệnh/field cần dùng>"}]}]}`,
+    'Mỗi chỗ vi phạm (file + dòng) là một finding riêng trong `findings`; không gộp chỗ khác vào câu `issue` ("cũng ở dòng …").',
   ].join('\n');
 }
 

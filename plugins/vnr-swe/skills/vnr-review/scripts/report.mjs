@@ -1,11 +1,13 @@
 // plugins/vnr-swe/skills/vnr-review/scripts/report.mjs
 // Báo cáo markdown của /vnr-review (orchestrator dán nguyên văn, không fence): tiêu đề PASS/WARN/FAIL, bảng 4 cột (# · Kết quả · Luật · Vị trí = tên file),
-// mỗi dòng bảng một thẻ chi tiết cùng số (đường dẫn đầy đủ, Vấn đề, Sửa), dòng chân độ phủ, dòng cuối luôn là `VERDICT:<…>`.
+// mỗi dòng bảng một thẻ chi tiết cùng số (mọi vị trí với đường dẫn đầy đủ, Vấn đề, Sửa), dòng chân độ phủ, dòng cuối luôn là `VERDICT:<…>`.
 // Ô xong tính lại từ kết quả trên đĩa (`resultOk`), không tin trạng thái trong ledger. Nhiều repo: một tiêu đề chung, mỗi repo một mục ###.
 import { resultOk, normalizeResult } from './ledger.mjs';
 
 // Số dòng bảng (và thẻ) tối đa của một repo; phần còn lại gói vào một dòng "+n dòng khác".
 const MAX_ROWS = 10;
+// Số vị trí tối đa liệt kê trong một thẻ; phần còn lại gói vào "… và n chỗ khác".
+const MAX_LOCS = 10;
 // Độ dài tối đa của "Vấn đề" và của "Sửa" trong thẻ.
 const CLIP = 400;
 const LEGEND = '**FAIL**: phải sửa trước khi push · **WARN**: nên xem; cố ý giữ thì ghi chú bỏ qua (xem user-guide)';
@@ -49,15 +51,16 @@ function reviewRepo(plan, results = {}, verifications = {}) {
     }
   }
   // Cùng mã gộp một dòng: mức xấu nhất; vị trí, issue và fix lấy từ finding FAIL đầu tiên (nếu có).
-  // Bảng: tên file `:dòng`; thẻ: đường dẫn đầy đủ trong backtick; `(+n)` = số vị trí khác.
+  // Bảng: tên file `:dòng` của vị trí đầu + `(+n)` = số vị trí khác; thẻ: mọi vị trí (bỏ trùng, cùng thứ tự), đường dẫn đầy đủ trong backtick.
   const rows = [...byCode.values()].map(({ code, items }) => {
     items.sort((a, b) => RANK[b.level] - RANK[a.level]);
-    const count = new Set(items.map(i => i.file + i.line)).size, [first] = items;
-    const more = count > 1 ? ` (+${count - 1})` : '';
+    const locs = [...new Set(items.map(i => (isPseudo(i.file) ? i.file : `\`${(i.file + i.line).replaceAll('`', '')}\``)))];
+    const count = locs.length, [first] = items;
     return {
       code, level: first.level, count,
-      short: md(base(first.file) + first.line, Infinity, true) + more,
-      full: (isPseudo(first.file) ? first.file : `\`${(first.file + first.line).replaceAll('`', '')}\``) + more,
+      short: md(base(first.file) + first.line, Infinity, true) + (count > 1 ? ` (+${count - 1})` : ''),
+      where: count === 1 ? [`- Vị trí: ${locs[0]}`] : [`- Vị trí (${count} chỗ):`, ...locs.slice(0, MAX_LOCS).map(l => `  - ${l}`),
+        ...(count > MAX_LOCS ? [`  - … và ${count - MAX_LOCS} chỗ khác`] : [])],
       issue: md(first.issue, CLIP), fix: md(first.fix, CLIP),
     };
   }).sort((a, b) => RANK[b.level] - RANK[a.level] || b.count - a.count || (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
@@ -74,7 +77,7 @@ function reviewRepo(plan, results = {}, verifications = {}) {
   };
 }
 
-// Phần thân một repo: bảng + thẻ (nếu có dòng), chú giải, ⚠ nhóm chưa kiểm hết, dòng độ phủ.
+// Phần thân một repo: bảng + chú giải + thẻ (nếu có dòng), ⚠ nhóm chưa kiểm hết, dòng độ phủ.
 function body(r, pluginVersion) {
   const { plan, rows, sets } = r, L = [];
   // Mỗi khối ngoài bảng là một đoạn riêng (dòng trống phía trước): markdown nối các dòng liền nhau thành một đoạn,
@@ -85,9 +88,10 @@ function body(r, pluginVersion) {
     L.push('| # | Kết quả | Luật | Vị trí |', '|---|---|---|---|');
     // `#` đánh từ 1 theo thứ tự hiển thị, lại từ 1 trong mỗi mục repo; thẻ dùng cùng số.
     shown.forEach((row, i) => L.push(`| ${i + 1} | ${row.level} | ${row.code} | ${row.short} |`));
-    shown.forEach((row, i) => para(`**#${i + 1} · ${row.level} · ${row.code}**`, `- Vị trí: ${row.full}`, `- Vấn đề: ${row.issue}`, ...(row.fix ? [`- Sửa: ${row.fix}`] : [])));
-    if (rows.length > MAX_ROWS) para(`_(+${rows.length - MAX_ROWS} dòng khác: ${rows.slice(MAX_ROWS).map(x => x.code).join(', ')})_`);
+    // Chú giải ngay dưới bảng: người đọc PR biết FAIL/WARN nghĩa là gì trước khi đọc thẻ chi tiết.
     para(LEGEND);
+    shown.forEach((row, i) => para(`**#${i + 1} · ${row.level} · ${row.code}**`, ...row.where, `- Vấn đề: ${row.issue}`, ...(row.fix ? [`- Sửa: ${row.fix}`] : [])));
+    if (rows.length > MAX_ROWS) para(`_(+${rows.length - MAX_ROWS} dòng khác: ${rows.slice(MAX_ROWS).map(x => x.code).join(', ')})_`);
   }
   for (const s of sets.filter(s => s.left)) para(`⚠ Chưa kiểm hết: nhóm "${s.title ?? s.aspect}" còn ${s.left} luật chưa xem. Gõ /vnr-review ${plan.repo.kind} để chạy lại.`);
   if (!sets.length) { para(`Không có luật nào áp dụng cho ${plan.fileCount} file thay đổi · vnr-review ${pluginVersion}`); return L; }

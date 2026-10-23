@@ -440,6 +440,7 @@ test('buildPrompt: đầu prompt, repoRoot, anh em, khối luật, hunk, danh s�
   assert.match(p, /\n## Trả về — CHỈ một khối JSON, ĐÚNG MỘT dòng cho MỖI mã: X-01, X-02\n\{"cell":"fe\/x\/1","rules":\[\{"code":"<MÃ>","status":"checked\|n\/a"/);
   assert.match(p, /"findings":\[\{"file":"<path tương đối>","level":"FAIL\|WARN","line"/);
   assert.match(p, /`level`: FAIL nếu khớp "FAIL khi", WARN nếu khớp "WARN khi"; luật mức WARN → luôn WARN/);
+  assert.match(p, /Mỗi chỗ vi phạm \(file \+ dòng\) là một finding riêng/);
   assert.doesNotMatch(p, /quá dài/);
 });
 

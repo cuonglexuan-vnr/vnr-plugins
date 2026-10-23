@@ -69,13 +69,17 @@ test('FAIL một repo: đúng khuôn §7 của spec (bảng tên file + thẻ đ
     '| 2 | WARN | SLOP-11 | JobRelationChartBuilder.cs:7 (+1) |',
     '| 3 | WARN | NAME-08 | JobRelationChartController.cs:12 |',
     '',
+    '**FAIL**: phải sửa trước khi push · **WARN**: nên xem; cố ý giữ thì ghi chú bỏ qua (xem user-guide)',
+    '',
     '**#1 · FAIL · DATA-20**',
     `- Vị trí: \`${SQL}:1\``,
     '- Vấn đề: Script seed INSERT thẳng, không kiểm tra bản ghi đã có: chạy lại migration sẽ nhân đôi dữ liệu cấu hình',
     '- Sửa: bọc mỗi INSERT bằng `WHERE NOT EXISTS` theo khoá nghiệp vụ',
     '',
     '**#2 · WARN · SLOP-11**',
-    `- Vị trí: \`${BUILDER}:7\` (+1)`,
+    '- Vị trí (2 chỗ):',
+    `  - \`${BUILDER}:7\``,
+    `  - \`${BUILDER}:31\``,
     '- Vấn đề: Comment lặp lại đúng tên hàm, không nói thêm điều gì',
     '- Sửa: xoá comment, hoặc ghi lý do thay vì mô tả',
     '',
@@ -83,8 +87,6 @@ test('FAIL một repo: đúng khuôn §7 của spec (bảng tên file + thẻ đ
     `- Vị trí: \`${CTRL}:12\``,
     '- Vấn đề: Tên action &lt;GetData> không nói dữ liệu gì',
     '- Sửa: đổi thành `GetJobRelationChart`',
-    '',
-    '**FAIL**: phải sửa trước khi push · **WARN**: nên xem; cố ý giữ thì ghi chú bỏ qua (xem user-guide)',
     '',
     'Đã kiểm 55 luật, đủ 6/6 nhóm · 0 chỗ bỏ qua theo ghi chú · 7 file quá lớn chưa đọc hết · vnr-review 2.0.0',
     '',
@@ -97,7 +99,7 @@ test('FE: bảng chỉ tên file, thẻ đủ đường dẫn; VERDICT luôn là
   const r = render([fixturePlan], { 'vnr.hrm.web': fixtureResults }, { 'vnr.hrm.web': fixtureVerify });
   assert.match(r.text, /^\| 1 \| FAIL \| NAME-20 \| EN\.json:6270 \(\+5\) \|$/m);
   assert.match(r.text, /^\| 2 \| FAIL \| FW-FE-33 \| property-panel\.component\.ts:15 \|$/m);
-  assert.ok(r.text.includes(`**#1 · FAIL · NAME-20**\n- Vị trí: \`${EN}:6270\` (+5)\n- Vấn đề: Khoá i18n đặt sai quy ước (6 khoá)\n- Sửa: đổi sang dạng \`verdi.widget.postApprove.hint\`\n\n**#2 · FAIL · FW-FE-33**`));
+  assert.ok(r.text.includes(`**#1 · FAIL · NAME-20**\n- Vị trí (6 chỗ):\n${[6270, 6271, 6272, 6273, 6274, 6275].map(l => `  - \`${EN}:${l}\`\n`).join('')}- Vấn đề: Khoá i18n đặt sai quy ước (6 khoá)\n- Sửa: đổi sang dạng \`verdi.widget.postApprove.hint\`\n\n**#2 · FAIL · FW-FE-33**`));
   assert.match(r.text, /vnr-review 2\.0\.0\n\nVERDICT:FAIL$/);
   assert.doesNotMatch(r.text, /COVERAGE=|RULES=/, 'không --ci → không COVERAGE/RULES');
 });
@@ -119,7 +121,7 @@ test('một mã: FAIL lẫn WARN gộp một dòng mức FAIL, vị trí đầu 
   const res = { [c.fileId]: ok(c, { 'SLOP-01': [{ file: 'apps/a.ts', line: 1, issue: 'chưa xác nhận' }, { file: 'apps/b.ts', line: 2, issue: 'đã xác nhận' }] }) };
   const r = render([mkPlan({ cells: [c] })], { 'vnr.hrm.web': res }, { 'vnr.hrm.web': { 'fe_slop_1-SLOP-01-1': { verdict: 'confirmed' } } });
   assert.match(r.text, /^\| 1 \| FAIL \| SLOP-01 \| b\.ts:2 \(\+1\) \|$/m);
-  assert.match(r.text, /^\*\*#1 · FAIL · SLOP-01\*\*\n- Vị trí: `apps\/b\.ts:2` \(\+1\)\n- Vấn đề: đã xác nhận\n/m);
+  assert.match(r.text, /^\*\*#1 · FAIL · SLOP-01\*\*\n- Vị trí \(2 chỗ\):\n  - `apps\/b\.ts:2`\n  - `apps\/a\.ts:1`\n- Vấn đề: đã xác nhận\n/m);
   assert.match(r.text, /^## vnr-review — FAIL \(1 FAIL · 0 WARN\) · /);
 });
 
@@ -151,12 +153,29 @@ test('chuẩn hoá dòng: file thiếu, path tuyệt đối Windows, dòng null/
   assert.doesNotMatch(t, /```/);
 });
 
+test('thẻ nhiều vị trí: liệt kê đủ, bỏ trùng, giữ thứ tự; tối đa 10 dòng rồi "… và n chỗ khác"; (+n) = số chỗ − 1', () => {
+  const files = Array.from({ length: 12 }, (_, i) => `apps/f${i}.ts`);
+  const c = mkCell('fe', 'slop', 1, [rule('M-01', 'WARN'), rule('M-02', 'WARN')], [...files, '(branch)']);
+  const res = { [c.fileId]: ok(c, {
+    'M-01': files.map((file, i) => ({ file, line: i + 1, issue: 'i' })),
+    'M-02': [{ file: 'apps/f0.ts', line: 3 }, { file: 'apps/f1.ts' }, { file: 'apps/f0.ts', line: 3 }, { file: '(branch)', line: 9 }],
+  }) };
+  const t = render([mkPlan({ cells: [c] })], { 'vnr.hrm.web': res }).text;
+  // Các dòng Vị trí của thẻ: từ sau tiêu đề thẻ tới trước "- Vấn đề".
+  const loc = code => { const c = t.slice(t.indexOf(` · ${code}**`)).split('\n').slice(1); return c.slice(0, c.findIndex(l => l.startsWith('- Vấn đề'))); };
+  assert.match(t, /^\| \d+ \| WARN \| M-01 \| f0\.ts:1 \(\+11\) \|$/m);
+  assert.deepEqual(loc('M-01'), ['- Vị trí (12 chỗ):', ...files.slice(0, 10).map((f, i) => `  - \`${f}:${i + 1}\``), '  - … và 2 chỗ khác']);
+  assert.match(t, /^\| \d+ \| WARN \| M-02 \| f0\.ts:3 \(\+2\) \|$/m);
+  assert.deepEqual(loc('M-02'), ['- Vị trí (3 chỗ):', '  - `apps/f0.ts:3`', '  - `apps/f1.ts`', '  - (branch)']);
+});
+
 test('không có fix (cả finding lẫn luật) → thẻ không có dòng "Sửa"', () => {
   const c = mkCell('fe', 'slop', 1, [rule('SLOP-01', 'WARN', '')], ['apps/a.ts']);
   const res = { [c.fileId]: ok(c, { 'SLOP-01': [{ file: 'apps/a.ts', line: 1, issue: 'Dữ liệu mẫu' }] }) };
   const t = render([mkPlan({ cells: [c] })], { 'vnr.hrm.web': res }).text;
   assert.match(t, /^\| 1 \| WARN \| SLOP-01 \| a\.ts:1 \|$/m);
-  assert.match(t, /^- Vấn đề: Dữ liệu mẫu\n\n\*\*FAIL\*\*: /m);
+  assert.match(t, /^\| 1 \| WARN \| SLOP-01 \| a\.ts:1 \|\n\n\*\*FAIL\*\*: [^\n]*\n\n\*\*#1 · WARN · SLOP-01\*\*/m, 'chú giải ngay dưới bảng, trước thẻ');
+  assert.match(t, /^- Vấn đề: Dữ liệu mẫu\n\nĐã kiểm /m);
   assert.doesNotMatch(t, /- Sửa:/);
 });
 
@@ -174,7 +193,7 @@ test('thứ tự: FAIL trước, trong mức theo số vị trí giảm dần r�
   const cards = r.text.split('\n').filter(l => /^\*\*#\d+ · /.test(l));
   assert.deepEqual(cards.map(l => l.match(/^\*\*#(\d+) · (\w+) · (\S+)\*\*$/).slice(1).join(' ')), order.map((o, i) => `${i + 1} ${o[1]} ${o[2]}`), 'thẻ cùng số, mức, mã với dòng bảng; ≤ 10');
   assert.ok(r.text.indexOf('**#10 · ') < r.text.indexOf('_(+5 dòng khác'), '"+n dòng khác" sau các thẻ');
-  assert.ok(r.text.indexOf('_(+5 dòng khác') < r.text.indexOf('**FAIL**: phải sửa'));
+  assert.ok(r.text.indexOf('**FAIL**: phải sửa') < r.text.indexOf('**#1 · '), 'chú giải trước thẻ đầu tiên');
   assert.match(r.text, /^## vnr-review — FAIL \(2 FAIL · 13 WARN\)/);
 });
 
