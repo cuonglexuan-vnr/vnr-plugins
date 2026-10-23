@@ -94,6 +94,7 @@ test('--help lists every command and the new exit codes', () => {
   const r = run('--help');
   assert.equal(r.status, 0);
   for (const c of ['plan', 'ledger', 'verify-jobs', 'report', 'check']) assert.match(r.stdout, new RegExp(`^  ${c} `, 'm'));
+  assert.match(r.stdout, /--save <dir>/);
   assert.match(r.stdout, /ledger 0 ok \/ 4/); assert.match(r.stdout, /verify-jobs 0 ok \/ 4/); assert.match(r.stdout, /\(--ci\) incomplete coverage/);
   assert.doesNotMatch(r.stdout, /--model|--full/);
 });
@@ -104,7 +105,7 @@ test('plan writes plan, ledger and one job + prompt per cell; no index.json', ()
   assert.match(p.stdout, /^vnr\.hrm\.web @ \S+ \(vs origin\/develop, upstream\) · 2 file · 1 nhóm · 3 luật trong phạm vi · 1 lượt review$/m);
   assert.deepEqual(lines.slice(-3).map(l => l.split('=')[0]), ['STATE', 'PARALLEL', 'CELLS']);
   assert.equal(lines.at(-1), `CELLS=${ledger.cells.length}`); assert.equal(lines.at(-2), 'PARALLEL=8');
-  assert.match(plan.sha7, /^[0-9a-f]{7}$/);
+  assert.match(plan.sha7, /^[0-9a-f]{7}$/); assert.match(plan.treeId, /^[0-9a-f]{40}$/);
   assert.deepEqual(ledger.cells.map(c => [c.id, c.resultFile, c.attempts, c.failed]), [['fe/slop/1', `results/${REPO}/${CELL}.json`, 0, false]]);
   assert.deepEqual(readdirSync(join(state, 'jobs', REPO)).sort(), [`${CELL}.json`, `${CELL}.prompt.md`]);
   const job = readJson(join(state, 'jobs', REPO, `${CELL}.json`));
@@ -248,6 +249,41 @@ test('report: mã lạ trong kết quả → stderr, không vào báo cáo', () 
     const r = run('report', '--state', st);
     assert.equal(r.status, 0, r.stdout + r.stderr);
     assert.match(r.stderr, /XX-99/); assert.doesNotMatch(r.stdout, /XX-99/);
+  });
+});
+
+test('report --save: một repo → <dir>/<repo>.md = dòng tree= + stdout; stdout không có dòng đó', () => {
+  withTmp('vnr-review-save1-', d => {
+    const st = join(d, 'st'); const { plan } = planInto(st); writeResult(st, okRows());
+    const out = join(d, 'work', 'vnr-review');
+    const r = run('report', '--state', st, '--save', out, '--plugin-version', '2.0.0');
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.deepEqual(readdirSync(out), [`${REPO}.md`]);
+    assert.equal(readFileSync(join(out, `${REPO}.md`), 'utf8'), `<!-- vnr-review tree=${plan.treeId} -->\n${r.stdout}`);
+    assert.doesNotMatch(r.stdout, /<!--/);
+  });
+});
+
+test('report --save: hai repo → hai file, mỗi file là báo cáo riêng của repo đó', () => {
+  withTmp('vnr-review-save2-', d => {
+    const st = join(d, 'st'); const { plan } = planInto(st); writeResult(st, okRows());
+    writeFileSync(join(st, 'plan-other.json'), JSON.stringify({ ...plan, repo: { ...plan.repo, name: 'other' } }));
+    const out = join(d, 'out');
+    const r = run('report', '--state', st, '--save', out, '--plugin-version', '2.0.0');
+    assert.match(r.stdout, /^### /m, 'stdout vẫn là báo cáo gộp');
+    assert.deepEqual(readdirSync(out).sort(), [`${REPO}.md`, 'other.md'].sort());
+    for (const name of [REPO, 'other']) {
+      const t = readFileSync(join(out, `${name}.md`), 'utf8').replace(/^<!-- vnr-review tree=[0-9a-f]{40} -->\n/, '');
+      assert.match(t, new RegExp(`^## vnr-review — .* · ${name.replace(/./g, '\.')} @ `)); assert.match(t, /^VERDICT:/m);
+      assert.doesNotMatch(t, /^### /m, 'không phải báo cáo gộp');
+    }
+  });
+});
+
+test('report --save không có giá trị → exit 4', () => {
+  withTmp('vnr-review-save0-', d => {
+    const st = join(d, 'st'); planInto(st);
+    assert.equal(run('report', '--state', st, '--save').status, 4);
   });
 });
 

@@ -10,7 +10,7 @@ Hướng dẫn cho người dùng: https://sa-hrm.vnrlocal.com/docs/marketplace/
 | `/vnr-review [fe\|be]` | trước khi push | đọc một bảng FAIL/WARN, mỗi dòng một chỗ phải sửa; dán vào mô tả PR. Gõ "sửa theo báo cáo" nếu muốn AI sửa |
 | `/vnr-toi-muon <PBI id \| mô tả \| file spec \| resume <id>>` | làm việc trong **repo bất kỳ** (không cần workspace HRM) | như `/vnr-dev`: trả lời vài câu, duyệt spec, duyệt plan (khi lớn); AI code, build, test, review toàn nhánh, để nhánh + staged. Không có `/vnr-review` ở cuối |
 | `/vnr-commit` | muốn lưu phần đang làm | không gì cả: chỉ cần nói "commit". AI stage, viết message theo quy ước team (tiêu đề tiếng Anh, thân tiếng Việt, work item), commit ngay |
-| `/vnr-pr` | xong, muốn gửi review | không gì cả: chỉ cần nói "tạo PR". AI push, mở PR trên TFS với tiêu đề tiếng Anh + mô tả tiếng Việt, trả link |
+| `/vnr-pr` | xong, muốn gửi review | không gì cả: chỉ cần nói "tạo PR". AI push, mở PR trên TFS với tiêu đề tiếng Anh + mô tả tiếng Việt (kèm báo cáo `/vnr-review` khi chạy trong `vnr.hrm.wiki`), trả link |
 
 Nền: plugin [`superpowers`](https://github.com/obra/superpowers) (brainstorming, writing-plans, TDD, systematic-debugging…). `/vnr-dev` chỉ
 điều phối các skill đó theo cách làm của VNR. Lệnh `/vnr-auto-pipeline` cũ không còn — gõ `/vnr-dev`.

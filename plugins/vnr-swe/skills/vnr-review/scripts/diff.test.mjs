@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync } from 'nod
 import { join } from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
-import { findRepos, baseline, collectDiff } from './diff.mjs';
+import { findRepos, baseline, collectDiff, contentTree } from './diff.mjs';
 
 // Cô lập khỏi cấu hình git của máy (autocrlf, gpgsign...) cho cả helper này lẫn diff.mjs.
 // os.devNull trên Windows không dùng được cho git; '/dev/null' thì git-for-windows hiểu.
@@ -92,4 +92,20 @@ test('upstream đã đi trước (fetch chưa merge): file của remote không l
   const paths = collectDiff(fe, b.ref).files.map(f => f.path);
   assert.ok(!paths.includes('nx.json'), 'remote-only change must not appear reversed');
   assert.ok(paths.includes('apps/a.ts'), 'unpushed local commit still reviewed');
+});
+
+test('contentTree = tree của commit "add -A trừ never-commit"; index thật không đổi', () => {
+  const r = mkdtempSync(join(os.tmpdir(), 'vnr-review-tree-'));
+  try {
+    sh(r, 'init', '-q'); writeFileSync(join(r, 'a.txt'), 'v1\n'); sh(r, 'add', '-A'); sh(r, 'commit', '-qm', 'base');
+    writeFileSync(join(r, 'a.txt'), 'v2\n'); sh(r, 'add', 'a.txt'); writeFileSync(join(r, 'a.txt'), 'v3\n');   // staged + unstaged
+    writeFileSync(join(r, 'b.txt'), 'untracked\n'); writeFileSync(join(r, '.env'), 'SECRET=1\n');   // untracked + never-commit
+    mkdirSync(join(r, 'p', 'bin'), { recursive: true }); writeFileSync(join(r, 'p', 'bin', 'o.txt'), 'build\n');   // never-commit ở thư mục con
+    const cached = sh(r, 'diff', '--cached');
+    const tree = contentTree(r);
+    assert.equal(sh(r, 'diff', '--cached'), cached, 'index thật không bị đụng');
+    sh(r, 'add', '-A'); sh(r, 'reset', '-q', '--', '.env', 'p/bin'); sh(r, 'commit', '-qm', 'same content');
+    assert.equal(tree, sh(r, 'rev-parse', 'HEAD^{tree}').trim());
+    assert.ok(!sh(r, 'ls-tree', '-r', '--name-only', 'HEAD').includes('.env'));
+  } finally { rmSync(r, { recursive: true, force: true }); }
 });

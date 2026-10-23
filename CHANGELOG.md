@@ -12,6 +12,9 @@ Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Số phiên bản
   (SA team) ghi đè theo mục khi chạy trong workspace hoặc trong `src/<repo>`.
 - **Skill `vnr-pr`** (`skills/vnr-pr/`): nói "tạo PR" là AI push nhánh, viết tiêu đề tiếng Anh + mô tả tiếng Việt bốn mục
   (Vì sao · Thay đổi · Kiểm tra · Work item), tạo PR qua MCP `tfs`; không MCP thì in text và link tạo PR để dán.
+  - Trong workspace `vnr.hrm.wiki`, `## Kiểm tra` tự đính kèm `work/vnr-review/<repo>.md`; nội dung đã review (dòng
+    `<!-- vnr-review tree=… -->`, trừ file never-commit) khác `HEAD^{tree}` sau khi commit → thêm dòng nhắc chạy lại `/vnr-review`
+    (review phần chưa commit rồi "tạo PR" không còn bị báo lệch); báo cáo còn FAIL vẫn tạo PR (chỉ báo SE một dòng).
 - Khối CLAUDE.md mới `git-conventions` (`claude-md/git-conventions.md`, scope user, khối thứ hai trong `devhub.claude-md.json`): điều hướng
   "commit" → `/vnr-commit`, "push / tạo PR" → `/vnr-pr` ở mọi repo + tóm tắt quy ước. Khối `hrm-wiki-rules` giữ nguyên.
 
@@ -49,6 +52,7 @@ Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Số phiên bản
   `--full`, `--no-verify`; luật có `Trạng thái: đề xuất` bị bỏ qua. Cách chấm đổi: kết quả có thể khác nhẹ giữa hai lần chạy.
   `--ci` chưa kiểm hết → exit 4.
   - Số đo 2026-10-22 trên nhánh thật: BE 55 file 2m20s · FE 23 file ~7m30s (chạy song song với một lượt khác) · FE+BE 78 file 7m04s (15 lượt review, `parallel` 8); mục tiêu 2–10 phút.
+  - Báo cáo riêng của mỗi repo luôn được lưu ở `work/vnr-review/<repo>.md` (`cli.mjs report --save <dir>`, stdout giữ nguyên) để `/vnr-pr` đính kèm.
 - `agents/AGENTS.md` của plugin bị gỡ (validator coi mọi `.md` trong `agents/` là một agent).
 - `README.md`, `AGENTS.md`, `devhub.catalog.json` của `vnr-swe` viết lại cho hai lệnh; `docs/glossary.md` thêm `work folder`, `lane`.
 

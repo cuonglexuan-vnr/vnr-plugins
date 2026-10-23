@@ -3,7 +3,8 @@ name: vnr-pr
 description: >-
   Push nhánh hiện tại và mở pull request theo quy ước team: tiêu đề Conventional Commits tiếng Anh, mô tả tiếng Việt bốn mục
   (Vì sao · Thay đổi · Kiểm tra · Work item), tạo PR trên TFS qua MCP, in link. Không hỏi. Dùng khi SE nói "push", "tạo PR",
-  "mở PR", "gửi review", "create pull request". Chạy trong repo bất kỳ; không có MCP thì in sẵn tiêu đề + mô tả để dán.
+  "mở PR", "gửi review", "create pull request". Chạy trong repo bất kỳ; không có MCP thì in sẵn tiêu đề + mô tả để dán; đính kèm
+  báo cáo /vnr-review khi chạy trong workspace vnr.hrm.wiki.
 argument-hint: "[--base <nhánh đích>]"
 compatibility: "Repo git bất kỳ có remote. PR tự động cần MCP tfs (DevHub › Nối TFS); không có thì in text để dán."
 user-invocable: true
@@ -31,9 +32,20 @@ $ARGUMENTS
 - Commit trên nhánh: `git log origin/<đích>..HEAD --format='%s%n%b'`.
 - Tiêu đề: một commit → nguyên tiêu đề của nó; nhiều → một dòng `<type>(<scope>): <tóm tắt>` tiếng Anh, `type` của commit nặng nhất
   (`feat` > `fix` > còn lại), ≤ 72 ký tự.
-- Mô tả tiếng Việt, đúng bốn mục `## Vì sao` · `## Thay đổi` · `## Kiểm tra` · `## Work item`. `## Kiểm tra`: nội dung `baseline-gates.md`
-  và `review.md` trong `work/<id>/` (do `/vnr-dev`, `/vnr-toi-muon` ghi) nếu có; không có → `chưa chạy`. `## Work item`: `#<id>` theo B2 của
+- Mô tả tiếng Việt, đúng bốn mục `## Vì sao` · `## Thay đổi` · `## Kiểm tra` · `## Work item`. `## Work item`: `#<id>` theo B2 của
   `/vnr-commit`; không có → `—`.
+- `## Kiểm tra`, theo thứ tự:
+  1. Nội dung `baseline-gates.md` và `review.md` trong `work/<id>/` (do `/vnr-dev`, `/vnr-toi-muon` ghi) nếu có.
+  2. **Chỉ khi biết gốc wiki** (B0 thấy `docs/review/git-conventions.md` ở cwd hoặc `../../`): đọc `<gốc wiki>/work/vnr-review/<tên thư mục
+     repo đích>.md`. Độ mới (sau bước commit ở P1): lấy `tree=<id>` ở dòng đầu `<!-- vnr-review tree=<id> -->`, so với
+     `git -C <repo đích> rev-parse HEAD^{tree}` — `<id>` là tree của code đã review nếu commit trọn, trừ file never-commit, đúng phần
+     `/vnr-commit` stage, nên review rồi mới commit vẫn khớp. File không có dòng `tree=` (bản cũ) → lấy `(<sha7>)` ở dòng `## vnr-review —`
+     đầu tiên, so với `git -C <repo đích> rev-parse --short=7 HEAD`. Bằng nhau → dán nguyên văn báo cáo (bỏ dòng `<!-- … -->`; markdown,
+     không bọc khối code). Khác → dán như vậy, thêm ngay trên báo cáo một dòng:
+     `⚠ Kết quả /vnr-review đã lệch với code hiện tại — bạn nên chạy lại /vnr-review.` Không có file → `/vnr-review: chưa chạy`.
+  3. Không có gì ở (1) và không ở trong workspace → `chưa chạy` như cũ.
+- Báo cáo đính kèm có `VERDICT:FAIL` → vẫn đính kèm, không chặn; ngay trước P4 in cho SE đúng một dòng:
+  `Báo cáo /vnr-review còn FAIL — PR vẫn được tạo, reviewer sẽ thấy trong mô tả.`
 
 ## P4. Tạo PR
 1. Remote (`git remote get-url origin`) là TFS/Azure DevOps (có `/_git/<repo>`) và MCP `tfs` nối được → tool `create_pull_request`

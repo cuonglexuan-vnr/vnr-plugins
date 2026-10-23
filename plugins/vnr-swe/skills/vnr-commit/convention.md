@@ -25,12 +25,13 @@ mô tả PR tiếng Việt.
 - Tiêu đề: cùng dạng tiêu đề commit, tiếng Anh. Nhánh có đúng một commit → lấy nguyên tiêu đề commit đó; nhiều commit → một dòng mới tóm cả nhánh.
 - Mô tả: tiếng Việt, đúng bốn mục theo thứ tự:
   `## Vì sao` (1–2 câu: vấn đề hay PBI) · `## Thay đổi` (gạch đầu dòng từ các commit; breaking/migration nói rõ) ·
-  `## Kiểm tra` (gate đã chạy và kết quả in ra; chưa chạy ghi `chưa chạy`; dán báo cáo `/vnr-review` nếu có) · `## Work item` (`#<id>` hoặc `—`).
+  `## Kiểm tra` (gate đã chạy và kết quả in ra; chưa chạy ghi `chưa chạy`; dán báo cáo `/vnr-review` nếu có — tự động khi chạy trong workspace `vnr.hrm.wiki`) · `## Work item` (`#<id>` hoặc `—`).
 - Không footer ghi công cụ.
 
 ## never-commit
 Luôn loại khỏi stage (kể cả khi `.gitignore` chưa có): `.env`, `.env.*`, `.claude/settings.local.json`, `work/`, `.superpowers/`,
 `.self/`, `*.binlog`, `TestResults/`, `node_modules/`, `dist/`, `bin/`, `obj/`.
+Đổi danh sách này → đổi cả `NEVER_COMMIT` trong `skills/vnr-review/scripts/diff.mjs` (dấu vân tay báo cáo mà `/vnr-pr` so với commit).
 
 ## scopes
 Lấy từ đường dẫn file thay đổi, ưu tiên theo thứ tự: tên project Nx (`libs/<…>/<name>/`, `apps/<name>/` → `<name>`) · thư mục module

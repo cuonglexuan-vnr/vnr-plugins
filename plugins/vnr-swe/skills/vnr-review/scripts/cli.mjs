@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, rmSync
 import { fileURLToPath } from 'node:url';
 import path, { join, resolve } from 'node:path';
 import os from 'node:os';
-import { findRepos, baseline, collectDiff, git } from './diff.mjs';
+import { findRepos, baseline, collectDiff, contentTree, git } from './diff.mjs';
 import { loadRules } from './rules.mjs';
 import { buildPlan, DEFAULT_CONFIG, hunkRanges } from './plan.mjs';
 import { buildLedger, resultOk, normalizeResult, nextDispatch } from './ledger.mjs';
@@ -18,7 +18,7 @@ const norm = p => (process.platform === 'win32' ? p.toLowerCase() : p);
 const realOr = p => { try { return realpathSync(p); } catch { return p; } };
 const PLUGIN_JSON = fileURLToPath(new URL('../../../.claude-plugin/plugin.json', import.meta.url));
 // Các tuỳ chọn bắt buộc có giá trị chuỗi — cờ trần là lỗi cú pháp.
-const VALUE_OPTS = ['ws', 'repo', 'base', 'aspect', 'state', 'plugin-version', 'elapsed-ms'];
+const VALUE_OPTS = ['ws', 'repo', 'base', 'aspect', 'state', 'plugin-version', 'elapsed-ms', 'save'];
 // Lệnh đọc state: mọi lỗi đầu vào là "lỗi chạy" (exit 4), không phải lỗi cú pháp.
 const STATE_CMDS = ['ledger', 'verify-jobs', 'report'];
 // Lời báo cho SE (không nhắc --ws: cờ đó chỉ dành cho người bảo trì, có trong --help).
@@ -33,7 +33,8 @@ Requires Node >= ${MIN_NODE}.
   plan        [--ws <dir>] [--repo fe|be|<name>] [--base <ref>] [--aspect a,b] [--state <dir>]
   ledger      --state <dir>   next review wave: "RETRY <repo> <fileId> <model> <attempt>" lines, then "PENDING=<n> FAILED=<n>"
   verify-jobs --state <dir>   one job per (cell, rule, file) with FAIL-level findings: "VERIFY <repo> <key> <model>" lines, then "VERIFY=<n>"
-  report      --state <dir> [--ci] [--plugin-version <v>] [--elapsed-ms <n>]   (defaults: plugin.json version, time since plan)
+  report      --state <dir> [--ci] [--save <dir>] [--plugin-version <v>] [--elapsed-ms <n>]   (defaults: plugin.json version, time since plan)
+              --save <dir>: also write each repo's own report to <dir>/<repo>.md (stdout unchanged)
   check       [--ws <dir>]
 
 Exit codes: plan 0 ok / 1 usage, missing rules dir, bad config.json or all repos failed / 2 nothing changed
@@ -130,6 +131,7 @@ function cmdPlan(o) {
       const branch = git(repo.root, ['rev-parse', '--abbrev-ref', 'HEAD']).trim();
       const plan = buildPlan({ repo, baseline: b, diff, rules, config, siblings, commitMessages, commits, branch, aspects: o.aspect ? String(o.aspect).split(',') : null });
       plan.sha7 = git(repo.root, ['rev-parse', '--short=7', 'HEAD']).trim();
+      plan.treeId = contentTree(repo.root);   // /vnr-pr so với HEAD^{tree} sau khi commit để biết báo cáo còn khớp code
       plan.siblings = siblings;
       writeFileSync(join(state, `plan-${repo.name}.json`), JSON.stringify(plan, null, 1));
       const jobsDir = join(state, 'jobs', repo.name); mkdirSync(jobsDir, { recursive: true });
@@ -240,9 +242,19 @@ function reportImpl(o) {
   const pluginVersion = o['plugin-version'] ?? readJson(PLUGIN_JSON)?.version ?? '?';
   // Phiên bản bộ luật cho người bảo trì (stderr, không vào báo cáo dán PR).
   for (const p of plans) console.error(`rules: ${plans.length > 1 ? `${p.repo.name} ` : ''}${(p.ruleSets ?? []).map(s => `${s.aspect} v${s.version}`).join(' · ') || '(không có)'}`);
-  const { text, verdict, incomplete, coverage, warnings = [] } = renderReport({ plans, ledger, results, verifications, elapsedMs, pluginVersion, ci: !!o.ci });
+  const input = { ledger, results, verifications, elapsedMs, pluginVersion, ci: !!o.ci };
+  const { text, verdict, incomplete, coverage, warnings = [] } = renderReport({ plans, ...input });
   for (const w of warnings) console.error(w);   // mã lạ trong kết quả: cho người bảo trì, không vào báo cáo
   console.log(text);
+  // --save: mỗi repo một file báo cáo riêng (cho /vnr-pr đính kèm), dòng đầu `<!-- vnr-review tree=<treeId> -->` để /vnr-pr kiểm độ mới;
+  // lỗi ghi chỉ báo stderr, không đổi exit code. Plan cũ không có treeId → không có dòng đó (/vnr-pr so sha7).
+  if (o.save) {
+    try {
+      mkdirSync(o.save, { recursive: true });
+      for (const p of plans) writeFileSync(join(o.save, `${p.repo.name}.md`), `${p.treeId ? `<!-- vnr-review tree=${p.treeId} -->\n` : ''}${renderReport({ plans: [p], ...input }).text}
+`);
+    } catch (e) { console.error(`report: không ghi được --save ${o.save} — ${e.message}`); }
+  }
   // CI: chưa kiểm hết là lỗi chạy — cổng không được cho qua dù chưa thấy FAIL.
   if (o.ci && incomplete) { console.error(`Chưa kiểm hết (${coverage?.done ?? '?'}/${coverage?.total ?? '?'} luật) — chạy lại /vnr-review.`); return 4; }
   return verdict === 'FAIL' ? 1 : 0;

@@ -18,6 +18,6 @@ Plugin cho dev VNR: năm lệnh (`/vnr-dev`, `/vnr-review`, `/vnr-toi-muon`, `/v
 | `skills/vnr-toi-muon/` | router làm PBI trong repo bất kỳ (bản sao độc lập của vnr-dev, không vnr-review) + `repo.md` (nhận diện stack/nhánh/gate) — xem AGENTS.md trong đó |
 | `skills/vnr-review/` | review diff trước khi push theo bộ luật `docs/review/` của workspace — xem AGENTS.md trong đó |
 | `skills/vnr-commit/` | commit theo quy ước team, không hỏi; `convention.md` = lớp quy ước mặc định (lớp wiki `docs/review/git-conventions.md` ghi đè theo mục) — xem AGENTS.md trong đó |
-| `skills/vnr-pr/` | push + mở PR (TFS MCP, hoặc in text) với tiêu đề EN, mô tả VI — xem AGENTS.md trong đó |
+| `skills/vnr-pr/` | push + mở PR (TFS MCP, hoặc in text) với tiêu đề EN, mô tả VI; trong workspace wiki đính kèm `work/vnr-review/<repo>.md` — xem AGENTS.md trong đó |
 | `agents/` | agent của `vnr-review` (không có AGENTS.md riêng: validator coi mọi .md trong agents/ là agent) — `vnr-rule-checker.md` kiểm một phần nhóm luật trên phần code thay đổi, trả JSON mỗi mã một dòng; `vnr-rule-verifier.md` tìm bằng chứng bác bỏ finding FAIL của một (mã, file) (confirmed \| wrong); cả hai chỉ Read/Grep/Glob, model sonnet |
 | `claude-md/` | thân các khối CLAUDE.md mà `devhub.claude-md.json` trỏ tới (`hrm-wiki-rules.md` ≤ 40 dòng: workspace HRM; `git-conventions.md`: điều hướng "commit" → `/vnr-commit`, "tạo PR" → `/vnr-pr` ở mọi repo + tóm tắt quy ước) |
