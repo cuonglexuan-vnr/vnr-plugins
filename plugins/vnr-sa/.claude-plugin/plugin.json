@@ -1,5 +1,6 @@
 {
     "name": "vnr-sa",
+    "displayName": "VNR SA",
     "description": "VNR Solution Architect toolkit for Claude Code",
     "version": "1.0.0",
     "author": {

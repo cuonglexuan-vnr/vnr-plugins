@@ -358,3 +358,26 @@ test('chuẩn hoá NFC: mã/nhãn tiếng Việt dạng NFD vẫn được nhậ
   const set = parseRuleFile(MINI.replace('Mức độ', 'Mức độ'.normalize('NFD')).replace('Gợi ý sửa', 'Gợi ý sửa'.normalize('NFD')), { path: 'x.md' });
   assert.equal(set.rules.length, 1); assert.equal(set.rules[0].fix, 'a');
 });
+
+test('title từ frontmatter; thiếu → null', () => {
+  assert.equal(parseRuleFile(SAMPLE, { path: 'slop.md' }).title, 'Dấu hiệu code do AI viết ẩu');
+  assert.equal(parseRuleFile(MINI, { path: 'x.md' }).title, null);
+});
+
+test('proposed: "**Trạng thái:** đề xuất" → true; "hiệu lực" hoặc không có → false', () => {
+  const st = s => parseRuleFile(MINI.replace('**Gợi ý sửa:** a', `**Gợi ý sửa:** a\n**Trạng thái:** ${s}`), { path: 'x.md' }).rules[0].proposed;
+  assert.equal(st('đề xuất — chờ SA duyệt'), true);
+  assert.equal(st('hiệu lực — spec v3.3'), false);
+  assert.equal(parseRuleFile(MINI, { path: 'x.md' }).rules[0].proposed, false);
+});
+
+test('blockForRepo bỏ dòng xuất xứ (Nguồn…) ngoài fence, giữ Gợi ý sửa', () => {
+  const r1 = parseRuleFile(SAMPLE, { path: 'slop.md' }).rules[0];
+  assert.match(r1.block, /\*\*Nguồn:\*\*/);
+  const fe = r1.blockForRepo('fe');
+  assert.doesNotMatch(fe, /\*\*Nguồn:\*\*/); assert.match(fe, /\*\*Gợi ý sửa:\*\*/);
+  const F = '`'.repeat(3);
+  const src = MINI + `**Phê duyệt:** SA\n**Năng lực:** CAP-1\n${F}md\n**Nguồn:** trong fence\n${F}\n`;
+  const b = parseRuleFile(src, { path: 'x.md' }).rules[0].blockForRepo('be');
+  assert.doesNotMatch(b, /Phê duyệt|Năng lực/); assert.match(b, /\*\*Nguồn:\*\* trong fence/);
+});

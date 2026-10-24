@@ -1,15 +1,34 @@
 // Tìm repo trong workspace, baseline so với remote, và hunk của mọi thay đổi chưa push.
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import os from 'node:os';
 
 const MAX_BYTES = 1_000_000;
 const MAX_LINE = 4000;
 const posix = p => p.replace(/\\/g, '/');
 
-export function git(cwd, args, { allowFail = false } = {}) {
-  try { return execFileSync('git', ['-c', 'core.quotepath=off', ...args], { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] }); }
+export function git(cwd, args, { allowFail = false, env } = {}) {
+  try { return execFileSync('git', ['-c', 'core.quotepath=off', ...args], { cwd, env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] }); }
   catch (e) { if (allowFail) return ''; throw new Error(`git ${args.join(' ')} thất bại trong ${cwd}: ${(e.stderr || e.message).toString().trim()}`); }
+}
+
+// Tệp không bao giờ commit — giữ đúng như mục `## never-commit` của skills/vnr-commit/convention.md (đổi một nơi thì đổi cả hai).
+export const NEVER_COMMIT = ['.env', '.env.*', '.claude/settings.local.json', 'work/', '.superpowers/', '.self/', '*.binlog', 'TestResults/', 'node_modules/', 'dist/', 'bin/', 'obj/'];
+// Mục kết thúc bằng `/` là thư mục; mọi mục khớp ở mọi độ sâu như .gitignore.
+const NEVER_COMMIT_SPECS = NEVER_COMMIT.map(e => `:(glob)**/${e.endsWith('/') ? `${e}**` : e}`);
+
+// Dấu vân tay nội dung đã review: tree id của working tree nếu commit ngay bây giờ (`add -A` trừ never-commit, như /vnr-commit stage).
+// Dùng index tạm (GIT_INDEX_FILE) — index thật không bị đụng. Bằng `HEAD^{tree}` sau khi /vnr-commit commit đúng phần đó.
+export function contentTree(repoRoot) {
+  const dir = mkdtempSync(join(os.tmpdir(), 'vnr-review-index-'));
+  const env = { ...process.env, GIT_INDEX_FILE: join(dir, 'index') };
+  try {
+    git(repoRoot, ['read-tree', 'HEAD'], { env });
+    git(repoRoot, ['add', '-A'], { env });
+    git(repoRoot, ['reset', '-q', '--', ...NEVER_COMMIT_SPECS], { env });
+    return git(repoRoot, ['write-tree'], { env }).trim();
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 }
 
 function kindOf(root) {

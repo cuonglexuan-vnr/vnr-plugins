@@ -2,6 +2,8 @@
 
 Plugin Claude Code cho vai trò Solution Architect, phân phối qua marketplace `vnr-marketplace`.
 
+Hướng dẫn cho người dùng: https://sa-hrm.vnrlocal.com/docs/marketplace/user/vnr-sa/tao-pbi-voi-vnr-tfs
+
 ## Skills
 
 | Skill | Mục đích |

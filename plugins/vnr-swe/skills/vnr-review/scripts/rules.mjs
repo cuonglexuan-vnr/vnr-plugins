@@ -8,6 +8,8 @@ const LEVELS = new Set(['FAIL', 'WARN', 'FAIL+WARN', 'RETIRED']);
 const BACKTICK = /`([^`]+)`/g;
 // "Lý do tồn tại" hiện trong báo cáo (Vì / Vì sao) — cắt ở đây để job và plan không phình.
 const MAX_REASON_CHARS = 240;
+// Dòng xuất xứ/quản trị của khối luật — không giúp agent chấm, bỏ khỏi khối gửi đi.
+const PROVENANCE = /^\*\*(Nguồn|Phê duyệt|Kiểm chứng|Trạng thái|Sẵn sàng|Catalog|Chủ sở hữu|Năng lực):\*\*/u;
 
 function normalise(src) { return src.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').normalize('NFC'); }
 
@@ -52,6 +54,7 @@ function compileRegex(spec, code, warnings) {
 }
 
 // Giữ cặp ❌/✅ có header chứa tên repo đang xét (vnr.hrm.web = fe, vnr.hrm.solution = be); không có header repo → giữ.
+// Bỏ dòng xuất xứ (PROVENANCE) nằm ngoài fence.
 function blockForRepo(lines, repo) {
   const other = repo === 'fe' ? /vnr\.hrm\.solution|\bBE\b/ : /vnr\.hrm\.web|\bFE\b/;
   const out = []; let skipping = false, inFence = false;
@@ -59,7 +62,7 @@ function blockForRepo(lines, repo) {
     if (!inFence && /^\*\*(❌ Sai|✅ Đúng)/.test(l)) skipping = other.test(l);
     else if (!inFence && l.startsWith('**')) skipping = false;
     if (l.startsWith('```')) { if (!skipping) out.push(l); inFence = !inFence; if (!inFence && skipping) { skipping = false; } continue; }
-    if (!skipping) out.push(l);
+    if (!skipping && (inFence || !PROVENANCE.test(l))) out.push(l);
   }
   return out.join('\n');
 }
@@ -69,7 +72,7 @@ export function parseRuleFile(raw, { path = '' } = {}) {
   const warnings = [], errors = [];
   const { fm, end } = parseFrontmatter(lines);
   const set = {
-    ok: true, path, aspect: fm.aspect ?? basename(path, '.md'), title: fm.title ?? '', repo: fm.repo ?? null,
+    ok: true, path, aspect: fm.aspect ?? basename(path, '.md'), title: fm.title ?? null, repo: fm.repo ?? null,
     version: typeof fm.version === 'string' ? fm.version : '', schema: typeof fm.schema === 'string' ? fm.schema : null,
     status: fm.status ?? '', model: typeof fm.model === 'string' ? fm.model : null,
     appliesTo: Array.isArray(fm.applies_to) ? fm.applies_to : [], excludes: Array.isArray(fm.excludes) ? fm.excludes : [],
@@ -116,6 +119,7 @@ export function parseRuleFile(raw, { path = '' } = {}) {
     set.rules.push({
       code, name: name.trim(), level: lv.first, scopeKind, scope: scopeKind !== 'files' ? [] : scope.length ? scope : [...set.appliesTo], pathGates, regexGates, regexHints,
       readMore, fix: field(lines2, 'Gợi ý sửa')?.text ?? '', reason: (field(lines2, 'Lý do tồn tại')?.text ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_REASON_CHARS), noIgnore: /^\*\*Bỏ qua được:\*\*\s*không/mu.test(lines2.join('\n')),
+      proposed: /^\*\*Trạng thái:\*\*\s*đề xuất/mu.test(lines2.join('\n')),
       model, block: lines2.join('\n'), blockForRepo: repo => blockForRepo(lines2, repo),
     });
   });

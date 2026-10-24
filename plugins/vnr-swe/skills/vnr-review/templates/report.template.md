@@ -1,66 +1,101 @@
-Đây là khuôn đầu ra của `CLI report`. Orchestrator dán stdout NGUYÊN VĂN trong một khối ``` — không chuyển sang bullet, không gộp finding,
-không dịch/đổi từ (`vs`, `·`, `→`), không thêm cột, không thêm bảng. Chỉ được thêm đúng một dòng sau khối: `Gõ "sửa theo báo cáo" để tôi sửa các finding FAIL/WARN.`
+Khuôn đầu ra của `CLI report` (markdown). Orchestrator dán stdout NGUYÊN VĂN vào câu trả lời cho SE, KHÔNG bọc trong code fence
+(để tiêu đề, bảng, thẻ hiện đúng markdown); không chuyển bảng sang bullet, không gộp/đổi dòng, không dịch hay đổi từ, không thêm bảng hay lời bình.
+Bảng chỉ có tên file; mỗi dòng bảng có một thẻ cùng số (`**#<n> · <FAIL|WARN> · <mã>**`) mang đường dẫn đầy đủ (nhiều chỗ thì liệt kê từng chỗ, tối đa 10), Vấn đề, Sửa.
+Dòng `VERDICT:<PASS|WARN|FAIL>` luôn là dòng cuối báo cáo (có hay không `--ci`) và được dán cùng; `--ci` có thêm `COVERAGE=` và `RULES=` sau nó.
+Không `--ci`: được thêm đúng một dòng sau báo cáo (sau `VERDICT:`), cách một dòng trống:
+Gõ "sửa theo báo cáo" để tôi sửa các mục FAIL (không commit).
+`--ci`: không thêm gì. Mỗi ví dụ dưới đây (sau dòng `---` và nhãn in đậm) là đúng hình dạng phải hiện cho SE.
 
-## Khuôn (mục nào rỗng thì bỏ cả mục; thứ tự cố định)
-```
-Tổng: <repo1> <FAIL|WARN|PASS> · <repo2> <…>          (chỉ khi review nhiều repo; sau đó là từng repo như dưới)
+---
+**Ví dụ FAIL, một repo (exit 1) — đầu ra thật, dán nguyên văn:**
+## vnr-review — FAIL (1 FAIL · 2 WARN) · vnr.hrm.solution @ feat/job-relation-chart (adbec63) · 58 file (2 chưa git add) · 1m54s
 
-KẾT LUẬN: <FAIL|WARN|PASS> — <a> FAIL · <b> WARN · <c> nghi ngờ · <d> cần ngữ cảnh
-Review  <repo> @ <nhánh>  (vs <baseline> · <N> file · <m>m<ss>s)
-Luật: <aspect> v<ver> · <aspect> v<ver>        (plugin vnr-swe <version>)
+| # | Kết quả | Luật | Vị trí |
+|---|---|---|---|
+| 1 | FAIL | DATA-20 | script_seed_p071_job_relation_chart.sql:1 |
+| 2 | WARN | SLOP-11 | JobRelationChartBuilder.cs:7 (+1) |
+| 3 | WARN | NAME-08 | JobRelationChartController.cs:12 |
 
-FAIL                                  (rồi tới WARN, cùng khuôn)
-  <MÃ>  <tên luật>  (<n> chỗ)         (nhóm theo mã luật: Vì và → in một lần cho cả nhóm)
-    Vì: <why của checker, không có thì Lý do tồn tại của luật; ≤ 200 ký tự>
-    → <gợi ý sửa>
-    <file>:<dòng>   `<trích ≤ 100 ký tự>`
-    <file>:<dòng>   `<trích>`  (chưa chắc)     (verifier hạ FAIL xuống WARN thì đánh dấu ở dòng vị trí)
-      Vì: <lý do riêng>                        (chỉ khi lý do của vị trí này khác lý do chung của nhóm)
+**FAIL**: phải sửa trước khi push · **WARN**: nên xem; cố ý giữ thì ghi chú bỏ qua (xem user-guide)
 
-Nghi ngờ (<tổng>) — chưa kiểm sâu; /vnr-review --full để kiểm
-  <MÃ>  <tên luật>  (<số lần>)
-    Vì sao: <Lý do tồn tại của luật; ≤ 200 ký tự, một lần cho mỗi mã>
-    <file>:<dòng>   `<trích ≤ 80 ký tự>`
-    … và <k> dòng nữa
+**#1 · FAIL · DATA-20**
+- Vị trí: `SQL/PostgreSQL/Migration/script_seed_p071_job_relation_chart.sql:1`
+- Vấn đề: Script seed INSERT thẳng, không kiểm tra bản ghi đã có: chạy lại migration sẽ nhân đôi dữ liệu cấu hình
+- Sửa: bọc mỗi INSERT bằng `WHERE NOT EXISTS` theo khoá nghiệp vụ
 
-Cần ngữ cảnh (<n>)   <MÃ> <file> — <ghi chú>
-Bỏ qua có lý do (<n>)   <MÃ> <file>:<dòng>  "<lý do>"
-Marker không hợp lệ (<n>)   <MÃ> <file>:<dòng> — <lý do>
-Chưa kiểm (<n>)   <MÃ> <file>      → chạy lại với --aspect hoặc tăng maxJobs
-File bỏ qua (<n>)   <file> (<lý do>)
+**#2 · WARN · SLOP-11**
+- Vị trí (2 chỗ):
+  - `Src/Modules/Hre/Vnr.Hrm.Hre.Application/JobRelationChart/JobRelationChartBuilder.cs:7`
+  - `Src/Modules/Hre/Vnr.Hrm.Hre.Application/JobRelationChart/JobRelationChartBuilder.cs:31`
+- Vấn đề: Comment lặp lại đúng tên hàm, không nói thêm điều gì
+- Sửa: xoá comment, hoặc ghi lý do thay vì mô tả
 
-VERDICT:<FAIL|WARN|PASS>
-```
+**#3 · WARN · NAME-08**
+- Vị trí: `Src/Modules/Hre/Vnr.Hrm.Hre.Api/Controllers/JobRelationChartController.cs:12`
+- Vấn đề: Tên action &lt;GetData> không nói dữ liệu gì
+- Sửa: đổi thành `GetJobRelationChart`
 
-## Ví dụ (đầu ra thật của `renderReport`)
-```
-KẾT LUẬN: FAIL — 3 FAIL · 1 WARN · 2 nghi ngờ · 1 cần ngữ cảnh
-Review  vnr.hrm.web @ feat/x  (vs origin/feat/x · 14 file · 2m50s)
-Luật: arch-fe v1 · name v1 · slop v2        (plugin vnr-swe 1.1.0)
-
-FAIL
-  NAME-20  Khoá i18n 4 cấp `{module}.{screen}.{function}.{element}` camelCase  (3 chỗ)
-    Vì: Khoá lồng có lá snake_case và chuỗi đường dẫn sâu hơn 4 cấp camelCase, không thuộc Ngoại lệ hay allowlist.
-    → Đặt khoá `{module}.{screen}.{function}.{element}` camelCase; chạy `npm run validate:i18n`.
-    apps/supertool/public/assets/i18n/EN.json:6270   `"host_action_after_apply": "Verb run after apply",`
-    apps/supertool/public/assets/i18n/EN.json:6271   `"host_action_after_apply_hint": "Only verbs in the catalogue…`
-    apps/supertool/public/assets/i18n/VN.json:6270   `"host_action_after_apply": "Động từ chạy sau khi áp dụng",`
-
-WARN
-  ARCH-FE-04  Thay đổi lib lõi đi PR riêng  (1 chỗ)
-    Vì: Sửa lib lõi lẫn vào PR tính năng khó review.
-    → Tách PR.
-    libs/ui/x.ts:18   `x`  (chưa chắc)
-
-Nghi ngờ (2) — chưa kiểm sâu; /vnr-review --full để kiểm
-  UIUX-28  Thao tác hàng loạt gửi theo khoá đã chọn  (1)
-    Vì sao: Lưới phân trang server giữ lựa chọn qua các trang, nhưng chỉ có bản ghi của trang đã nạp.
-    apps/supertool/src/app/core/verdi-widget/supertool-verdi-host-actions.ts:90   `runtime.execute(parsed.key, { selectedIds })`
-  NAME-17  Interface FE của miền nghiệp vụ có tiền tố `I`  (1)
-    Vì sao: FE quy định `IEmployee`; phân biệt interface với class cùng tên.
-    apps/supertool/src/app/core/verdi-widget/supertool-verdi-widget.contract.ts:135   `export interface VerdiHostSaved {`
-
-Cần ngữ cảnh (1)   SLOP-10 apps/x/e.ts — thiếu {be}/…/UserController.cs
+Đã kiểm 55 luật, đủ 6/6 nhóm · 0 chỗ bỏ qua theo ghi chú · 7 file quá lớn chưa đọc hết · vnr-review 2.0.0
 
 VERDICT:FAIL
-```
+
+---
+**Ví dụ PASS (exit 0) — đầu ra thật, dán nguyên văn:**
+## vnr-review — PASS · vnr.hrm.web @ feat/verdi-post-approve (a1b2c3d) · 12 file · 2m40s
+
+Đã kiểm 4 luật, đủ 3/3 nhóm · 0 chỗ bỏ qua theo ghi chú · vnr-review 2.0.0
+
+VERDICT:PASS
+
+---
+**Ví dụ chưa kiểm hết, `--ci` (verdict tối đa WARN; exit 4, stderr `Chưa kiểm hết …`) — đầu ra thật, dán nguyên văn:**
+## vnr-review — WARN · vnr.hrm.api @ feat/payroll (b2c3d4e) · 5 file
+
+⚠ Chưa kiểm hết: nhóm "Kiến trúc BE" còn 2 luật chưa xem. Gõ /vnr-review be để chạy lại.
+
+Đã kiểm 2 luật, đủ 0/1 nhóm · 0 chỗ bỏ qua theo ghi chú · vnr-review 2.0.0
+
+VERDICT:WARN
+COVERAGE=2/4
+RULES=arch-be v1
+
+---
+**Ví dụ nhiều repo (repo PASS chỉ một dòng) — đầu ra thật, dán nguyên văn:**
+## vnr-review — FAIL · vnr.hrm.web FAIL (2 FAIL · 1 WARN) · vnr.hrm.api PASS · 17 file · 2m40s
+
+### vnr.hrm.web (a1b2c3d)
+
+| # | Kết quả | Luật | Vị trí |
+|---|---|---|---|
+| 1 | FAIL | NAME-20 | EN.json:6270 (+5) |
+| 2 | FAIL | FW-FE-33 | property-panel.component.ts:15 |
+| 3 | WARN | UIUX-28 | supertool-verdi-host-actions.ts:90 |
+
+**FAIL**: phải sửa trước khi push · **WARN**: nên xem; cố ý giữ thì ghi chú bỏ qua (xem user-guide)
+
+**#1 · FAIL · NAME-20**
+- Vị trí (6 chỗ):
+  - `apps/supertool/public/assets/i18n/EN.json:6270`
+  - `apps/supertool/public/assets/i18n/EN.json:6271`
+  - `apps/supertool/public/assets/i18n/EN.json:6272`
+  - `apps/supertool/public/assets/i18n/EN.json:6273`
+  - `apps/supertool/public/assets/i18n/EN.json:6274`
+  - `apps/supertool/public/assets/i18n/EN.json:6275`
+- Vấn đề: Khoá i18n đặt sai quy ước (6 khoá)
+- Sửa: đổi sang dạng `verdi.widget.postApprove.hint`
+
+**#2 · FAIL · FW-FE-33**
+- Vị trí: `libs/ui-framework/src/property-panel/property-panel.component.ts:15`
+- Vấn đề: Lib dùng chung import thẳng ng-zorro
+- Sửa: khai ng-zorro là peer dependency của lib
+
+**#3 · WARN · UIUX-28**
+- Vị trí: `apps/supertool/src/app/core/verdi-widget/supertool-verdi-host-actions.ts:90`
+- Vấn đề: Chọn nhiều trang rồi bấm hàng loạt chỉ xử lý trang đang xem
+- Sửa: gửi danh sách khoá đã chọn
+
+Đã kiểm 4 luật, đủ 3/3 nhóm · 1 chỗ bỏ qua theo ghi chú · vnr-review 2.0.0
+
+### vnr.hrm.api — PASS · đã kiểm 4 luật
+
+VERDICT:FAIL

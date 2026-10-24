@@ -9,15 +9,16 @@ import { fileURLToPath } from 'node:url';
 import { buildPrompt } from './cli.mjs';
 
 const CLI = fileURLToPath(new URL('./cli.mjs', import.meta.url));
+const WRONG_FOLDER = 'Không thấy docs/review/rules. Mở terminal tại thư mục vnr.hrm.wiki (nơi có docs/ và src/) rồi gõ lại /vnr-review.';
+const REPO = 'vnr.hrm.web', CELL = 'fe_slop_1';
 let ws, state;
 const sh = (cwd, ...a) => execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', ...a], { cwd, encoding: 'utf8' });
 const run = (...args) => spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf8' });
+const readJson = f => JSON.parse(readFileSync(f, 'utf8'));
+const tmp = prefix => mkdtempSync(join(os.tmpdir(), prefix));
+const withTmp = (prefix, fn) => { const d = tmp(prefix); try { fn(d); } finally { rmSync(d, { recursive: true, force: true }); } };
 
-before(() => {
-  ws = mkdtempSync(join(os.tmpdir(), 'vnr-review-ws-')); state = join(ws, 'state');
-  mkdirSync(join(ws, 'docs/review/rules'), { recursive: true });
-  writeFileSync(join(ws, 'docs/review/config.json'), JSON.stringify({ maxJobs: 5 }));
-  writeFileSync(join(ws, 'docs/review/rules/slop.md'), `---
+const SLOP = `---
 schema: "1"
 aspect: slop
 title: "SLOP"
@@ -35,24 +36,32 @@ Từ điển.
 ### SLOP-01 — Dữ liệu mẫu
 **Mức độ:** FAIL
 **Phạm vi:** \`apps/**/*.ts\`
-**Cách phát hiện:**
-- regex-gate: /MOCK/u
 **Cần đọc thêm:** —
 **Gợi ý sửa:** Bỏ mock.
 ### SLOP-02 — Ghi chú
 **Mức độ:** WARN
-**Cách phát hiện:**
-- regex-gate: /TODO/u
 **Gợi ý sửa:** Sửa comment.
 ### SLOP-03 — Commit message
 **Mức độ:** WARN
 **Phạm vi:** \`(commit message)\`
-**Cách phát hiện:**
-- regex-gate: /^update/u
 **Gợi ý sửa:** Đặt tên commit theo quy ước.
-`);
+`;
+const PROPOSED = `### SLOP-04 — Đề xuất
+**Mức độ:** FAIL
+**Trạng thái:** đề xuất
+**Cách phát hiện:**
+- regex-gate: notaregex
+**Gợi ý sửa:** x.
+`;
+const NO_S1 = '---\nschema: "1"\naspect: other\nversion: "1"\nrepo: both\napplies_to:\n  - "apps/**/*.ts"\n---\n## 3. Các luật\n### OTH-01 — X\n**Mức độ:** WARN\n**Gợi ý sửa:** x.\n';
+
+before(() => {
+  ws = tmp('vnr-review-ws-'); state = join(ws, 'state');
+  mkdirSync(join(ws, 'docs/review/rules'), { recursive: true });
+  writeFileSync(join(ws, 'docs/review/config.json'), JSON.stringify({ maxJobs: 5 }));   // khoá v1 lạ: bị bỏ qua
+  writeFileSync(join(ws, 'docs/review/rules/slop.md'), SLOP);
   const remote = join(ws, 'remote.git'); sh(ws, 'init', '--bare', '-b', 'develop', remote);
-  const fe = join(ws, 'src/vnr.hrm.web'); mkdirSync(join(ws, 'src')); sh(ws, 'clone', '-q', remote, fe);
+  const fe = join(ws, 'src', REPO); mkdirSync(join(ws, 'src')); sh(ws, 'clone', '-q', remote, fe);
   writeFileSync(join(fe, 'nx.json'), '{}'); mkdirSync(join(fe, 'apps')); writeFileSync(join(fe, 'apps/a.ts'), 'ok\n');
   sh(fe, 'add', '-A'); sh(fe, 'commit', '-qm', 'base'); sh(fe, 'push', '-qu', 'origin', 'develop');
   writeFileSync(join(fe, 'notes.txt'), 'n\n'); sh(fe, 'add', 'notes.txt'); sh(fe, 'commit', '-qm', 'update stuff');   // commit chưa push cho luật phạm vi commit
@@ -60,71 +69,260 @@ Từ điển.
 });
 after(() => rmSync(ws, { recursive: true, force: true }));
 
+// plan vào một state; trả stdout, plan và ledger đã ghi.
+const planInto = st => {
+  const p = run('plan', '--ws', ws, '--state', st);
+  assert.equal(p.status, 0, p.stdout + p.stderr);
+  return { p, plan: readJson(join(st, `plan-${REPO}.json`)), ledger: readJson(join(st, 'ledger.json')) };
+};
+const writeResult = (st, rules) => {
+  mkdirSync(join(st, 'results', REPO), { recursive: true });
+  writeFileSync(join(st, 'results', REPO, `${CELL}.json`), JSON.stringify({ cell: 'fe/slop/1', rules }));
+};
+const okRows = (slop01 = [], slop02 = []) => [
+  { code: 'SLOP-01', status: 'checked', findings: slop01 }, { code: 'SLOP-02', status: 'checked', findings: slop02 }, { code: 'SLOP-03', status: 'n/a', note: 'commit ổn' },
+];
+const mock = line => ({ file: 'apps/a.ts', line, excerpt: 'const MOCK = 1;', issue: 'Dữ liệu mẫu trong code', fix: 'Bỏ hằng MOCK' });
+
 test('check writes INDEX and digests', () => {
   const r = run('check', '--ws', ws);
   assert.equal(r.status, 0, r.stderr); assert.match(r.stdout, /3 luật đọc được/);
   assert.ok(existsSync(join(ws, 'docs/review/INDEX.md')) && existsSync(join(ws, '.claude/rules/review-fe.md')));
 });
 
-test('plan writes one job per FAIL candidate with a prompt; report renders from results', () => {
-  const p = run('plan', '--ws', ws, '--state', state);
-  assert.equal(p.status, 0, p.stderr); assert.match(p.stdout, /vnr\.hrm\.web/); assert.match(p.stdout, /1 job/);
-  const plan = JSON.parse(readFileSync(join(state, 'plan-vnr.hrm.web.json'), 'utf8'));
-  assert.equal(plan.jobs.length, 1); assert.equal(plan.regexWarnings.length, 2);
-  assert.ok(plan.regexWarnings.some(w => w.code === 'SLOP-03' && /^\(commit [0-9a-f]+\)$/.test(w.file) && w.text === 'update stuff'), 'luật commit chạy trên commit, không trên dòng code');
-  const jobFile = readdirSync(join(state, 'jobs/vnr.hrm.web')).find(f => f !== 'index.json');
-  const index = JSON.parse(readFileSync(join(state, 'jobs/vnr.hrm.web/index.json'), 'utf8'));
-  assert.deepEqual(Object.keys(index), ['repo', 'repoRoot', 'branch', 'baseline', 'jobs']);
-  assert.equal(index.repo, 'vnr.hrm.web'); assert.equal(index.repoRoot, plan.repo.root); assert.equal(index.branch, plan.branch); assert.equal(index.baseline.ref, plan.baseline.ref);
-  assert.deepEqual(index.jobs.map(j => [j.id, j.code, j.model, j.file, j.files, j.noIgnore]), [['SLOP-01__1', 'SLOP-01', 'haiku', 'apps/a.ts', ['apps/a.ts'], false]]);
+test('--help lists every command and the new exit codes', () => {
+  const r = run('--help');
+  assert.equal(r.status, 0);
+  for (const c of ['plan', 'ledger', 'verify-jobs', 'report', 'check']) assert.match(r.stdout, new RegExp(`^  ${c} `, 'm'));
+  assert.match(r.stdout, /--save <dir>/);
+  assert.match(r.stdout, /ledger 0 ok \/ 4/); assert.match(r.stdout, /verify-jobs 0 ok \/ 4/); assert.match(r.stdout, /\(--ci\) incomplete coverage/);
+  assert.doesNotMatch(r.stdout, /--model|--full/);
+});
+
+test('plan writes plan, ledger and one job + prompt per cell; no index.json', () => {
+  const { p, plan, ledger } = planInto(state);
+  const lines = p.stdout.trim().split('\n');
+  assert.match(p.stdout, /^vnr\.hrm\.web @ \S+ \(vs origin\/develop, upstream\) · 2 file · 1 nhóm · 3 luật trong phạm vi · 1 lượt review$/m);
+  assert.deepEqual(lines.slice(-3).map(l => l.split('=')[0]), ['STATE', 'PARALLEL', 'CELLS']);
+  assert.equal(lines.at(-1), `CELLS=${ledger.cells.length}`); assert.equal(lines.at(-2), 'PARALLEL=8');
+  assert.match(plan.sha7, /^[0-9a-f]{7}$/); assert.match(plan.treeId, /^[0-9a-f]{40}$/);
+  assert.deepEqual(ledger.cells.map(c => [c.id, c.resultFile, c.attempts, c.failed]), [['fe/slop/1', `results/${REPO}/${CELL}.json`, 0, false]]);
+  assert.deepEqual(readdirSync(join(state, 'jobs', REPO)).sort(), [`${CELL}.json`, `${CELL}.prompt.md`]);
+  const job = readJson(join(state, 'jobs', REPO, `${CELL}.json`));
+  assert.equal(job.id, 'fe/slop/1'); assert.equal(job.model, 'sonnet'); assert.ok(!('prompt' in job));
+  assert.deepEqual(job.codes, ['SLOP-01', 'SLOP-02', 'SLOP-03']);
+  const prompt = readFileSync(join(state, 'jobs', REPO, `${CELL}.prompt.md`), 'utf8');
+  for (const c of job.codes) assert.ok(prompt.includes(c), c);
+  assert.ok(prompt.includes('ĐÚNG MỘT dòng cho MỖI mã: SLOP-01, SLOP-02, SLOP-03'));
+  assert.ok(prompt.includes(`Repo: ${plan.repo.root}.`)); assert.doesNotMatch(prompt, /CWD/);
+  assert.match(prompt, /const MOCK = 1/); assert.match(prompt, /Từ điển\./); assert.match(prompt, /### \(commit [0-9a-f]+\)\n@@ commit/);
   assert.match(readFileSync(join(state, 'started.json'), 'utf8'), /"startedAt":"\d{4}-/);
-  const tpl = JSON.parse(readFileSync(join(state, 'verify-jobs/vnr.hrm.web/SLOP-01__1.template.json'), 'utf8'));
-  assert.deepEqual(Object.keys(tpl).sort(), ['block', 'hunks', 'jobId', 'readMoreFiles', 'repoRoot']); assert.ok(tpl.hunks.length);
-  const job = JSON.parse(readFileSync(join(state, 'jobs/vnr.hrm.web', jobFile), 'utf8'));
-  assert.match(job.prompt, /ĐÚNG MỘT luật/); assert.match(job.prompt, /SLOP-01/); assert.match(job.prompt, /const MOCK = 1/); assert.match(job.prompt, /Từ điển\./);
-  mkdirSync(join(state, 'results/vnr.hrm.web'), { recursive: true });
-  writeFileSync(join(state, 'results/vnr.hrm.web', jobFile), JSON.stringify({ code: 'SLOP-01', verdict: 'FAIL', findings: [{ file: 'apps/a.ts', line: 2, excerpt: 'const MOCK = 1;', why: 'mock' }], needs_context: [] }));
-  const r = run('report', '--state', state, '--ci', '--plugin-version', '1.1.0');
-  assert.equal(r.status, 1); assert.match(r.stdout, /KẾT LUẬN: FAIL — 1 FAIL · 0 WARN · 2 nghi ngờ/); assert.match(r.stdout, /VERDICT:FAIL\s*$/);
-  // Không truyền cờ: phiên bản plugin và thời gian chạy tự lấy từ plugin.json / started.json.
-  const auto = run('report', '--state', state);
-  assert.match(auto.stdout, /plugin vnr-swe \d+\.\d+/); assert.match(auto.stdout, /· \d+m\d\ds\)/);
-  // Job FAIL rồi bị tắt: file kết quả hỏng bị bỏ qua và báo stderr, job hiện là "không có kết quả".
-  writeFileSync(join(state, 'results/vnr.hrm.web', jobFile), '{oops');
-  const bad = run('report', '--state', state, '--ci');
-  assert.match(bad.stderr, /bỏ qua file kết quả hỏng: SLOP-01__1\.json/); assert.match(bad.stdout, /SLOP-01 apps\/a\.ts — không có kết quả/);
-  assert.equal(bad.status, 0);
 });
 
-test('plan exits 2 when nothing changed', () => {
-  const clean = mkdtempSync(join(os.tmpdir(), 'vnr-review-clean-'));
-  try {
-    mkdirSync(join(clean, 'docs/review/rules'), { recursive: true }); writeFileSync(join(clean, 'docs/review/rules/x.md'), readFileSync(join(ws, 'docs/review/rules/slop.md')));
-    mkdirSync(join(clean, 'src')); sh(clean, 'clone', '-q', join(ws, 'remote.git'), join(clean, 'src/vnr.hrm.web'));
+test('plan: luật đề xuất được đếm, cảnh báo regex-gate bị ẩn, cảnh báo khác vẫn in', () => {
+  withTmp('vnr-review-warn-', w => {
+    mkdirSync(join(w, 'docs/review/rules'), { recursive: true });
+    writeFileSync(join(w, 'docs/review/rules/slop.md'), SLOP + PROPOSED);
+    writeFileSync(join(w, 'docs/review/rules/other.md'), NO_S1);
+    mkdirSync(join(w, 'src')); const fe = join(w, 'src', REPO); sh(w, 'clone', '-q', join(ws, 'remote.git'), fe);
+    writeFileSync(join(fe, 'apps/a.ts'), 'ok\nconst MOCK = 1;\n');
+    const p = run('plan', '--ws', w, '--state', join(w, 'st'));
+    assert.equal(p.status, 0, p.stdout + p.stderr);
+    assert.match(p.stdout, / · 2 nhóm · 3 luật trong phạm vi · 2 lượt review · bỏ qua 1 luật đề xuất$/m);
+    assert.doesNotMatch(p.stdout + p.stderr, /bỏ gate/);
+    assert.match(p.stdout, /§1 rỗng/);
+  });
+});
+
+test('ledger: không kết quả → RETRY 1, RETRY 2, rồi FAILED; ghi lại ledger.json', () => {
+  withTmp('vnr-review-ledger-', d => {
+    const st = join(d, 'st'); planInto(st);
+    let r = run('ledger', '--state', st);
+    assert.equal(r.status, 0, r.stderr); assert.equal(r.stdout.trim(), `RETRY ${REPO} ${CELL} sonnet 1\nPENDING=1 FAILED=0`);
+    r = run('ledger', '--state', st);
+    assert.equal(r.stdout.trim(), `RETRY ${REPO} ${CELL} sonnet 2\nPENDING=1 FAILED=0`);
+    r = run('ledger', '--state', st);
+    assert.equal(r.status, 0); assert.doesNotMatch(r.stdout, /RETRY/); assert.match(r.stdout, /^PENDING=0 FAILED=1$/m);
+    const l = readJson(join(st, 'ledger.json'));
+    assert.equal(l.cells[0].attempts, 2); assert.equal(l.cells[0].failed, true);
+  });
+});
+
+test('ledger: ô đã có kết quả hợp lệ → không RETRY, PENDING=0, attempts không tăng', () => {
+  withTmp('vnr-review-ledger-ok-', d => {
+    const st = join(d, 'st'); planInto(st);
+    writeResult(st, [{ code: 'SLOP-01', status: 'PASS', findings: null }, { code: 'SLOP-02' }, { code: 'SLOP-03', status: 'n/a' }]);
+    for (let i = 0; i < 3; i++) assert.equal(run('ledger', '--state', st).stdout.trim(), 'PENDING=0 FAILED=0');
+    assert.equal(readJson(join(st, 'ledger.json')).cells[0].attempts, 0);
+  });
+});
+
+test('ledger: state hỏng / thiếu → exit 4', () => {
+  assert.equal(run('ledger', '--state').status, 4);
+  assert.equal(run('ledger').status, 4);
+  withTmp('vnr-review-ledger-bad-', d => {
+    const r = run('ledger', '--state', d);
+    assert.equal(r.status, 4); assert.match(r.stderr, /ledger\.json/);
+  });
+});
+
+test('verify-jobs: một job cho mỗi (mã FAIL, file trong diff); WARN và file ngoài diff không verify; chạy lại như cũ', () => {
+  withTmp('vnr-review-vj-', d => {
+    const st = join(d, 'st'); const { plan } = planInto(st);
+    const f = plan.cells[0].files.indexOf('apps/a.ts');
+    assert.equal(run('verify-jobs', '--state', st).stdout.trim(), 'VERIFY=0', 'chưa có kết quả → không job');
+    writeResult(st, okRows([mock(2), mock(3), { ...mock(1), file: 'apps/zzz.ts' }], [{ ...mock(2), issue: 'TODO' }]));
+    const r = run('verify-jobs', '--state', st);
+    const key = `${CELL}-SLOP-01-${f}`;
+    assert.equal(r.status, 0, r.stderr); assert.equal(r.stdout.trim(), `VERIFY ${REPO} ${key} sonnet\nVERIFY=1`);
+    assert.deepEqual(readdirSync(join(st, 'verify-jobs', REPO)), [`${key}.json`]);
+    const job = readJson(join(st, 'verify-jobs', REPO, `${key}.json`));
+    assert.deepEqual(Object.keys(job).sort(), ['block', 'cell', 'code', 'file', 'findings', 'hunk', 'key', 'repoRoot']);
+    assert.equal(job.repoRoot, plan.repo.root); assert.equal(job.cell, 'fe/slop/1'); assert.equal(job.code, 'SLOP-01'); assert.equal(job.file, 'apps/a.ts');
+    assert.equal(job.key, key); assert.match(job.block, /SLOP-01/); assert.match(job.hunk, /const MOCK = 1/); assert.deepEqual(job.findings.map(x => x.line), [2, 3]);
+    assert.equal(run('verify-jobs', '--state', st).stdout, r.stdout, 'idempotent');
+    assert.deepEqual(readdirSync(join(st, 'verify-jobs', REPO)), [`${key}.json`]);
+  });
+});
+
+test('verify-jobs: finding FAIL trên file giả (commit) cũng được verify, hunk là nội dung commit', () => {
+  withTmp('vnr-review-vj2-', d => {
+    const st = join(d, 'st'); const { plan } = planInto(st);
+    const files = plan.cells[0].files, commit = files.find(x => x.startsWith('(commit '));
+    const key = `${CELL}-SLOP-01-${files.indexOf(commit)}`;
+    writeResult(st, okRows([{ ...mock(1), file: commit }]));
+    assert.match(run('verify-jobs', '--state', st).stdout, new RegExp(`^VERIFY ${REPO} ${key} sonnet$`, 'm'));
+    assert.match(readJson(join(st, 'verify-jobs', REPO, `${key}.json`)).hunk, /update stuff/);
+  });
+});
+
+test('verify-jobs: finding ghi đường dẫn tuyệt đối có \\ hoặc ./ vẫn được verify (cùng một job)', () => {
+  withTmp('vnr-review-vj3-', d => {
+    const st = join(d, 'st'); const { plan } = planInto(st);
+    const abs = join(plan.repo.root, 'apps', 'a.ts').replace(/\//g, '\\');
+    writeResult(st, okRows([{ ...mock(2), file: abs }, { ...mock(3), file: './apps/a.ts' }]));
+    const key = `${CELL}-SLOP-01-${plan.cells[0].files.indexOf('apps/a.ts')}`;
+    const r = run('verify-jobs', '--state', st);
+    assert.equal(r.stdout.trim(), `VERIFY ${REPO} ${key} sonnet
+VERIFY=1`);
+    const job = readJson(join(st, 'verify-jobs', REPO, `${key}.json`));
+    assert.equal(job.file, 'apps/a.ts'); assert.deepEqual(job.findings.map(f => [f.file, f.line]), [['apps/a.ts', 2], ['apps/a.ts', 3]]);
+  });
+});
+
+test('verify-jobs: state hỏng → exit 4', () => {
+  assert.equal(run('verify-jobs', '--state').status, 4);
+  withTmp('vnr-review-vj-bad-', d => assert.equal(run('verify-jobs', '--state', d).status, 4));
+});
+
+// --- report (cần renderReport của Task 3) ---
+test('round-trip: plan → kết quả → verify-jobs → confirmed → report FAIL; wrong → dòng biến mất', () => {
+  withTmp('vnr-review-rt-', d => {
+    const st = join(d, 'st'); planInto(st);
+    writeResult(st, okRows([mock(2)]));
+    const key = run('verify-jobs', '--state', st).stdout.match(/^VERIFY \S+ (\S+) /m)[1];
+    mkdirSync(join(st, 'verify', REPO), { recursive: true });
+    writeFileSync(join(st, 'verify', REPO, `${key}.json`), JSON.stringify({ verdict: 'confirmed', reason: 'thấy MOCK' }));
+    const r = run('report', '--state', st, '--plugin-version', '2.0.0');
+    assert.equal(r.status, 1, r.stdout + r.stderr); assert.match(r.stdout, /^\| 1 \| FAIL \| SLOP-01 \| /m);
+    assert.match(r.stdout, /^\*\*#1 · FAIL · SLOP-01\*\*$/m); assert.equal(r.stdout.trimEnd().split('\n').at(-1), 'VERDICT:FAIL');
+    assert.match(r.stderr, /^rules: slop v2$/m);
+    writeFileSync(join(st, 'verify', REPO, `${key}.json`), JSON.stringify({ verdict: 'wrong', reason: 'không phải mock' }));
+    const ok = run('report', '--state', st, '--plugin-version', '2.0.0');
+    assert.equal(ok.status, 0, ok.stdout + ok.stderr); assert.doesNotMatch(ok.stdout, /(FAIL|WARN) (\||·) SLOP-01/);
+    assert.equal(ok.stdout.trimEnd().split('\n').at(-1), 'VERDICT:PASS');
+  });
+});
+
+test('report --ci: ô thiếu kết quả → exit 4, stderr "Chưa kiểm hết"', () => {
+  withTmp('vnr-review-ci-', d => {
+    const st = join(d, 'st'); planInto(st);
+    const r = run('report', '--state', st, '--ci');
+    assert.equal(r.status, 4, r.stdout + r.stderr); assert.match(r.stderr, /Chưa kiểm hết/);
+  });
+});
+
+test('report: mã lạ trong kết quả → stderr, không vào báo cáo', () => {
+  withTmp('vnr-review-unk-', d => {
+    const st = join(d, 'st'); planInto(st);
+    writeResult(st, [...okRows(), { code: 'XX-99', status: 'checked', findings: [mock(2)] }]);
+    const r = run('report', '--state', st);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stderr, /XX-99/); assert.doesNotMatch(r.stdout, /XX-99/);
+  });
+});
+
+test('report --save: một repo → <dir>/<repo>.md = dòng tree= + stdout; stdout không có dòng đó', () => {
+  withTmp('vnr-review-save1-', d => {
+    const st = join(d, 'st'); const { plan } = planInto(st); writeResult(st, okRows());
+    const out = join(d, 'work', 'vnr-review');
+    const r = run('report', '--state', st, '--save', out, '--plugin-version', '2.0.0');
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.deepEqual(readdirSync(out), [`${REPO}.md`]);
+    assert.equal(readFileSync(join(out, `${REPO}.md`), 'utf8'), `<!-- vnr-review tree=${plan.treeId} -->\n${r.stdout}`);
+    assert.doesNotMatch(r.stdout, /<!--/);
+  });
+});
+
+test('report --save: hai repo → hai file, mỗi file là báo cáo riêng của repo đó', () => {
+  withTmp('vnr-review-save2-', d => {
+    const st = join(d, 'st'); const { plan } = planInto(st); writeResult(st, okRows());
+    writeFileSync(join(st, 'plan-other.json'), JSON.stringify({ ...plan, repo: { ...plan.repo, name: 'other' } }));
+    const out = join(d, 'out');
+    const r = run('report', '--state', st, '--save', out, '--plugin-version', '2.0.0');
+    assert.match(r.stdout, /^### /m, 'stdout vẫn là báo cáo gộp');
+    assert.deepEqual(readdirSync(out).sort(), [`${REPO}.md`, 'other.md'].sort());
+    for (const name of [REPO, 'other']) {
+      const t = readFileSync(join(out, `${name}.md`), 'utf8').replace(/^<!-- vnr-review tree=[0-9a-f]{40} -->\n/, '');
+      assert.match(t, new RegExp(`^## vnr-review — .* · ${name.replace(/./g, '\.')} @ `)); assert.match(t, /^VERDICT:/m);
+      assert.doesNotMatch(t, /^### /m, 'không phải báo cáo gộp');
+    }
+  });
+});
+
+test('report --save không có giá trị → exit 4', () => {
+  withTmp('vnr-review-save0-', d => {
+    const st = join(d, 'st'); planInto(st);
+    assert.equal(run('report', '--state', st, '--save').status, 4);
+  });
+});
+
+test('plan exits 2 when nothing changed, with the SE message', () => {
+  withTmp('vnr-review-clean-', clean => {
+    mkdirSync(join(clean, 'docs/review/rules'), { recursive: true }); writeFileSync(join(clean, 'docs/review/rules/x.md'), SLOP);
+    mkdirSync(join(clean, 'src')); sh(clean, 'clone', '-q', join(ws, 'remote.git'), join(clean, 'src', REPO));
     const r = run('plan', '--ws', clean, '--state', join(clean, 'st'));
-    assert.equal(r.status, 2); assert.match(r.stdout, /Không có thay đổi/);
-  } finally { rmSync(clean, { recursive: true, force: true }); }
+    assert.equal(r.status, 2); assert.equal(r.stdout.trim(), 'Không có thay đổi so với code đã push.');
+  });
 });
-
-// --- Lỗi đầu vào & trạng thái ---
-const tmp = prefix => mkdtempSync(join(os.tmpdir(), prefix));
-const withTmp = (prefix, fn) => { const d = tmp(prefix); try { fn(d); } finally { rmSync(d, { recursive: true, force: true }); } };
 
 test('plan --repo fe still resolves the be sibling and records it; stale state is purged', () => {
   withTmp('vnr-review-sib-', w => {
-    mkdirSync(join(w, 'docs/review/rules'), { recursive: true });
-    writeFileSync(join(w, 'docs/review/rules/slop.md'), readFileSync(join(ws, 'docs/review/rules/slop.md')));
+    mkdirSync(join(w, 'docs/review/rules'), { recursive: true }); writeFileSync(join(w, 'docs/review/rules/slop.md'), SLOP);
     mkdirSync(join(w, 'src'));
-    const fe = join(w, 'src/vnr.hrm.web'); sh(w, 'clone', '-q', join(ws, 'remote.git'), fe);
+    const fe = join(w, 'src', REPO); sh(w, 'clone', '-q', join(ws, 'remote.git'), fe);
     writeFileSync(join(fe, 'apps/a.ts'), 'ok\nconst MOCK = 1;\n');
     const be = join(w, 'src/vnr.hrm.solution'); sh(w, 'init', '-q', be); writeFileSync(join(be, 'x.sln'), '');
     const st = join(w, 'st');
     mkdirSync(join(st, 'results/ghost'), { recursive: true }); writeFileSync(join(st, 'plan-ghost.json'), '{}');
     const p = run('plan', '--ws', w, '--repo', 'fe', '--state', st);
     assert.equal(p.status, 0, p.stdout + p.stderr);
-    const plan = JSON.parse(readFileSync(join(st, 'plan-vnr.hrm.web.json'), 'utf8'));
+    const plan = readJson(join(st, `plan-${REPO}.json`));
     assert.equal(plan.siblings.be, be);
+    assert.ok(readFileSync(join(st, 'jobs', REPO, `${CELL}.prompt.md`), 'utf8').includes(be), 'prompt nêu repo anh em');
     assert.ok(!existsSync(join(st, 'plan-ghost.json')) && !existsSync(join(st, 'results/ghost')), 'state cũ phải bị xoá');
+  });
+});
+
+test('plan chạy lại vào cùng --state: ledger.json, verify-jobs/, verify/ cũ bị xoá và sinh lại', () => {
+  withTmp('vnr-review-purge-', d => {
+    const st = join(d, 'st'); planInto(st);
+    const l = readJson(join(st, 'ledger.json')); l.cells[0].attempts = 7; l.stale = true; writeFileSync(join(st, 'ledger.json'), JSON.stringify(l));
+    mkdirSync(join(st, 'verify-jobs', REPO), { recursive: true }); writeFileSync(join(st, 'verify-jobs', REPO, 'OLD.json'), '{}');
+    mkdirSync(join(st, 'verify', REPO), { recursive: true }); writeFileSync(join(st, 'verify', REPO, 'OLD.json'), '{}');
+    const { ledger } = planInto(st);
+    assert.ok(!('stale' in ledger)); assert.equal(ledger.cells[0].attempts, 0);
+    assert.ok(!existsSync(join(st, 'verify-jobs')) && !existsSync(join(st, 'verify')), 'verify-jobs/ và verify/ cũ phải bị xoá');
   });
 });
 
@@ -133,9 +331,10 @@ test('plan --repo matching nothing exits 1', () => {
   assert.equal(r.status, 1); assert.match(r.stderr, /Không tìm thấy repo/);
 });
 
-test('bare value flag is a usage error', () => {
+test('bare value flag: plan exit 1, report/ledger/verify-jobs exit 4', () => {
   const r = run('plan', '--ws', ws, '--state');
   assert.equal(r.status, 1); assert.match(r.stderr, /--state cần một giá trị/);
+  for (const c of ['report', 'ledger', 'verify-jobs']) assert.equal(run(c, '--state').status, 4, c);
 });
 
 test('plan names an invalid config.json and exits 1', () => {
@@ -146,10 +345,12 @@ test('plan names an invalid config.json and exits 1', () => {
   });
 });
 
-test('plan without rules dir exits 1', () => {
+test('plan / check ở sai thư mục: thông báo cho SE, exit 1', () => {
   withTmp('vnr-review-norules-', w => {
     const r = run('plan', '--ws', w, '--state', join(w, 'st'));
-    assert.equal(r.status, 1); assert.match(r.stderr, /Không thấy/);
+    assert.equal(r.status, 1); assert.equal(r.stderr.trim(), WRONG_FOLDER);
+    const c = run('check', '--ws', w);
+    assert.equal(c.status, 1); assert.equal(c.stderr.trim(), WRONG_FOLDER);
   });
 });
 
@@ -165,10 +366,11 @@ test('report on a state dir without plan-*.json exits 4 (no silent PASS)', () =>
   });
 });
 
-test('check without rules dir exits 1 with a message', () => {
-  withTmp('vnr-review-nocheck-', w => {
-    const r = run('check', '--ws', w);
-    assert.equal(r.status, 1); assert.match(r.stderr, /Không thấy/);
+test('report: plan-*.json hỏng → exit 4', () => {
+  withTmp('vnr-review-bad-', d => {
+    writeFileSync(join(d, 'plan-x.json'), '{oops');
+    const r = run('report', '--state', d);
+    assert.equal(r.status, 4); assert.match(r.stderr, /lỗi khi tạo báo cáo/);
   });
 });
 
@@ -200,92 +402,6 @@ test('CLI runs when invoked through a symlink/junction', (t) => {
   });
 });
 
-// --- buildPrompt: gán file cho từng finding ---
-const jobOf = extra => ({ code: 'X-01', aspect: 'x', section1: 'S', block: 'B', hunks: ['@@ h @@'], hits: [], readMore: { files: [], unresolved: [] }, ...extra });
-const ATTRIB = /"file": đường dẫn ĐÚNG của file \(hoặc "\(commit <sha>\)" \/ "\(branch\)"\) chứa vi phạm — mỗi finding ghi file của chính nó/;
-
-test('buildPrompt: job một file dùng đúng đường dẫn trong ví dụ', () => {
-  const p = buildPrompt(jobOf({ file: 'apps/a.ts', files: ['apps/a.ts'] }));
-  assert.match(p, /## Thay đổi cần xét — 1 file\n- apps\/a\.ts\n/); assert.match(p, /"file":"apps\/a\.ts"/); assert.match(p, ATTRIB);
-});
-
-test('buildPrompt: job nhiều file liệt kê đủ và không mặc định file đầu', () => {
-  const p = buildPrompt(jobOf({ file: 'apps/a.ts', files: ['apps/a.ts', 'apps/b.ts', 'apps/c.ts'] }));
-  assert.match(p, /— 3 file\n- apps\/a\.ts\n- apps\/b\.ts\n- apps\/c\.ts\n/);
-  assert.doesNotMatch(p, /"file":"apps\/a\.ts"/); assert.match(p, /"file":"<file chứa vi phạm>"/); assert.match(p, ATTRIB);
-});
-
-test('buildPrompt: job commit / nhánh', () => {
-  const c = buildPrompt(jobOf({ file: '(commit)', files: ['(commit abc1234567)'] }));
-  assert.match(c, /— 1 commit chưa push\n- \(commit abc1234567\)\n/); assert.match(c, /"file":"\(commit abc1234567\)"/);
-  assert.match(c, /\(không có gate — xem toàn bộ nội dung\)/); assert.match(c, ATTRIB);
-  const b = buildPrompt(jobOf({ file: '(branch)', files: ['(branch)'] }));
-  assert.match(b, /— tên nhánh\n/); assert.match(b, /"file":"\(branch\)"/);
-});
-
-test('report: --state trần và plan-*.json hỏng đều exit 4', () => {
-  assert.equal(run('report', '--state').status, 4);
-  withTmp('vnr-review-bad-', d => {
-    writeFileSync(join(d, 'plan-x.json'), '{oops');
-    const r = run('report', '--state', d);
-    assert.equal(r.status, 4); assert.match(r.stderr, /lỗi khi tạo báo cáo/);
-  });
-});
-
-test('plan chạy lại vào cùng --state xoá verify-jobs/ cũ', () => {
-  withTmp('vnr-review-purge-', d => {
-    const st = join(d, 'st');
-    assert.equal(run('plan', '--ws', ws, '--state', st).status, 0);
-    const stale = join(st, 'verify-jobs/vnr.hrm.web/OLD__9-0.json'); writeFileSync(stale, '{}');
-    mkdirSync(join(st, 'verify/vnr.hrm.web'), { recursive: true }); writeFileSync(join(st, 'verify/vnr.hrm.web/OLD__9-0.json'), '{}');
-    assert.equal(run('plan', '--ws', ws, '--state', st).status, 0);
-    assert.ok(!existsSync(stale) && !existsSync(join(st, 'verify')), 'verify-jobs/ và verify/ cũ phải bị xoá');
-    assert.ok(existsSync(join(st, 'verify-jobs/vnr.hrm.web/SLOP-01__1.template.json')));
-  });
-});
-
-const miniPlan = (name, jobs = []) => ({
-  repo: { name, kind: 'fe', root: '/x' }, baseline: { ref: 'origin/x' }, fileCount: 1, skippedFiles: [], branch: 'b', ruleSets: [], jobs,
-  regexWarnings: [], ignored: [], invalidIgnores: [], skippedJobs: [], warnings: [], errors: [],
-});
-
-test('report nhiều repo: mỗi repo không có VERDICT riêng, chỉ một dòng VERDICT cuối = xấu nhất', () => {
-  withTmp('vnr-review-multi-', d => {
-    const job = { id: 'A-01__1', code: 'A-01', name: 'n', level: 'FAIL', file: 'a.ts', files: ['a.ts'], fix: '' };
-    writeFileSync(join(d, 'plan-fe.json'), JSON.stringify(miniPlan('fe', [job])));
-    writeFileSync(join(d, 'plan-be.json'), JSON.stringify(miniPlan('be')));
-    mkdirSync(join(d, 'results/fe'), { recursive: true });
-    writeFileSync(join(d, 'results/fe/A-01__1.json'), JSON.stringify({ code: 'A-01', verdict: 'FAIL', findings: [{ file: 'a.ts', line: 1, excerpt: 'x', why: 'y' }] }));
-    const r = run('report', '--state', d, '--ci');
-    assert.equal(r.status, 1);
-    assert.equal((r.stdout.match(/^VERDICT:/gm) ?? []).length, 1);
-    assert.match(r.stdout, /KẾT LUẬN: FAIL/); assert.match(r.stdout, /KẾT LUẬN: PASS/);
-    assert.match(r.stdout, /\n\nVERDICT:FAIL\s*$/);
-    assert.match(r.stdout, /^Tổng: (fe FAIL · be PASS|be PASS · fe FAIL)\n\n/, 'dòng Tổng ở đầu khi nhiều repo');
-    assert.match(r.stdout, /^Tổng: [^\n]+\n\nKẾT LUẬN: (FAIL|PASS)[^\n]*\nReview  /, 'mỗi khối repo bắt đầu bằng KẾT LUẬN');
-    // Cả hai PASS → VERDICT:PASS duy nhất.
-    rmSync(join(d, 'results'), { recursive: true }); writeFileSync(join(d, 'plan-fe.json'), JSON.stringify(miniPlan('fe')));
-    const ok = run('report', '--state', d, '--ci');
-    assert.equal(ok.status, 0); assert.equal((ok.stdout.match(/^VERDICT:/gm) ?? []).length, 1); assert.match(ok.stdout, /VERDICT:PASS\s*$/);
-  });
-});
-
-test('buildPrompt: luật noIgnore và luật cho phép ignore có câu khác nhau', () => {
-  const yes = buildPrompt(jobOf({ file: 'a.ts', files: ['a.ts'], noIgnore: false }));
-  assert.match(yes, /Chỉ marker `review-ignore <MÃ>: <lý do>` \(có lý do\) mới có hiệu lực\./); assert.doesNotMatch(yes, /KHÔNG cho bỏ qua/);
-  const no = buildPrompt(jobOf({ file: 'a.ts', files: ['a.ts'], noIgnore: true }));
-  assert.match(no, /Luật này KHÔNG cho bỏ qua — marker review-ignore không có hiệu lực\./); assert.doesNotMatch(no, /mới có hiệu lực/);
-});
-
-test('buildPrompt: placeholder khi không có dòng khớp, nhiều commit, file bị cắt hunk', () => {
-  assert.match(buildPrompt(jobOf({ file: 'a.ts', files: ['a.ts'] })), /\(không có dòng khớp regex — xem toàn bộ hunk\)/);
-  const c = buildPrompt(jobOf({ file: '(commit)', files: ['(commit a1)', '(commit b2)'] }));
-  assert.match(c, /"file":"<commit chứa vi phạm>"/);
-  const t = buildPrompt(jobOf({ file: 'a.ts', files: ['a.ts', 'b.ts'], truncated: ['b.ts'] }));
-  assert.match(t, /Các file sau không kèm hunk \(quá dài\) — đọc khi cần:\n- b\.ts/);
-  assert.doesNotMatch(buildPrompt(jobOf({ file: 'a.ts', files: ['a.ts'] })), /quá dài/);
-});
-
 test('CLI chạy được dù Node có --preserve-symlinks-main (gọi qua junction)', (t) => {
   withTmp('vnr-review-link2-', d => {
     const link = join(d, 'link');
@@ -302,4 +418,71 @@ test('Node thiếu path.matchesGlob → exit 3 với thông báo rõ', () => {
     const r = spawnSync(process.execPath, ['-r', shim, CLI, '--help'], { encoding: 'utf8' });
     assert.equal(r.status, 3); assert.match(r.stderr, /vnr-review cần Node >= 22\.5 \(path\.matchesGlob\) — đang dùng /);
   });
+});
+
+// Đổi mức một luật trong plan-<repo>.json và job của ô (report đọc plan, verify-jobs đọc job).
+const setLevel = (st, code, level) => {
+  const pf = join(st, `plan-${REPO}.json`), jf = join(st, 'jobs', REPO, `${CELL}.json`);
+  const plan = readJson(pf), job = readJson(jf);
+  for (const c of [...plan.cells.filter(c => c.fileId === CELL), job]) c.rules.find(r => r.code === code).level = level;
+  writeFileSync(pf, JSON.stringify(plan)); writeFileSync(jf, JSON.stringify(job));
+};
+
+test('luật FAIL+WARN: finding level WARN → không verify, dòng WARN; level FAIL → verify, confirmed → FAIL; thiếu level → WARN', () => {
+  withTmp('vnr-review-lv-', d => {
+    const st = join(d, 'st'); planInto(st); setLevel(st, 'SLOP-01', 'FAIL+WARN');
+    const report = () => run('report', '--state', st, '--plugin-version', '2.0.0');
+    writeResult(st, okRows([{ ...mock(2), level: 'WARN' }]));
+    assert.equal(run('verify-jobs', '--state', st).stdout.trim(), 'VERIFY=0');
+    let r = report(); assert.equal(r.status, 0, r.stdout + r.stderr); assert.match(r.stdout, /\| WARN \| SLOP-01 \|/); assert.match(r.stdout, /^VERDICT:WARN$/m);
+    writeResult(st, okRows([mock(2)]));
+    assert.equal(run('verify-jobs', '--state', st).stdout.trim(), 'VERIFY=0', 'thiếu level trên FAIL+WARN → WARN');
+    writeResult(st, okRows([{ ...mock(2), level: 'FAIL' }]));
+    const key = run('verify-jobs', '--state', st).stdout.match(/^VERIFY \S+ (\S+) /m)[1];
+    mkdirSync(join(st, 'verify', REPO), { recursive: true });
+    writeFileSync(join(st, 'verify', REPO, `${key}.json`), JSON.stringify({ verdict: 'confirmed', reason: 'x' }));
+    r = report(); assert.equal(r.status, 1, r.stdout + r.stderr); assert.match(r.stdout, /\| FAIL \| SLOP-01 \|/); assert.match(r.stdout, /^VERDICT:FAIL$/m);
+  });
+});
+
+test('verify-jobs: file bị cắt hunk vẫn gửi hunk thật (truncatedHunks), không bao giờ hunk rỗng', () => {
+  withTmp('vnr-review-vj4-', d => {
+    const st = join(d, 'st'); planInto(st);
+    const jf = join(st, 'jobs', REPO, `${CELL}.json`), job = readJson(jf);
+    const h = job.hunks.find(x => x.path === 'apps/a.ts');
+    job.hunks = job.hunks.filter(x => x !== h); job.truncated = ['apps/a.ts']; job.truncatedHunks = { 'apps/a.ts': h.text };
+    writeFileSync(jf, JSON.stringify(job));
+    writeResult(st, okRows([mock(2)]));
+    const key = run('verify-jobs', '--state', st).stdout.match(/^VERIFY \S+ (\S+) /m)[1];
+    assert.match(readJson(join(st, 'verify-jobs', REPO, `${key}.json`)).hunk, /const MOCK = 1/);
+  });
+});
+
+// --- buildPrompt(cell, plan) ---
+const cellOf = extra => ({
+  id: 'fe/x/1', aspect: 'x', title: 'Nhóm X', codes: ['X-01', 'X-02'], rules: [{ code: 'X-01', block: 'B1' }, { code: 'X-02', block: 'B2' }],
+  files: ['a.ts'], hunks: [{ path: 'a.ts', text: '@@ -1 +1 @@\n+a' }], section1: 'S1', readMore: { files: [], unresolved: [] }, noIgnoreCodes: [], ...extra,
+});
+const planOf = { repo: { root: '/w/web' }, siblings: { be: '/w/sol' } };
+
+test('buildPrompt: đầu prompt, repoRoot, anh em, khối luật, hunk, danh sách mã', () => {
+  const p = buildPrompt(cellOf(), planOf);
+  const lines = p.split('\n');
+  assert.equal(lines[0], 'Bạn là reviewer. Áp dụng ĐÚNG 2 luật dưới đây (nhóm x — Nhóm X), không thêm luật từ trí nhớ.');
+  assert.equal(lines[1], 'Repo: /w/web. Mọi đường dẫn dưới đây là tương đối với thư mục đó — ghép /w/web khi Read/Grep/Glob (Glob: path = /w/web). Repo anh em: be: /w/sol. KHÔNG sửa file.');
+  assert.match(p, /\n## Từ điển nhóm x\nS1\n## Luật \(2\)\nB1\n\n---\n\nB2\n/);
+  assert.match(p, /\n## Thay đổi cần xét — 1 file \(chỉ phần thay đổi; mở file để xem đầy đủ\)\n### a\.ts\n@@ -1 \+1 @@\n\+a\n/);
+  assert.match(p, /TRỪ các luật: \(không có\)\./); assert.match(p, /\n## Nên đọc thêm: \(không có\)\n/);
+  assert.match(p, /\n## Trả về — CHỈ một khối JSON, ĐÚNG MỘT dòng cho MỖI mã: X-01, X-02\n\{"cell":"fe\/x\/1","rules":\[\{"code":"<MÃ>","status":"checked\|n\/a"/);
+  assert.match(p, /"findings":\[\{"file":"<path tương đối>","level":"FAIL\|WARN","line"/);
+  assert.match(p, /`level`: FAIL nếu khớp "FAIL khi", WARN nếu khớp "WARN khi"; luật mức WARN → luôn WARN/);
+  assert.match(p, /Mỗi chỗ vi phạm \(file \+ dòng\) là một finding riêng/);
+  assert.doesNotMatch(p, /quá dài/);
+});
+
+test('buildPrompt: noIgnore, file bị cắt hunk, nên đọc thêm, không có anh em, thiếu title', () => {
+  const p = buildPrompt(cellOf({ title: null, noIgnoreCodes: ['X-02'], files: ['a.ts', 'b.ts'], truncated: ['b.ts'], truncatedHunks: { 'b.ts': '@@ -1,2 +3,3 @@\n+a\n+b\n+c\n@@ -9 +10 @@\n+x\n@@ -20,4 +14,0 @@' }, readMore: { files: ['c.ts', '../sol/d.cs'], unresolved: [] } }), { repo: { root: '/w/web' } });
+  assert.match(p, /\(nhóm x — x\)/); assert.match(p, /Repo anh em: \(không có\)\./); assert.match(p, /TRỪ các luật: X-02\./);
+  assert.match(p, /— 2 file \(/); assert.match(p, /\nCác file sau quá dài nên không kèm hunk — Read trực tiếp, chỉ các dòng đã đổi:\n- b\.ts: dòng 3–5, 10\n/);
+  assert.match(p, /\n## Nên đọc thêm: c\.ts, \.\.\/sol\/d\.cs\n/);
 });

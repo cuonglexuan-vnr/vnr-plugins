@@ -1,89 +1,136 @@
 // plugins/vnr-swe/skills/vnr-review/scripts/report.mjs
-// Gộp kết quả subagent thành báo cáo tiếng Việt gọn + dòng VERDICT cho hook/CI.
-// Module thuần: không import module anh em; `plan.branch` do cli.mjs bổ sung.
+// Báo cáo markdown của /vnr-review (orchestrator dán nguyên văn, không fence): tiêu đề PASS/WARN/FAIL, bảng 4 cột (# · Kết quả · Luật · Vị trí = tên file),
+// mỗi dòng bảng một thẻ chi tiết cùng số (mọi vị trí với đường dẫn đầy đủ, Vấn đề, Sửa), dòng chân độ phủ, dòng cuối luôn là `VERDICT:<…>`.
+// Ô xong tính lại từ kết quả trên đĩa (`resultOk`), không tin trạng thái trong ledger. Nhiều repo: một tiêu đề chung, mỗi repo một mục ###.
+import { resultOk, normalizeResult } from './ledger.mjs';
+
+// Số dòng bảng (và thẻ) tối đa của một repo; phần còn lại gói vào một dòng "+n dòng khác".
+const MAX_ROWS = 10;
+// Số vị trí tối đa liệt kê trong một thẻ; phần còn lại gói vào "… và n chỗ khác".
+const MAX_LOCS = 10;
+// Độ dài tối đa của "Vấn đề" và của "Sửa" trong thẻ.
+const CLIP = 400;
+const LEGEND = '**FAIL**: phải sửa trước khi push · **WARN**: nên xem; cố ý giữ thì ghi chú bỏ qua (xem user-guide)';
+const RANK = { PASS: 0, WARN: 1, FAIL: 2 };
 const fmtMs = ms => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}m${String(s % 60).padStart(2, '0')}s`; };
-const clip = (s, n = 100) => (s ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
-const INDENT = '\n' + ' '.repeat(22); // căn các dòng tiếp theo của mục nhiều dòng
+// Một dòng markdown: không fence, ≤ n ký tự; `<` ngoài cặp backtick → `&lt;` (thẻ như <nz-select> không bị render nuốt); trong bảng thêm thoát `|`.
+const md = (s, n = Infinity, cell = false) => {
+  let t = String(s ?? '').replace(/\s+/g, ' ').trim().replace(/`{3,}/g, '`');
+  if (t.length > n) t = t.slice(0, n - 1) + '…';
+  t = t.split(/(`[^`]*`)/).map((p, i) => (i % 2 ? p : p.replaceAll('<', '&lt;'))).join('');
+  return cell ? t.replaceAll('|', '\\|') : t;
+};
+// File giả `(commit abc1234)` / `(branch)` / `(không rõ file)` giữ nguyên, không `:dòng`. Tách theo `/` lẫn `\` (không phụ thuộc OS).
+const isPseudo = f => /^\(.*\)$/.test(f);
+const base = f => (isPseudo(f) ? f : f.split(/[\\/]/).pop());
 
-// Nghi ngờ (khớp regex, chưa kiểm sâu): số dòng file:dòng tối đa dưới mỗi luật, và độ dài excerpt.
-const REGEX_HITS_PER_RULE = 5;
-const REGEX_EXCERPT = 80;
-// Độ dài tối đa của dòng lý do (Vì / Vì sao).
-const REASON_CHARS = 200;
-// Gom theo mã luật, giữ thứ tự gặp đầu tiên.
-const groupByCode = items => { const m = new Map(); for (const i of items) { if (!m.has(i.code)) m.set(i.code, []); m.get(i.code).push(i); } return m; };
-
-// finalLine=false: bỏ dòng VERDICT cuối — nhiều repo dùng chung một dòng VERDICT do cli.mjs ghép.
-export function renderReport(plan, { results = {}, verifications = [], elapsedMs = 0, pluginVersion = '?', ci = false, finalLine = true }) {
-  const fail = [], warn = [], needs = [];
-  for (const job of plan.jobs) {
-    const res = results[job.id];
-    // Job nhiều file: nhãn "(N file)" thay vì file đầu; finding vẫn giữ file riêng của nó.
-    const label = (job.files?.length ?? 0) > 1 ? `(${job.files.length} file)` : job.file;
-    if (!res) { needs.push({ code: job.code, file: label, note: 'không có kết quả từ subagent' }); continue; }
-    for (const nc of res.needs_context ?? []) needs.push({ code: job.code, file: label, note: clip(nc, 200) });
-    // Chỉ thêm "không quyết được" khi subagent không nêu rõ cần gì — tránh dòng trùng.
-    if (res.verdict === 'NEEDS_CONTEXT' && !(res.needs_context ?? []).length) needs.push({ code: job.code, file: label, note: 'không quyết được' });
-    const findings = res.findings ?? [];
-    // Kết quả tự mâu thuẫn: FAIL/WARN không có finding → không im lặng thành PASS.
-    if ((res.verdict === 'FAIL' || res.verdict === 'WARN') && !findings.length) needs.push({ code: job.code, file: label, note: `verdict ${res.verdict} không kèm finding — kết quả không nhất quán` });
-    findings.forEach((f, index) => {
-      const item = { code: job.code, name: job.name, file: f.file || job.file, line: f.line, excerpt: clip(f.excerpt), fix: job.fix, why: clip(f.why, REASON_CHARS) || clip(job.reason, REASON_CHARS) };
-      if (res.verdict === 'PASS') warn.push(item);                       // PASS mà có finding → coi là WARN
-      else if (res.verdict === 'FAIL') {
-        // Verifier: confirmed giữ FAIL, unsure hạ xuống WARN, wrong loại bỏ.
-        const v = verifications.find(x => x.jobId === job.id && x.index === index)?.verdict;
-        if (v === 'wrong') return;
-        if (v === 'unsure') { warn.push({ ...item, unsure: true }); return; }
-        fail.push(item);
-      } else if (res.verdict === 'WARN') warn.push(item);
-    });
-  }
-  const rw = plan.regexWarnings ?? [];
-  const verdict = fail.length ? 'FAIL' : (warn.length || rw.length || needs.length) ? 'WARN' : 'PASS';
-
-  const L = [];
-  const parts = [`${fail.length} FAIL`, `${warn.length} WARN`, `${rw.length} nghi ngờ`, `${needs.length} cần ngữ cảnh`];
-  // KẾT LUẬN là dòng đầu: reviewer đọc một dòng biết push được chưa; chi tiết nhóm theo mã luật ở các mục dưới (không bảng tóm tắt — trùng với mục chi tiết).
-  L.push(`KẾT LUẬN: ${verdict}${verdict === 'PASS' ? '' : ' — ' + parts.join(' · ')}`);
-  const tail = ci ? '' : ` · ${fmtMs(elapsedMs)}`; // CI bỏ thời gian để đầu ra ổn định
-  L.push(`Review  ${plan.repo.name} @ ${plan.branch ?? 'HEAD'}  (vs ${plan.baseline.from ?? plan.baseline.ref} · ${plan.fileCount} file${tail})`);
-  L.push(`Luật: ${plan.ruleSets.map(s => `${s.aspect} v${s.version}`).join(' · ')}        (plugin vnr-swe ${pluginVersion})`);
-  for (const e of plan.errors ?? []) L.push(`! ${e}`);
-  // Mục FAIL/WARN nhóm theo luật: tên, Vì và → in một lần; mỗi vị trí một dòng (6 finding cùng luật: 9 dòng thay vì 24).
-  const section = (title, items) => {
-    if (!items.length) return;
-    L.push('', title);
-    for (const [code, group] of groupByCode(items)) {
-      const head = group[0];
-      L.push(`  ${code}  ${head.name}  (${group.length} chỗ)`);
-      if (head.why) L.push(`    Vì: ${head.why}`);
-      if (head.fix) L.push(`    → ${head.fix}`);
-      for (const i of group) {
-        L.push(`    ${i.file}:${i.line ?? '?'}   \`${i.excerpt}\`${i.unsure ? '  (chưa chắc)' : ''}`);
-        if (i.why && i.why !== head.why) L.push(`      Vì: ${i.why}`); // lý do riêng khác lý do chung của nhóm
+// Một repo: dòng bảng theo mã luật, nhóm luật chưa kiểm hết, độ phủ, verdict.
+function reviewRepo(plan, results = {}, verifications = {}) {
+  const done = new Set(plan.cells.filter(c => resultOk(c, results[c.fileId])));
+  const warnings = [], byCode = new Map();
+  for (const cell of done) {
+    const { rows, warnings: w } = normalizeResult(cell, results[cell.fileId], plan.repo.root);
+    warnings.push(...w);
+    for (const [code, row] of rows) {
+      const rule = cell.rules.find(r => r.code === code);
+      for (const f of row.findings) {
+        // FAIL chỉ khi finding mức FAIL (findingLevel), file trong diff của ô và verifier xác nhận; `wrong` bỏ hẳn;
+        // ngoài diff hoặc chưa trả lời → WARN. Finding mức WARN không qua verify, không bao giờ bị bỏ.
+        let level = 'WARN';
+        if (f.level === 'FAIL' && cell.files.includes(f.file)) {
+          const v = verifications[`${cell.fileId}-${code}-${cell.files.indexOf(f.file)}`]?.verdict;
+          if (v === 'wrong') continue;
+          if (v === 'confirmed') level = 'FAIL';
+        }
+        // Không rõ file thì số dòng vô nghĩa; dòng null/0 → chỉ file.
+        const file = typeof f.file === 'string' && f.file.trim() ? f.file.trim() : '(không rõ file)';
+        const line = !isPseudo(file) && f.line ? `:${String(f.line).trim()}` : '';
+        if (!byCode.has(code)) byCode.set(code, { code, items: [] });
+        byCode.get(code).items.push({ level, file, line, issue: f.issue || rule.name, fix: f.fix || rule.fix });
       }
     }
+  }
+  // Cùng mã gộp một dòng: mức xấu nhất; vị trí, issue và fix lấy từ finding FAIL đầu tiên (nếu có).
+  // Bảng: tên file `:dòng` của vị trí đầu + `(+n)` = số vị trí khác; thẻ: mọi vị trí (bỏ trùng, cùng thứ tự), đường dẫn đầy đủ trong backtick.
+  const rows = [...byCode.values()].map(({ code, items }) => {
+    items.sort((a, b) => RANK[b.level] - RANK[a.level]);
+    const locs = [...new Set(items.map(i => (isPseudo(i.file) ? i.file : `\`${(i.file + i.line).replaceAll('`', '')}\``)))];
+    const count = locs.length, [first] = items;
+    return {
+      code, level: first.level, count,
+      short: md(base(first.file) + first.line, Infinity, true) + (count > 1 ? ` (+${count - 1})` : ''),
+      where: count === 1 ? [`- Vị trí: ${locs[0]}`] : [`- Vị trí (${count} chỗ):`, ...locs.slice(0, MAX_LOCS).map(l => `  - ${l}`),
+        ...(count > MAX_LOCS ? [`  - … và ${count - MAX_LOCS} chỗ khác`] : [])],
+      issue: md(first.issue, CLIP), fix: md(first.fix, CLIP),
+    };
+  }).sort((a, b) => RANK[b.level] - RANK[a.level] || b.count - a.count || (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
+
+  const sets = (plan.ruleSets ?? []).map(s => ({ ...s, left: plan.cells.filter(c => c.aspect === s.aspect && !done.has(c)).reduce((n, c) => n + c.codes.length, 0) }));
+  const incomplete = sets.some(s => s.left);
+  const fails = rows.filter(r => r.level === 'FAIL').length;
+  return {
+    plan, rows, sets, incomplete, warnings,
+    checked: [...done].reduce((n, c) => n + c.codes.length, 0),
+    inScope: sets.reduce((n, s) => n + s.inScope, 0),
+    counts: rows.length ? ` (${fails} FAIL · ${rows.length - fails} WARN)` : '',
+    verdict: fails ? 'FAIL' : rows.length || incomplete ? 'WARN' : 'PASS',
   };
-  section('FAIL', fail); section('WARN', warn);
-  const line = (title, body) => L.push('', `${title}   ${body}`);
-  if (rw.length) {
-    L.push('', `Nghi ngờ (${rw.length}) — chưa kiểm sâu; /vnr-review --full để kiểm`);
-    const byCode = new Map(); // Map giữ thứ tự gặp đầu tiên của mã luật
-    for (const w of rw) { if (!byCode.has(w.code)) byCode.set(w.code, { name: w.name, reason: clip(w.reason, REASON_CHARS), hits: [] }); byCode.get(w.code).hits.push(w); }
-    for (const [code, { name, reason, hits }] of byCode) {
-      L.push(`  ${code}  ${name}  (${hits.length})`);
-      if (reason) L.push(`    Vì sao: ${reason}`);
-      hits.sort((x, y) => (x.file < y.file ? -1 : x.file > y.file ? 1 : x.n - y.n));
-      for (const h of hits.slice(0, REGEX_HITS_PER_RULE)) L.push(`    ${h.file}:${h.n ?? 0}   \`${clip(h.text, REGEX_EXCERPT)}\``);
-      if (hits.length > REGEX_HITS_PER_RULE) L.push(`    … và ${hits.length - REGEX_HITS_PER_RULE} dòng nữa`);
+}
+
+// Phần thân một repo: bảng + chú giải + thẻ (nếu có dòng), ⚠ nhóm chưa kiểm hết, dòng độ phủ.
+function body(r, pluginVersion) {
+  const { plan, rows, sets } = r, L = [];
+  // Mỗi khối ngoài bảng là một đoạn riêng (dòng trống phía trước): markdown nối các dòng liền nhau thành một đoạn,
+  // và dòng thường ngay sau bảng GFM bị coi là một hàng của bảng.
+  const para = (...s) => { if (L.length) L.push(''); L.push(...s); };
+  if (rows.length) {
+    const shown = rows.slice(0, MAX_ROWS);
+    L.push('| # | Kết quả | Luật | Vị trí |', '|---|---|---|---|');
+    // `#` đánh từ 1 theo thứ tự hiển thị, lại từ 1 trong mỗi mục repo; thẻ dùng cùng số.
+    shown.forEach((row, i) => L.push(`| ${i + 1} | ${row.level} | ${row.code} | ${row.short} |`));
+    // Chú giải ngay dưới bảng: người đọc PR biết FAIL/WARN nghĩa là gì trước khi đọc thẻ chi tiết.
+    para(LEGEND);
+    shown.forEach((row, i) => para(`**#${i + 1} · ${row.level} · ${row.code}**`, ...row.where, `- Vấn đề: ${row.issue}`, ...(row.fix ? [`- Sửa: ${row.fix}`] : [])));
+    if (rows.length > MAX_ROWS) para(`_(+${rows.length - MAX_ROWS} dòng khác: ${rows.slice(MAX_ROWS).map(x => x.code).join(', ')})_`);
+  }
+  for (const s of sets.filter(s => s.left)) para(`⚠ Chưa kiểm hết: nhóm "${s.title ?? s.aspect}" còn ${s.left} luật chưa xem. Gõ /vnr-review ${plan.repo.kind} để chạy lại.`);
+  if (!sets.length) { para(`Không có luật nào áp dụng cho ${plan.fileCount} file thay đổi · vnr-review ${pluginVersion}`); return L; }
+  const invalid = plan.invalidIgnores ?? [];
+  const truncated = new Set(plan.cells.flatMap(c => c.truncated ?? []));
+  para([
+    `Đã kiểm ${r.checked} luật, đủ ${sets.filter(s => !s.left).length}/${sets.length} nhóm`,
+    `${plan.ignored?.length ?? 0} chỗ bỏ qua theo ghi chú`,
+    ...(invalid.length ? [`${invalid.length} ghi chú bỏ qua không được chấp nhận (${[...new Set(invalid.map(i => i.code))].join(', ')})`] : []),
+    ...(truncated.size ? [`${truncated.size} file quá lớn chưa đọc hết`] : []),
+    `vnr-review ${pluginVersion}`,
+  ].join(' · '));
+  return L;
+}
+
+// `ledger` nhận để giữ giao diện với cli; ô xong luôn tính lại từ `results`.
+export function renderReport({ plans, ledger, results = {}, verifications = {}, elapsedMs = 0, pluginVersion = '?', ci = false }) {
+  const repos = plans.map(p => reviewRepo(p, results[p.repo.name], verifications[p.repo.name]));
+  const verdict = repos.reduce((v, r) => (RANK[r.verdict] > RANK[v] ? r.verdict : v), 'PASS');
+  const time = ci ? '' : ` · ${fmtMs(elapsedMs)}`;   // CI bỏ thời gian để đầu ra ổn định
+  const L = [];
+  if (repos.length === 1) {
+    const [r] = repos, p = r.plan;
+    const untracked = p.untrackedCount > 0 ? ` (${p.untrackedCount} chưa git add)` : '';
+    L.push(`## vnr-review — ${verdict}${r.counts} · ${p.repo.name} @ ${p.branch || 'HEAD'} (${p.sha7}) · ${p.fileCount} file${untracked}${time}`, '', ...body(r, pluginVersion));
+  } else {
+    const files = repos.reduce((n, r) => n + r.plan.fileCount, 0);
+    L.push(`## vnr-review — ${verdict} · ${repos.map(r => `${r.plan.repo.name} ${r.verdict}${r.counts}`).join(' · ')} · ${files} file${time}`);
+    for (const r of repos) {
+      if (r.verdict === 'PASS') L.push('', `### ${r.plan.repo.name} — PASS · đã kiểm ${r.checked} luật`);
+      else L.push('', `### ${r.plan.repo.name} (${r.plan.sha7})`, '', ...body(r, pluginVersion));
     }
   }
-  if (needs.length) line(`Cần ngữ cảnh (${needs.length})`, needs.map(n => `${n.code} ${n.file} — ${n.note}`).join(INDENT));
-  if (plan.ignored?.length) line(`Bỏ qua có lý do (${plan.ignored.length})`, plan.ignored.map(i => `${i.code} ${i.path}${i.line ? ':' + i.line : ''}  "${clip(i.reason)}"`).join(INDENT));
-  if (plan.invalidIgnores?.length) line(`Marker không hợp lệ (${plan.invalidIgnores.length})`, plan.invalidIgnores.map(i => `${i.code} ${i.path}${i.line ? ':' + i.line : ''} — ${i.why}`).join(INDENT));
-  if (plan.skippedJobs?.length) line(`Chưa kiểm (${plan.skippedJobs.length})`, plan.skippedJobs.map(s => `${s.code} ${s.file}`).join(' · ') + '      → chạy lại với --aspect hoặc tăng maxJobs');
-  if (plan.skippedFiles?.length) line(`File bỏ qua (${plan.skippedFiles.length})`, plan.skippedFiles.map(s => `${s.path} (${s.why})`).join(' · '));
-  if (finalLine) L.push('', `VERDICT:${verdict}`);
-  return { text: L.join('\n'), verdict };
+  const coverage = { done: repos.reduce((n, r) => n + r.checked, 0), total: repos.reduce((n, r) => n + r.inScope, 0) };
+  // VERDICT luôn là dòng cuối của báo cáo (một dòng cho mọi repo); --ci thêm COVERAGE/RULES sau nó.
+  L.push('', `VERDICT:${verdict}`);
+  if (ci) {
+    L.push(`COVERAGE=${coverage.done}/${coverage.total}`);
+    for (const r of repos) L.push(`RULES=${repos.length > 1 ? `${r.plan.repo.name} ` : ''}${r.sets.map(s => `${s.aspect} v${s.version}`).join(' · ') || '(không có)'}`);
+  }
+  return { text: L.join('\n'), verdict, incomplete: repos.some(r => r.incomplete), coverage, warnings: repos.flatMap(r => r.warnings) };
 }

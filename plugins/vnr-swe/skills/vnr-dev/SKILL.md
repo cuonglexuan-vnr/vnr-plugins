@@ -46,7 +46,7 @@ Agent nền (khảo sát FE/BE, Explore): chờ kết quả trong cùng lượt;
    Ledger → `planned` (cả small), `building` khi vào B3.
 
 ## B3 — Phần không trông (Envelope là luật)
-3. Nhánh `<type>/<id-or-slug>` (`feat` · `fix` · `refactor` · `chore` · `docs`) trong repo đích: chưa có → tạo từ nhánh tích hợp; có rồi (resume) → checkout. Không worktree. Trước khi tạo/checkout: kiểm sạch như B0.
+3. Nhánh `<type>/<id>-<slug>` (`feat` · `fix` · `refactor` · `chore` · `docs`; không có id → `<type>/<slug>`; slug 2–5 từ tiếng Anh kebab-case từ tên spec) trong repo đích: chưa có → tạo từ nhánh tích hợp; có rồi (resume) → checkout. Không worktree. Trước khi tạo/checkout: kiểm sạch như B0.
    Ngay sau khi tạo, **trước khi sửa bất kỳ file nào**: chạy gate của workspace.md một lần → `WORK/baseline-gates.md` (đúng thư mục `WORK` của `<id>`; mỗi gate: lệnh · kết quả · tên test đỏ sẵn); `<project>`/csproj lấy theo file sẽ sửa (Change: mục Files của `PLAN`; Bug: file trong trace, không rõ → chỉ gate có lệnh cố định). Tệp đã có (resume, Bug → Change) → dùng lại.
 4. big → `superpowers:subagent-driven-development`; small → `superpowers:executing-plans`; `superpowers:test-driven-development` bên trong.
    Không xoá `.superpowers/sdd/`: SDD/executing-plans tự tách ledger theo plan (`.superpowers/sdd/<id>-plan/`, marker `plan-path`). Lượt mới: chỉ xoá tệp phẳng cũ `.superpowers/sdd/progress.md` nếu có (bản superpowers cũ đọc nhầm nó).
@@ -60,7 +60,7 @@ Agent nền (khảo sát FE/BE, Explore): chờ kết quả trong cùng lượt;
 ## Lane Bug — làm đúng thứ tự, không bỏ bước dù bug trông đơn giản
 1. Wiki trước: mở `docs/wiki/index.md` (nếu có) và các trang trong `.claude/rules/*-wiki.md` của stack bị lỗi, **rồi** mới đọc source.
 2. Viết `WORK/bug.md`: triệu chứng/trace, `## Files` dự kiến sửa, khối *Envelope* (mục `## Envelope`). Không tái hiện được → hỏi tối đa **một** câu. Từ đây không trông; mỗi quyết định ghi `## Decisions taken unattended` trong `bug.md`.
-3. Nhánh `fix/<id>` theo B3 bước 3, rồi baseline `WORK/baseline-gates.md`. **Chưa sửa file nào trước khi baseline xong** — sửa trước thì không chứng minh được "đỏ sẵn", mọi test đỏ thành đỏ mới.
+3. Nhánh `fix/<id>-<slug>` theo B3 bước 3, rồi baseline `WORK/baseline-gates.md`. **Chưa sửa file nào trước khi baseline xong** — sửa trước thì không chứng minh được "đỏ sẵn", mọi test đỏ thành đỏ mới.
 4. **REQUIRED SUB-SKILL:** `superpowers:systematic-debugging` (Phase 4 = TDD: viết test tái hiện, chạy thấy đỏ, rồi mới sửa). 3 vòng sửa thất bại → `blocked`, giả thuyết ghi `## Blockers` trong `bug.md`.
 5. Tiếp B3 từ bước 5. Sửa > 3 file → dừng lane Bug, ghi lý do vào `bug.md`, chuyển lane Change tại `writing-plans` với đầu vào `WORK/bug.md` (plan ghi ra `PLAN`, qua **STOP 2** như mọi plan big).
 

@@ -1,4 +1,4 @@
-// Tầng cổng: glob, path-gate, regex-gate, marker review-ignore, giải "Cần đọc thêm" — thuần script.
+// Lọc phạm vi bằng glob, marker review-ignore, giải "Cần đọc thêm" — thuần script.
 import path from 'node:path';
 import { readdirSync, statSync, existsSync } from 'node:fs';
 
@@ -14,28 +14,6 @@ const anyGlob = (file, globs) => globs.some(g => matchGlob(file, g));
 export function inScope(file, set, rule) {
   return anyGlob(file, set.appliesTo) && !anyGlob(file, set.excludes)
     && anyGlob(file, rule.scope?.length ? rule.scope : set.appliesTo);
-}
-
-// Che comment trong một dòng thêm: <!-- -->, /* */ trên một dòng, // (trừ "://" của URL), dòng tiếp của block comment.
-// ponytail: không theo dõi trạng thái nhiều dòng và chuỗi chứa "//"; nâng lên tokenizer theo ngôn ngữ nếu báo nhầm.
-export function maskComments(text) {
-  if (/^\s*\*/.test(text)) return '';
-  return text.replace(/<!--.*?-->/g, ' ').replace(/\/\*.*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/, '$1');
-}
-
-// Regex "muốn comment" (vd. SLOP-11 bắt `// ĐÍNH CHÍNH`): nguồn regex nhắc cú pháp comment NGOÀI lookahead/lookbehind phủ định.
-// Regex chỉ nhắc comment trong `(?!…)` là để loại comment → vẫn chạy trên dòng đã che.
-export const wantsComments = re =>
-  /\\\/\\\/|\\\/\\\*|<!--|\^\\s\*\\\*/.test(re.source.replace(/\(\?<?!(?:[^()]|\([^()]*\))*\)/g, ''));
-
-// regex chỉ chạy trên dòng thêm: regex muốn comment thấy dòng gốc, còn lại thấy dòng đã che comment; path-gate xét cả diff.
-export function runGates(rule, file, diffPaths) {
-  const hasGate = rule.pathGates.length > 0 || rule.regexGates.length > 0;
-  const pathHit = rule.pathGates.length > 0 && diffPaths.some(p => anyGlob(p, rule.pathGates));
-  const regexHits = rule.regexGates.length
-    ? file.added.filter(l => { const t = maskComments(l.text); return rule.regexGates.some(re => { re.lastIndex = 0; return re.test(wantsComments(re) ? l.text : t); }); })
-    : [];
-  return { hasGate, pathHit, regexHits: regexHits.map(({ n, text }) => ({ n, text })) };
 }
 
 const MARK = /review-ignore\s+([A-Z]+(?:-[A-Z]+)*-\d+)\s*(?::\s*(.*?))?\s*(?:-->|\*\/)?\s*$/u;

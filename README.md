@@ -1,5 +1,7 @@
 # Cài đặt plugin VNR cho Claude Code
 
+Hướng dẫn cho người dùng: https://sa-hrm.vnrlocal.com/docs/marketplace/user
+
 Marketplace `vnr-marketplace` phân phối hai plugin: `vnr-swe` (hai lệnh cho dev HRM: `/vnr-dev` làm PBI trên nền superpowers, `/vnr-review` review trước khi push) và `vnr-sa`
 (bộ công cụ cho Solution Architect). Lệnh `vnr-bootstrap` đăng ký marketplace với Claude Code rồi cài plugin;
 plugin chạy từ kho plugin của Claude, **không** chép tệp nào vào dự án của bạn.

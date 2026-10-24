@@ -2,7 +2,7 @@
   "name": "vnr-swe",
   "displayName": "VNR SWE",
   "version": "2.0.0",
-  "description": "Hai lệnh cho dev HRM: /vnr-dev làm một PBI từ đầu đến cuối trên nền superpowers, /vnr-review review code trước khi push theo bộ luật SA team",
+  "description": "Lệnh cho dev HRM: /vnr-dev làm một PBI từ đầu đến cuối trên nền superpowers, /vnr-review review code trước khi push, /vnr-commit và /vnr-pr commit + PR theo quy ước team",
   "author": { "name": "VNR" },
   "keywords": ["hrm", "sdlc", "review", "superpowers"]
 }
