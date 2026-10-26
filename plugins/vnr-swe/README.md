@@ -9,7 +9,7 @@ Hướng dẫn cho người dùng: https://sa-hrm.vnrlocal.com/docs/marketplace/
 | `/vnr-dev <PBI id \| mô tả \| file spec BA \| resume <id>>` | nhận một PBI, một yêu cầu hay một bug | trả lời vài câu làm rõ, duyệt spec, duyệt plan (khi lớn). AI code, build, test, review, để nhánh + staged cho bạn commit |
 | `/vnr-review [fe\|be]` | trước khi push | đọc một bảng FAIL/WARN, mỗi dòng một chỗ phải sửa; dán vào mô tả PR. Gõ "sửa theo báo cáo" nếu muốn AI sửa |
 | `/vnr-toi-muon <PBI id \| mô tả \| file spec \| resume <id>>` | làm việc trong **repo bất kỳ** (không cần workspace HRM) | như `/vnr-dev`: trả lời vài câu, duyệt spec, duyệt plan (khi lớn); AI code, build, test, review toàn nhánh, để nhánh + staged. Không có `/vnr-review` ở cuối |
-| `/vnr-commit` | muốn lưu phần đang làm | không gì cả: chỉ cần nói "commit". AI stage, viết message theo quy ước team (tiêu đề tiếng Anh, thân tiếng Việt, work item), commit ngay |
+| `/vnr-commit` | muốn lưu phần đang làm | không gì cả: chỉ cần nói "commit". AI stage, viết message theo quy ước team (tiêu đề tiếng Anh, thân tiếng Việt, work item), commit ngay; ở gốc `vnr.hrm.wiki` commit cả FE lẫn BE trong một lượt |
 | `/vnr-pr` | xong, muốn gửi review | không gì cả: chỉ cần nói "tạo PR". AI push, mở PR trên TFS với tiêu đề tiếng Anh + mô tả tiếng Việt (kèm báo cáo `/vnr-review` khi chạy trong `vnr.hrm.wiki`), trả link |
 
 Nền: plugin [`superpowers`](https://github.com/obra/superpowers) (brainstorming, writing-plans, TDD, systematic-debugging…). `/vnr-dev` chỉ
@@ -72,7 +72,9 @@ tạo PR            # hoặc /vnr-pr — AI push, mở PR (TFS qua MCP), trả l
 Quy ước: Conventional Commits, tiêu đề tiếng Anh ≤ 72 ký tự, thân tiếng Việt khi cần, footer `VNR W<tuần> #<id>` (work item lấy từ tên nhánh
 `<type>/<id>-<slug>` hoặc `work/<id>/`), mô tả PR tiếng Việt bốn mục (Vì sao · Thay đổi · Kiểm tra · Work item). Mặc định nằm trong plugin
 (`skills/vnr-commit/convention.md`); ở `vnr.hrm.wiki`, SA team ghi đè bằng `docs/review/git-conventions.md`. Chạy được ở repo bất kỳ.
-Sai ý → `git commit --amend` hoặc nói "sửa lại: …".
+Đứng ở gốc `vnr.hrm.wiki` mà cả `src/vnr.hrm.solution` lẫn `src/vnr.hrm.web` đều có thay đổi → một lượt "commit" ra hai commit (BE trước, FE sau,
+hai nhánh cùng tên); muốn một repo thì nói "commit BE" / "commit FE"; đứng trong `src/<repo>` thì chỉ repo đó.
+Sai ý → `git commit --amend` hoặc nói "sửa lại: …" ("sửa lại FE: …" / "sửa lại BE: …" khi vừa có hai commit).
 
 ## Dùng `/vnr-review`
 

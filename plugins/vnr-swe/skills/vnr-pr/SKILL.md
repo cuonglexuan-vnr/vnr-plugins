@@ -22,7 +22,8 @@ $ARGUMENTS
 3. Nhánh hiện tại là nhánh tích hợp (`## branch`) → in "đang đứng trên <nhánh>, không mở PR từ nhánh tích hợp", dừng.
 
 ## P1. Trạng thái
-- `git status --short` khác rỗng → gọi Skill `vnr-swe:vnr-commit` trước (cùng phiên), rồi tiếp.
+- `git status --short` khác rỗng → gọi Skill `vnr-swe:vnr-commit` trước (cùng phiên), rồi tiếp. Ở gốc wiki, `/vnr-commit` tự commit mọi
+  `src/<repo>` bẩn trong một lượt (mỗi repo một commit) — gọi đúng một lần, không gọi lại cho repo thứ hai.
 - `git fetch origin <đích>`; `git rev-list --count origin/<đích>..HEAD` = 0 → in "nhánh chưa có commit nào so với <đích>", dừng. Không push, không PR.
 
 ## P2. Push
