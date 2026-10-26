@@ -56,7 +56,7 @@
         "Báo cáo /vnr-review là một bảng PASS / WARN / FAIL dán thẳng vào PR; mọi luật trong phạm vi đều qua AI",
         "Hợp đồng devhub.claude-md.json: DevHub ghi khối HRM Wiki vào CLAUDE.md máy SE",
         "Thêm /vnr-toi-muon: làm PBI / sửa bug trong repo bất kỳ trên nền superpowers, tự nhận stack và nhánh gốc, artefact ở work/<id>/; không gọi /vnr-review",
-        "Thêm /vnr-commit: stage + commit theo quy ước team (Conventional Commits tiếng Anh, thân tiếng Việt, footer VNR W<tuần> #<id>), không hỏi, không push",
+        "Thêm /vnr-commit: stage + commit theo quy ước team (Conventional Commits tiếng Anh, thân tiếng Việt, footer VNR W<tuần> #<id>), không hỏi, không push; ở gốc vnr.hrm.wiki commit cả FE lẫn BE trong một lượt",
         "Thêm /vnr-pr: push + mở PR trên TFS (tiêu đề tiếng Anh, mô tả tiếng Việt bốn mục); không MCP thì in text để dán",
         "Khối CLAUDE.md: nói \"commit\" / \"tạo PR\" là Claude dùng đúng skill, không cần gõ lệnh",
         "/vnr-dev, /vnr-toi-muon tạo nhánh <type>/<id>-<slug>"

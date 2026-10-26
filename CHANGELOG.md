@@ -10,6 +10,9 @@ Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Số phiên bản
   quy ước team — Conventional Commits, tiêu đề tiếng Anh ≤ 72, thân tiếng Việt khi cần, footer `VNR W<tuần> #<id>` — và commit ngay;
   không hỏi, không push. Lớp quy ước mặc định ở `skills/vnr-commit/convention.md`; `vnr.hrm.wiki/docs/review/git-conventions.md`
   (SA team) ghi đè theo mục khi chạy trong workspace hoặc trong `src/<repo>`.
+  - Ở gốc `vnr.hrm.wiki` với cả `src/vnr.hrm.solution` lẫn `src/vnr.hrm.web` bẩn: một lượt ra hai commit (BE trước, FE sau, hai nhánh cùng tên,
+    mỗi repo một message), không hỏi "FE hay BE?" nữa (2026-10-26). Đối số `FE` / `BE` giới hạn một repo; đứng trong `src/<repo>` thì chỉ repo đó.
+    Amend sau hai commit: "sửa lại FE: …" / "sửa lại BE: …".
 - **Skill `vnr-pr`** (`skills/vnr-pr/`): nói "tạo PR" là AI push nhánh, viết tiêu đề tiếng Anh + mô tả tiếng Việt bốn mục
   (Vì sao · Thay đổi · Kiểm tra · Work item), tạo PR qua MCP `tfs`; không MCP thì in text và link tạo PR để dán.
   - Trong workspace `vnr.hrm.wiki`, `## Kiểm tra` tự đính kèm `work/vnr-review/<repo>.md`; nội dung đã review (dòng

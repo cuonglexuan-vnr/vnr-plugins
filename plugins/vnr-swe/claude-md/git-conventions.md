@@ -2,7 +2,7 @@
 
 Khối này do DevHub ghi ở bước "Ngữ cảnh cho Claude" của Trang chủ; đừng sửa tay (DevHub ghi đè khi chạy lại bước đó). Áp cho **mọi repo** trên máy này.
 
-Khi SE nói "commit", "commit đi", "lưu lại", "tạo commit", "save changes" → dùng skill `/vnr-commit`: tự stage, tự viết message theo quy ước team, commit ngay, không hỏi, không push.
+Khi SE nói "commit", "commit đi", "lưu lại", "tạo commit", "save changes" → dùng skill `/vnr-commit`: tự stage, tự viết message theo quy ước team, commit ngay, không hỏi, không push; ở gốc `vnr.hrm.wiki` commit cả FE lẫn BE trong một lượt.
 Khi SE nói "push", "tạo PR", "mở PR", "gửi review", "create pull request" → dùng skill `/vnr-pr`: push + mở PR, tiêu đề tiếng Anh, mô tả tiếng Việt.
 Không tự commit/push/PR khi SE chưa bảo. SE bảo thì làm qua hai skill trên — không tự nghĩ ra message, tên nhánh hay mô tả PR theo kiểu khác.
 
