@@ -15,4 +15,4 @@ vnr.hrm.wiki/
 
 Khi SE nói "làm PBI <id>", "tôi muốn …", "sửa bug …" → dùng skill `/vnr-dev`. Trước khi push → `/vnr-review`.
 Khi plan hoặc viết code HRM ở bất kỳ thư mục nào trong workspace: mở `docs/wiki/index.md` của `vnr.hrm.wiki`, chọn trang theo việc đang làm, rồi mới đọc `src/`.
-Không tự commit/push; SE xem diff và commit tay.
+Không tự commit/push/PR khi SE chưa bảo; SE bảo → `/vnr-commit`, `/vnr-pr`.

@@ -3,7 +3,7 @@
 Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Số phiên bản là `version` của `.claude-plugin/marketplace.json`
 (phiên bản gửi lên registry); phiên bản từng plugin ghi trong ngoặc. Mục mới nhất ở trên.
 
-## [2.0.0] — chưa phát hành (nhánh `feat/slim-vnr-swe`, PBI #8089)
+## [2.0.0] — 2026-10-16 (PBI #8089)
 
 ### Thêm (git conventions, 2026-10-22)
 - **Skill `vnr-commit`** (`skills/vnr-commit/`): nói "commit" là AI stage mọi thay đổi (trừ danh sách never-commit), viết message theo
@@ -36,8 +36,8 @@ Theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/). Số phiên bản
 
 ### Thêm
 - **Skill `vnr-dev`** (`skills/vnr-dev/`): một lệnh làm PBI từ đầu đến cuối trên nền `superpowers` — intake (PBI id qua MCP `tfs`,
-  file spec BA, câu mô tả, `resume`), brainstorm → `work/<id>/spec.md` (SE duyệt), `writing-plans` → `plan.md` (SE duyệt khi ≥ 4 task
-  hoặc đụng path risky), build không trông (SDD / executing-plans + TDD), gate build/test, `finishing` giữ nhánh + staged, rồi tự chạy
+  file spec BA, câu mô tả, `resume`), brainstorm → `work/<id>/spec.md` (SE duyệt), `writing-plans` → `<id>-plan.md` (SE duyệt khi ≥ 4 task
+  hoặc đụng path risky), build không trông (SDD / executing-plans + TDD), gate build/test, giữ nhánh + staged, rồi tự chạy
   `/vnr-review` một lần. Không commit/push. `workspace.md` nhận diện `vnr.hrm.wiki` hay repo đơn, nhánh `develop` / `projects/<customer>/dev`.
 - `devhub.claude-md.json` + `claude-md/hrm-wiki-rules.md`: hợp đồng để DevHub ghi khối `<!-- BEGIN:hrm-wiki-rules -->` vào CLAUDE.md
   user-level của máy SE ở bước "Ngữ cảnh cho Claude" của Trang chủ (đọc từ bản marketplace đã đồng bộ, không cần cài plugin; thay trọn
